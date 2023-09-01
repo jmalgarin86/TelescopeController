@@ -21,10 +21,15 @@ int STP;  //STEP
 int PER_X1 = 52;  //PERIODE x1
 int PER_X5 = 10; //PERIODE x10
 int PER_X17 = 3;  //PERIODE x17
-int PER;  //PERIODE
+int PER = PER_X17;  //PERIODE
 
 //Variables globales
-int inByte = 0;
+int ar_steps = 0;
+int ar_dir = 1;
+int dec_steps = 0;
+int dec_dir = 1;
+int follow = 0;
+int period = 0;
 
 void setup() {
   //Inicio módulo Bluetooth
@@ -57,103 +62,94 @@ void setup() {
 
 }
 
-void loop() {
+void followStepper(){
+  // empty serial buffer
+  while (Serial.available() > 0) {
+    char _ = Serial.read(); // Read and discard the character
+  }
+
+  // set pins
+  digitalWrite(DIR_PIN_AR, 0);
+  digitalWrite(SLP_PIN_AR, HIGH);
+  Serial.println(Serial.available());
   
-  if (BT1.available()>0 || Serial.available()>0)
-  {
-    if (BT1.available()>0)
-    {
-      inByte = BT1.read();
-    }
-    else if (Serial.available()>0)
-    {
-      inByte = Serial.read();
-    }
-    if (inByte=='0') //OFF
-    {
-      digitalWrite(SLP_PIN_AR,LOW);
-      digitalWrite(SLP_PIN_DEC,LOW);
-    }
-    else if (inByte=='1') //AR - x1 ON
-    {
-      digitalWrite(SLP_PIN_AR,HIGH);
-      digitalWrite(DIR_PIN_AR,LOW);
-      STP = STP_PIN_AR;
-      PER = PER_X1;
-    }
-    else if (inByte=='2') //AR - x17
-    {
-      digitalWrite(SLP_PIN_AR,HIGH);
-      digitalWrite(DIR_PIN_AR,LOW);
-      STP = STP_PIN_AR;
-      PER = PER_X17;
-    }
-    else if (inByte=='3') //AR + x17
-    {
-      digitalWrite(SLP_PIN_AR,HIGH);
-      digitalWrite(DIR_PIN_AR,HIGH);
-      STP = STP_PIN_AR;
-      PER = PER_X17;
-    }
-    else if (inByte=='4') //AR - x5
-    {
-      digitalWrite(SLP_PIN_AR,HIGH);
-      digitalWrite(DIR_PIN_AR,LOW);
-      STP = STP_PIN_AR;
-      PER = PER_X5;
-    }
-    else if (inByte=='5') //AR + x5
-    {
-      digitalWrite(SLP_PIN_AR,HIGH);
-      digitalWrite(DIR_PIN_AR,HIGH);
-      STP = STP_PIN_AR;
-      PER = PER_X5;
-    }
-    else if (inByte=='6') //DEC + x17
-    {
-      digitalWrite(SLP_PIN_DEC,HIGH);
-      digitalWrite(DIR_PIN_DEC,LOW);
-      STP = STP_PIN_DEC;
-      PER = PER_X17;
-    }
-    else if (inByte=='7') //DEC - x17
-    {
-      digitalWrite(SLP_PIN_DEC,HIGH);
-      digitalWrite(DIR_PIN_DEC,HIGH);
-      STP = STP_PIN_DEC;
-      PER = PER_X17;
-    }
-    else if (inByte=='8') //DEC + x5
-    {
-      digitalWrite(SLP_PIN_DEC,HIGH);
-      digitalWrite(DIR_PIN_DEC,LOW);
-      STP = STP_PIN_DEC;
-      PER = PER_X5;
-    }
-    else if (inByte=='9') //DEC - x5
-    {
-      digitalWrite(SLP_PIN_DEC,HIGH);
-      digitalWrite(DIR_PIN_DEC,HIGH);
-      STP = STP_PIN_DEC;
-      PER = PER_X5;
+  // Follow while no new serial available
+  while (BT1.available()==0 && Serial.available()==0){
+    for (int i = 0; i<4; i++){
+      digitalWrite(STP_PIN_AR, HIGH);
+      delay(52);
+      digitalWrite(STP_PIN_AR, LOW);
+      delay(52);
     }
   }
-  // put your main code here, to run repeatedly:
-  digitalWrite(STP,HIGH);
-  delay(PER);
-  digitalWrite(STP,LOW);
-  delay(PER);
-  digitalWrite(STP,HIGH);
-  delay(PER);
-  digitalWrite(STP,LOW);
-  delay(PER);
-  digitalWrite(STP,HIGH);
-  delay(PER);
-  digitalWrite(STP,LOW);
-  delay(PER);
-  digitalWrite(STP,HIGH);
-  delay(PER);
-  digitalWrite(STP,LOW);
-  delay(PER);
+  digitalWrite(SLP_PIN_AR, LOW);
+}
 
+void moveSteppers(){
+  digitalWrite(DIR_PIN_AR, ar_dir);
+  digitalWrite(DIR_PIN_DEC, dec_dir);
+  digitalWrite(SLP_PIN_AR, HIGH);
+  digitalWrite(SLP_PIN_DEC, HIGH);
+  if(ar_steps<=dec_steps){
+    for (int i = 0; i<4*(dec_steps-ar_steps); i++){
+      digitalWrite(STP_PIN_DEC, HIGH);
+      delay(period);
+      digitalWrite(STP_PIN_DEC, LOW);
+      delay(period);
+    }
+    for (int i = 0; i<4*ar_steps; i++){
+      digitalWrite(STP_PIN_AR, HIGH);
+      digitalWrite(STP_PIN_DEC, HIGH);
+      delay(period);
+      digitalWrite(STP_PIN_AR, LOW);
+      digitalWrite(STP_PIN_DEC, LOW);
+      delay(period);
+    }
+  }
+  else{
+    for (int i = 0; i<4*(ar_steps-dec_steps); i++){
+      digitalWrite(STP_PIN_AR, HIGH);
+      delay(period);
+      digitalWrite(STP_PIN_AR, LOW);
+      delay(period);
+    }
+    for (int i = 0; i<4*dec_steps; i++){
+      digitalWrite(STP_PIN_AR, HIGH);
+      digitalWrite(STP_PIN_DEC, HIGH);
+      delay(period);
+      digitalWrite(STP_PIN_AR, LOW);
+      digitalWrite(STP_PIN_DEC, LOW);
+      delay(period);
+    }
+  }
+  digitalWrite(SLP_PIN_AR, LOW);
+  digitalWrite(SLP_PIN_DEC, LOW);
+  if (follow==1){
+    followStepper();
+  }
+}
+
+void loop() {
+  if (BT1.available()>6 || Serial.available()>6)
+  {
+    if (BT1.available()>6)
+    {
+      follow = Serial.parseInt();
+      ar_steps = Serial.parseInt();
+      ar_dir = Serial.parseInt();
+      dec_steps = Serial.parseInt();
+      dec_dir = Serial.parseInt();
+      period = Serial.parseInt();
+    }
+    else if (Serial.available()>6)
+    {
+      follow = Serial.parseInt();
+      ar_steps = Serial.parseInt();
+      ar_dir = Serial.parseInt();
+      dec_steps = Serial.parseInt();
+      dec_dir = Serial.parseInt();
+      period = Serial.parseInt();
+    }
+    moveSteppers();
+  }
 }
