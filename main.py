@@ -28,7 +28,7 @@ class TelescopeController(QMainWindow):
         layout = QVBoxLayout()
 
         # Create the manual control widget
-        self.manual_controller = ManualController()
+        self.manual_controller = ManualController(self)
         layout.addWidget(self.manual_controller)
 
         # Create the ConsoleController widget

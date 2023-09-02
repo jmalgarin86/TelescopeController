@@ -15,9 +15,10 @@ class GuideToolBar(QToolBar):
         self.addAction(self.action_arduino)
 
         # Setup arduino button
-        self.action_guiding = QAction(QIcon("icons/guide.png"), "Start guide", self)
-        self.action_guiding.setStatusTip("Start guide")
-        self.action_guiding.setEnabled(False)
-        self.addAction(self.action_guiding)
+        self.action_keep_on = QAction(QIcon("icons/guide.png"), "Start guide", self)
+        self.action_keep_on.setStatusTip("Start guide")
+        self.action_keep_on.setCheckable(True)
+        self.action_keep_on.setEnabled(False)
+        self.addAction(self.action_keep_on)
 
 

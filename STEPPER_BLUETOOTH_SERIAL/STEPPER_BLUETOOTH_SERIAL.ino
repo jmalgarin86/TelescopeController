@@ -62,27 +62,26 @@ void setup() {
 
 }
 
-void followStepper(){
+void followStepper(int DIR_PIN, int SLP_PIN, int STP_PIN, int dir){
   // empty serial buffer
   while (Serial.available() > 0) {
     char _ = Serial.read(); // Read and discard the character
   }
 
   // set pins
-  digitalWrite(DIR_PIN_AR, 0);
-  digitalWrite(SLP_PIN_AR, HIGH);
-  Serial.println(Serial.available());
+  digitalWrite(DIR_PIN, dir);
+  digitalWrite(SLP_PIN, HIGH);
   
   // Follow while no new serial available
   while (BT1.available()==0 && Serial.available()==0){
     for (int i = 0; i<4; i++){
-      digitalWrite(STP_PIN_AR, HIGH);
-      delay(52);
-      digitalWrite(STP_PIN_AR, LOW);
-      delay(52);
+      digitalWrite(STP_PIN, HIGH);
+      delay(period);
+      digitalWrite(STP_PIN, LOW);
+      delay(period);
     }
   }
-  digitalWrite(SLP_PIN_AR, LOW);
+  digitalWrite(SLP_PIN, LOW);
 }
 
 void moveSteppers(){
@@ -125,9 +124,18 @@ void moveSteppers(){
   digitalWrite(SLP_PIN_AR, LOW);
   digitalWrite(SLP_PIN_DEC, LOW);
   if (follow==1){
-    followStepper();
+    period = 52;
+    ar_dir = 1;
+    followStepper(DIR_PIN_AR, SLP_PIN_AR, STP_PIN_AR, ar_dir);
+  }
+  else if (follow==2){
+    followStepper(DIR_PIN_AR, SLP_PIN_AR, STP_PIN_AR, ar_dir);
+  }
+  else if (follow==3){
+    followStepper(DIR_PIN_DEC, SLP_PIN_DEC, STP_PIN_DEC, dec_dir);
   }
 }
+
 
 void loop() {
   if (BT1.available()>6 || Serial.available()>6)

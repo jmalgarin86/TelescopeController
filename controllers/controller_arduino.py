@@ -40,9 +40,9 @@ class ArduinoController:
         if self.serial_connection:
             self.serial_connection.write(command.encode())
 
-    def start_guiding(self):
+    def start_keep_on(self):
         self.send_command("1 0 0 0 0 52\n")
 
-    def stop_guiding(self):
+    def stop_keep_on(self):
         self.send_command("0 0 0 0 0 0\n")
 
