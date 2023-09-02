@@ -1,4 +1,4 @@
-from widgets.manual import ManualWidget
+from widgets.widget_manual_control import ManualWidget
 
 
 class ManualController(ManualWidget):

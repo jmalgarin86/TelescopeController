@@ -7,7 +7,7 @@
 
 import sys
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
-from widgets.console import ConsoleWidget
+from widgets.widget_console import ConsoleWidget
 
 
 class ConsoleController(ConsoleWidget):

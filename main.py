@@ -1,9 +1,9 @@
 import sys
 import qdarkstyle
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QVBoxLayout, QWidget
-from controllers.console import ConsoleController
-from controllers.toolbar_guide import GuideController
-from controllers.manual import ManualController
+from controllers.controller_console import ConsoleController
+from controllers.controller_toolbar_guide import GuideController
+from controllers.controller_manual_control import ManualController
 
 
 class TelescopeController(QMainWindow):

@@ -1,5 +1,5 @@
-from controllers.arduino import ArduinoController
-from widgets.toolbar_guide import GuideToolBar
+from controllers.controller_arduino import ArduinoController
+from widgets.widget_toolbar_guide import GuideToolBar
 
 
 class GuideController(GuideToolBar):
