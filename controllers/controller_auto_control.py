@@ -3,6 +3,9 @@ import numpy as np
 from widgets.widget_auto_control import AutoWidget
 import threading
 
+from catalogs.catalog import catalog
+
+import time
 
 class AutoController(AutoWidget):
     def __init__(self, *args, **kwargs):
@@ -12,21 +15,53 @@ class AutoController(AutoWidget):
         self.motor_period_x1 = 0.416  # s/step or "/step
         self.motor_period_x26 = 0.016  # s/step or "/step
 
+        # Updtate coordinates according to first element in the catalog
+        self.update_origen()
+        self.update_target()
+
         # Connect goto button to goto function0
         self.goto_button.clicked.connect(self.goto)
+        self.origen_combo.currentTextChanged.connect(self.update_origen)
+        self.target_combo.currentTextChanged.connect(self.update_target)
+
+    def update_origen(self):
+        key = self.origen_combo.currentText()
+        try:
+            x = catalog[key]
+
+            ar = "%sh %sm %ss" % (x[0], x[1], x[2])
+            de = "%sº %s' %s''" % (x[3], x[4], x[5])
+
+            self.ar_origin_edit.setText(ar)
+            self.dec_origin_edit.setText(de)
+        except:
+            pass
+
+    def update_target(self):
+        key = self.target_combo.currentText()
+        try:
+            x = catalog[key]
+
+            ar = "%sh %sm %ss" % (x[0], x[1], x[2])
+            de = "%sº %s' %s''" % (x[3], x[4], x[5])
+
+            self.ar_target_edit.setText(ar)
+            self.dec_target_edit.setText(de)
+        except:
+            pass
 
     def get_steps(self):
         if not self.ar_origin_edit.text():
             ar_a = self.ar_origin_edit.placeholderText().split(" ")
         else:
             ar_a = self.ar_origin_edit.text().split(" ")
-        ar_a = float(ar_a[0][0:-1]) * 60 * 60 + float(ar_a[1][0:-1]) * 60 + float(ar_a[2][0:-2])
+        ar_a = float(ar_a[0][0:-1]) * 60 * 60 + float(ar_a[1][0:-1]) * 60 + float(ar_a[2][0:-1])
 
         if not self.ar_target_edit.text():
             ar_b = self.ar_target_edit.placeholderText().split(" ")
         else:
             ar_b = self.ar_target_edit.text().split(" ")
-        ar_b = float(ar_b[0][0:-1]) * 60 * 60 + float(ar_b[1][0:-1]) * 60 + float(ar_b[2][0:-2])
+        ar_b = float(ar_b[0][0:-1]) * 60 * 60 + float(ar_b[1][0:-1]) * 60 + float(ar_b[2][0:-1])
 
         if not self.dec_origin_edit.text():
             dec_a = self.dec_origin_edit.placeholderText().split(" ")
@@ -94,12 +129,21 @@ class AutoController(AutoWidget):
         # Get the number of steps for DEC axis
         nde = str(int(np.abs(ndes_0)))
 
+        # Get time
+        tar = int(nar) * bt
+        tde = int(nde) * bt
+        t = np.max(np.array([np.abs(tar), np.abs(tde)]))
+        minutes = int(t/60)
+        seconds = int(t-int(t/60))
+
         # Send instruction to arduino
         print("Go to the target")
+        print("Time: %im %is" % (minutes, seconds))
         command = "0 %s %s %s %s 2" % (nar, ar_dir, nde, de_dir)
         self.main.guiding_toolbar.arduino.serial_connection.flushInput()
         self.main.guiding_toolbar.arduino.send_command(command)
         while self.main.guiding_toolbar.arduino.serial_connection.in_waiting == 0:
+            time.sleep(0.01)
             pass
         self.main.guiding_toolbar.arduino.serial_connection.flushInput()
 

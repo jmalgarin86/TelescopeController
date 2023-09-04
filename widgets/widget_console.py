@@ -15,5 +15,5 @@ class ConsoleWidget(QMainWindow):
         self.console.setReadOnly(True)
         self.setCentralWidget(self.console)
         self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-        self.setMaximumWidth(400)
+        # self.setMaximumWidth(400)
 
