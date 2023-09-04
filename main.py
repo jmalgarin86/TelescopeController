@@ -1,9 +1,11 @@
 import sys
 import qdarkstyle
+from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QVBoxLayout, QWidget
 from controllers.controller_console import ConsoleController
 from controllers.controller_toolbar_guide import GuideController
 from controllers.controller_manual_control import ManualController
+from controllers.controller_auto_control import AutoController
 
 
 class TelescopeController(QMainWindow):
@@ -31,6 +33,10 @@ class TelescopeController(QMainWindow):
         self.manual_controller = ManualController(self)
         layout.addWidget(self.manual_controller)
 
+        # Create the auto control widget
+        self.auto_controller = AutoController(self)
+        layout.addWidget(self.auto_controller)
+
         # Create the ConsoleController widget
         self.console_controller = ConsoleController()
         layout.addWidget(self.console_controller)  # Add it to the layout
@@ -40,6 +46,14 @@ class TelescopeController(QMainWindow):
 
         # Initialize guiding state
         self.guiding = False
+
+    def closeEvent(self, event):
+        # Return stdout to defaults.
+        sys.stdout = sys.__stdout__
+        self.guiding_toolbar.arduino.stop_keep_on()
+        self.guiding_toolbar.arduino.disconnect()
+        print('\nGUI closed successfully!')
+        super().closeEvent(event)
 
 def main():
     app = QApplication(sys.argv)

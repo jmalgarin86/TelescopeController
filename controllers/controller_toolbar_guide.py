@@ -18,6 +18,7 @@ class GuideController(GuideToolBar):
                 if self.arduino.connect():
                     self.action_keep_on.setEnabled(True)
                     self.main.manual_controller.setEnabled(True)
+                    self.main.auto_controller.setEnabled(True)
                     self.action_arduino.setStatusTip("Disconnect Arduino")
                     self.action_arduino.setToolTip("Disconnect Arduino")
                     print("Arduino connected!")
@@ -27,6 +28,7 @@ class GuideController(GuideToolBar):
             self.arduino.disconnect()
             self.action_keep_on.setEnabled(False)  # Disable the "Guiding" button
             self.main.manual_controller.setEnabled(False)
+            self.main.auto_controller.setEnabled(False)
             self.action_arduino.setStatusTip("Connect Arduino")
             self.action_arduino.setToolTip("Connect Arduino")
             print("Arduino disconnected!")

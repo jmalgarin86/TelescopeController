@@ -3,7 +3,7 @@ import serial.tools.list_ports
 
 
 class ArduinoController:
-    def __init__(self, baud_rate=9600):
+    def __init__(self, baud_rate=115200):
         self.baud_rate = baud_rate
         self.serial_connection = None
 

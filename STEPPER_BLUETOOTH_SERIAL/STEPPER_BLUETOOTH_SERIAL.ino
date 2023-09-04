@@ -1,7 +1,7 @@
 #include <SoftwareSerial.h>
 SoftwareSerial BT1(7,13); // RX, TX
 
-//Versión V2.1 Corrige la dirección del eje de AR
+//Versión V3.0. Mueve simultaneamente los motores de AR y DEC
 
 //Pines Stepper AR
 #define DIR_PIN_AR 2
@@ -17,12 +17,6 @@ SoftwareSerial BT1(7,13); // RX, TX
 #define MS2_PIN_DEC 11
 #define SLP_PIN_DEC 12
 
-int STP;  //STEP
-int PER_X1 = 52;  //PERIODE x1
-int PER_X5 = 10; //PERIODE x10
-int PER_X17 = 3;  //PERIODE x17
-int PER = PER_X17;  //PERIODE
-
 //Variables globales
 int ar_steps = 0;
 int ar_dir = 1;
@@ -33,8 +27,8 @@ int period = 0;
 
 void setup() {
   //Inicio módulo Bluetooth
-  BT1.begin(9600);
-  Serial.begin(9600);
+  BT1.begin(115200);
+  Serial.begin(115200);
   
   //Modos de pines Stepper A
   pinMode(DIR_PIN_AR,OUTPUT);
@@ -85,44 +79,47 @@ void followStepper(int DIR_PIN, int SLP_PIN, int STP_PIN, int dir){
 }
 
 void moveSteppers(){
-  digitalWrite(DIR_PIN_AR, ar_dir);
-  digitalWrite(DIR_PIN_DEC, dec_dir);
-  digitalWrite(SLP_PIN_AR, HIGH);
-  digitalWrite(SLP_PIN_DEC, HIGH);
-  if(ar_steps<=dec_steps){
-    for (int i = 0; i<4*(dec_steps-ar_steps); i++){
-      digitalWrite(STP_PIN_DEC, HIGH);
-      delay(period);
-      digitalWrite(STP_PIN_DEC, LOW);
-      delay(period);
+  if (ar_steps>0 || dec_steps>0){
+    digitalWrite(DIR_PIN_AR, ar_dir);
+    digitalWrite(DIR_PIN_DEC, dec_dir);
+    digitalWrite(SLP_PIN_AR, HIGH);
+    digitalWrite(SLP_PIN_DEC, HIGH);
+    if(ar_steps<=dec_steps){
+      for (int i = 0; i<4*ar_steps; i++){
+        digitalWrite(STP_PIN_DEC, HIGH);
+        digitalWrite(STP_PIN_AR, HIGH);
+        delay(period);
+        digitalWrite(STP_PIN_DEC, LOW);
+        digitalWrite(STP_PIN_AR, LOW);
+        delay(period);
+      }
+      for (int i = 0; i<4*(dec_steps-ar_steps); i++){
+        digitalWrite(STP_PIN_DEC, HIGH);
+        delay(period);
+        digitalWrite(STP_PIN_DEC, LOW);
+        delay(period);
+      }
     }
-    for (int i = 0; i<4*ar_steps; i++){
-      digitalWrite(STP_PIN_AR, HIGH);
-      digitalWrite(STP_PIN_DEC, HIGH);
-      delay(period);
-      digitalWrite(STP_PIN_AR, LOW);
-      digitalWrite(STP_PIN_DEC, LOW);
-      delay(period);
+    else{
+      for (int i = 0; i<4*(dec_steps); i++){
+        digitalWrite(STP_PIN_DEC, HIGH);
+        digitalWrite(STP_PIN_AR, HIGH);
+        delay(period);
+        digitalWrite(STP_PIN_DEC, LOW);
+        digitalWrite(STP_PIN_AR, LOW);
+        delay(period);
+      }
+      for (int i = 0; i<4*(ar_steps-dec_steps); i++){
+        digitalWrite(STP_PIN_AR, HIGH);
+        delay(period);
+        digitalWrite(STP_PIN_AR, LOW);
+        delay(period);
+      }
     }
+    Serial.println("Ready!");
+    digitalWrite(SLP_PIN_AR, LOW);
+    digitalWrite(SLP_PIN_DEC, LOW);
   }
-  else{
-    for (int i = 0; i<4*(ar_steps-dec_steps); i++){
-      digitalWrite(STP_PIN_AR, HIGH);
-      delay(period);
-      digitalWrite(STP_PIN_AR, LOW);
-      delay(period);
-    }
-    for (int i = 0; i<4*dec_steps; i++){
-      digitalWrite(STP_PIN_AR, HIGH);
-      digitalWrite(STP_PIN_DEC, HIGH);
-      delay(period);
-      digitalWrite(STP_PIN_AR, LOW);
-      digitalWrite(STP_PIN_DEC, LOW);
-      delay(period);
-    }
-  }
-  digitalWrite(SLP_PIN_AR, LOW);
-  digitalWrite(SLP_PIN_DEC, LOW);
   if (follow==1){
     period = 52;
     ar_dir = 1;

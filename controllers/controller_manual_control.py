@@ -12,6 +12,12 @@ class ManualController(ManualWidget):
 
     def move_ar_n(self):
         if self.button_ar_n.isChecked():
+            # Uncheck other buttons
+            self.button_ar_p.setChecked(False)
+            self.button_dec_n.setChecked(False)
+            self.button_dec_p.setChecked(False)
+            self.speed_combo.setEnabled(False)
+
             # Check for speed
             speed = float(self.speed_combo.currentText()[1::])
             period = int(52/speed)
@@ -23,6 +29,7 @@ class ManualController(ManualWidget):
             self.main.guiding_toolbar.arduino.send_command(command)
             print("Moving AR in negative direction")
         else:
+            self.speed_combo.setEnabled(True)
             if self.main.guiding_toolbar.keep_on_enable:
                 self.main.guiding_toolbar.arduino.send_command("1 0 0 0 0 0")
                 print("Tracking")
@@ -34,6 +41,12 @@ class ManualController(ManualWidget):
 
     def move_ar_p(self):
         if self.button_ar_p.isChecked():
+            # Uncheck other buttons
+            self.button_ar_n.setChecked(False)
+            self.button_dec_n.setChecked(False)
+            self.button_dec_p.setChecked(False)
+            self.speed_combo.setEnabled(False)
+
             # Check for speed
             speed = float(self.speed_combo.currentText()[1::])
             period = int(52/speed)
@@ -45,6 +58,7 @@ class ManualController(ManualWidget):
             self.main.guiding_toolbar.arduino.send_command(command)
             print("Moving AR in positive direction")
         else:
+            self.speed_combo.setEnabled(True)
             if self.main.guiding_toolbar.keep_on_enable:
                 self.main.guiding_toolbar.arduino.send_command("1 0 0 0 0 0")
                 print("Tracking")
@@ -56,6 +70,12 @@ class ManualController(ManualWidget):
 
     def move_dec_n(self):
         if self.button_dec_n.isChecked():
+            # Uncheck other buttons
+            self.button_ar_p.setChecked(False)
+            self.button_ar_n.setChecked(False)
+            self.button_dec_p.setChecked(False)
+            self.speed_combo.setEnabled(False)
+
             # Check for speed
             speed = float(self.speed_combo.currentText()[1::])
             period = int(52/speed)
@@ -67,6 +87,7 @@ class ManualController(ManualWidget):
             self.main.guiding_toolbar.arduino.send_command(command)
             print("Moving DEC in negative direction")
         else:
+            self.speed_combo.setEnabled(True)
             if self.main.guiding_toolbar.keep_on_enable:
                 self.main.guiding_toolbar.arduino.send_command("1 0 0 0 0 0")
                 print("Tracking")
@@ -78,6 +99,12 @@ class ManualController(ManualWidget):
 
     def move_dec_p(self):
         if self.button_dec_p.isChecked():
+            # Uncheck other buttons
+            self.button_ar_p.setChecked(False)
+            self.button_ar_n.setChecked(False)
+            self.button_dec_n.setChecked(False)
+            self.speed_combo.setEnabled(False)
+
             # Check for speed
             speed = float(self.speed_combo.currentText()[1::])
             period = int(52/speed)
@@ -89,6 +116,7 @@ class ManualController(ManualWidget):
             self.main.guiding_toolbar.arduino.send_command(command)
             print("Moving DEC in positive direction")
         else:
+            self.speed_combo.setEnabled(True)
             if self.main.guiding_toolbar.keep_on_enable:
                 self.main.guiding_toolbar.arduino.send_command("1 0 0 0 0 0")
                 print("Tracking")
