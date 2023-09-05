@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QGroupBox, QPushButton, QGridLayout, QHBoxLayout, QLabel, QComboBox, QVBoxLayout, \
-    QSizePolicy
+    QSizePolicy, QRadioButton
 
 
 class ManualWidget(QGroupBox):
@@ -36,6 +36,14 @@ class ManualWidget(QGroupBox):
         speed_layout.addWidget(speed_label)
         speed_layout.addWidget(self.speed_combo)
 
+        # Radio buttons
+        self.radio_west = QRadioButton("West")
+        self.radio_east = QRadioButton("East")
+        self.radio_east.setChecked(True)
+        radio_layout = QHBoxLayout()
+        radio_layout.addWidget(self.radio_west)
+        radio_layout.addWidget(self.radio_east)
+
         # Create buttons layout
         layout = QGridLayout()
         layout.addWidget(self.button_ar_p, 1, 1)
@@ -43,5 +51,6 @@ class ManualWidget(QGroupBox):
         layout.addWidget(self.button_dec_p, 2, 2)
         layout.addWidget(self.button_dec_n, 2, 0)
         layout.addLayout(speed_layout, 0, 0, 1, 3)
+        layout.addLayout(radio_layout, 2, 1)
 
         self.setLayout(layout)

@@ -5,10 +5,22 @@ class ManualController(ManualWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.dec_dir = None
+
+        self.set_dec_direction()
+
         self.button_ar_n.clicked.connect(self.move_ar_n)
         self.button_ar_p.clicked.connect(self.move_ar_p)
         self.button_dec_n.clicked.connect(self.move_dec_n)
         self.button_dec_p.clicked.connect(self.move_dec_p)
+        self.radio_east.clicked.connect(self.set_dec_direction)
+        self.radio_west.clicked.connect(self.set_dec_direction)
+
+    def set_dec_direction(self):
+        if self.radio_east.isChecked():
+            self.dec_dir = +1
+        elif self.radio_west.isChecked():
+            self.dec_dir = -1
 
     def move_ar_n(self):
         if self.button_ar_n.isChecked():
@@ -20,10 +32,10 @@ class ManualController(ManualWidget):
 
             # Check for speed
             speed = float(self.speed_combo.currentText()[1::])
-            period = int(52/speed)
+            period = int(52 / speed)
 
             # Set command to arduino
-            command = "2 0 0 0 0 "+str(period)
+            command = "2 0 0 0 0 " + str(period)
 
             # Send command
             self.main.guiding_toolbar.arduino.send_command(command)
@@ -49,10 +61,10 @@ class ManualController(ManualWidget):
 
             # Check for speed
             speed = float(self.speed_combo.currentText()[1::])
-            period = int(52/speed)
+            period = int(52 / speed)
 
             # Set command to arduino
-            command = "2 0 1 0 0 "+str(period)
+            command = "2 0 1 0 0 " + str(period)
 
             # Send command
             self.main.guiding_toolbar.arduino.send_command(command)
@@ -78,10 +90,13 @@ class ManualController(ManualWidget):
 
             # Check for speed
             speed = float(self.speed_combo.currentText()[1::])
-            period = int(52/speed)
+            period = int(52 / speed)
 
             # Set command to arduino
-            command = "3 0 0 0 0 "+str(period)
+            if self.dec_dir == 1:
+                command = "3 0 0 0 0 " + str(period)
+            else:
+                command = "3 0 0 0 1 " + str(period)
 
             # Send command
             self.main.guiding_toolbar.arduino.send_command(command)
@@ -107,10 +122,12 @@ class ManualController(ManualWidget):
 
             # Check for speed
             speed = float(self.speed_combo.currentText()[1::])
-            period = int(52/speed)
+            period = int(52 / speed)
 
-            # Set command to arduino
-            command = "3 0 0 0 1 "+str(period)
+            if self.dec_dir == 1:
+                command = "3 0 0 0 1 " + str(period)
+            else:
+                command = "3 0 0 0 0 " + str(period)
 
             # Send command
             self.main.guiding_toolbar.arduino.send_command(command)

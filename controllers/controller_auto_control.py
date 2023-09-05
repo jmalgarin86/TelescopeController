@@ -121,10 +121,16 @@ class AutoController(AutoWidget):
         nar = str(int(np.abs(np.max(np.array([nars_tar, nars_tde])))))
 
         # Get the DEC direction
-        if ndes_0 >= 0:
-            de_dir = "1"
-        else:
-            de_dir = "0"
+        if self.main.manual_controller.dec_dir == 1:
+            if ndes_0 >= 0:
+                de_dir = "1"
+            else:
+                de_dir = "0"
+        elif self.main.manual_controller.dec_dir == -1:
+            if ndes_0 >= 0:
+                de_dir = "0"
+            else:
+                de_dir = "1"
 
         # Get the number of steps for DEC axis
         nde = str(int(np.abs(ndes_0)))
