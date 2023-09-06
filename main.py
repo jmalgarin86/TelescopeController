@@ -65,7 +65,6 @@ class TelescopeController(QMainWindow):
             if self.waiting_commands:
                 command = self.waiting_commands.pop(0)
                 self.arduino.send_command(command)
-                print(f"Executed command: {command}")
             time.sleep(0.1)
 
     def closeEvent(self, event):
