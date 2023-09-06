@@ -1,7 +1,6 @@
 import sys
 import qdarkstyle
-from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 from controllers.controller_console import ConsoleController
 from controllers.controller_toolbar_guide import GuideController
 from controllers.controller_manual_control import ManualController
@@ -55,11 +54,13 @@ class TelescopeController(QMainWindow):
         print('\nGUI closed successfully!')
         super().closeEvent(event)
 
+
 def main():
     app = QApplication(sys.argv)
     window = TelescopeController()
     window.show()
     sys.exit(app.exec_())
+
 
 if __name__ == "__main__":
     main()

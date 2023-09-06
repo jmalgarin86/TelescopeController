@@ -104,7 +104,7 @@ class AutoController(AutoWidget):
         ndes_0 = target_dec / bs
 
         # Get AR position of the star at tde
-        nars_tde = nars_0 + np.abs(bt / bs * ndes_0)
+        nars_tde = nars_0 - np.abs(bt / bs * ndes_0)
 
         # Get the AR direction
         if nars_tde >= 0:
@@ -115,7 +115,7 @@ class AutoController(AutoWidget):
             bt = -bt
 
         # Get AR position of the star at telescope intersection
-        nars_tar = bs / (bs - bt) * nars_0
+        nars_tar = bs / (bs + bt) * nars_0
 
         # Get the number of steps for AR axis
         nar = str(int(np.abs(np.max(np.array([nars_tar, nars_tde])))))

@@ -122,7 +122,7 @@ void moveSteppers(){
   }
   if (follow==1){
     period = 52;
-    ar_dir = 1;
+    ar_dir = 0;
     followStepper(DIR_PIN_AR, SLP_PIN_AR, STP_PIN_AR, ar_dir);
   }
   else if (follow==2){
