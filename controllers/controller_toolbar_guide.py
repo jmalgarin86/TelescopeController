@@ -1,4 +1,3 @@
-from controllers.controller_arduino import ArduinoController
 from widgets.widget_toolbar_guide import GuideToolBar
 
 
@@ -24,7 +23,7 @@ class GuideController(GuideToolBar):
                 else:
                     self.action_arduino.setChecked(False)
         else:
-            self.arduino.disconnect()
+            self.main.arduino.disconnect()
             self.action_tracking.setEnabled(False)  # Disable the "Guiding" button
             self.main.manual_controller.setEnabled(False)
             self.main.auto_controller.setEnabled(False)
