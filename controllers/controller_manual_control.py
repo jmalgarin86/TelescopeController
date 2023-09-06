@@ -35,18 +35,18 @@ class ManualController(ManualWidget):
             period = int(52 / speed)
 
             # Set command to arduino
-            command = "2 0 0 0 0 " + str(period)
+            command = "2 0 0 0 0 " + str(period) + "\n"
 
             # Send command
-            self.main.guiding_toolbar.arduino.send_command(command)
+            self.main.waiting_commands.append(command)
             print("Moving AR in negative direction")
         else:
             self.speed_combo.setEnabled(True)
-            if self.main.guiding_toolbar.keep_on_enable:
-                self.main.guiding_toolbar.arduino.send_command("1 0 0 0 0 0")
+            if self.main.guiding_toolbar.tracking_enable:
+                self.main.waiting_commands.append("1 0 0 0 0 52\n")
                 print("Tracking")
             else:
-                self.main.guiding_toolbar.arduino.send_command("0 0 0 0 0 0")
+                self.main.waiting_commands.append("0 0 0 0 0 0\n")
                 print("Stop")
 
         return 0
@@ -64,18 +64,18 @@ class ManualController(ManualWidget):
             period = int(52 / speed)
 
             # Set command to arduino
-            command = "2 0 1 0 0 " + str(period)
+            command = "2 0 1 0 0 " + str(period) + "\n"
 
             # Send command
-            self.main.guiding_toolbar.arduino.send_command(command)
+            self.main.waiting_commands.append(command)
             print("Moving AR in positive direction")
         else:
             self.speed_combo.setEnabled(True)
-            if self.main.guiding_toolbar.keep_on_enable:
-                self.main.guiding_toolbar.arduino.send_command("1 0 0 0 0 0")
+            if self.main.guiding_toolbar.tracking_enable:
+                self.main.waiting_commands.append("1 0 0 0 0 52\n")
                 print("Tracking")
             else:
-                self.main.guiding_toolbar.arduino.send_command("0 0 0 0 0 0")
+                self.main.waiting_commands.append("0 0 0 0 0 0\n")
                 print("Stop")
 
         return 0
@@ -94,20 +94,20 @@ class ManualController(ManualWidget):
 
             # Set command to arduino
             if self.dec_dir == 1:
-                command = "3 0 0 0 0 " + str(period)
+                command = "3 0 0 0 0 " + str(period) + "\n"
             else:
-                command = "3 0 0 0 1 " + str(period)
+                command = "3 0 0 0 1 " + str(period) + "\n"
 
             # Send command
-            self.main.guiding_toolbar.arduino.send_command(command)
+            self.main.waiting_commands.append(command)
             print("Moving DEC in negative direction")
         else:
             self.speed_combo.setEnabled(True)
-            if self.main.guiding_toolbar.keep_on_enable:
-                self.main.guiding_toolbar.arduino.send_command("1 0 0 0 0 0")
+            if self.main.guiding_toolbar.tracking_enable:
+                self.main.waiting_commands.append("1 0 0 0 0 52\n")
                 print("Tracking")
             else:
-                self.main.guiding_toolbar.arduino.send_command("0 0 0 0 0 0")
+                self.main.waiting_commands.append("0 0 0 0 0 0\n")
                 print("Stop")
 
         return 0
@@ -125,20 +125,20 @@ class ManualController(ManualWidget):
             period = int(52 / speed)
 
             if self.dec_dir == 1:
-                command = "3 0 0 0 1 " + str(period)
+                command = "3 0 0 0 1 " + str(period) + "\n"
             else:
-                command = "3 0 0 0 0 " + str(period)
+                command = "3 0 0 0 0 " + str(period) + "\n"
 
             # Send command
-            self.main.guiding_toolbar.arduino.send_command(command)
+            self.main.waiting_commands.append(command)
             print("Moving DEC in positive direction")
         else:
             self.speed_combo.setEnabled(True)
-            if self.main.guiding_toolbar.keep_on_enable:
-                self.main.guiding_toolbar.arduino.send_command("1 0 0 0 0 0")
+            if self.main.guiding_toolbar.tracking_enable:
+                self.main.waiting_commands.append("1 0 0 0 0 52\n")
                 print("Tracking")
             else:
-                self.main.guiding_toolbar.arduino.send_command("0 0 0 0 0 0")
+                self.main.waiting_commands.append("0 0 0 0 0 0\n")
                 print("Stop")
 
         return 0

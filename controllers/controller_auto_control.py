@@ -146,19 +146,19 @@ class AutoController(AutoWidget):
         print("Go to the target")
         print("Time: %im %is" % (minutes, seconds))
         command = "0 %s %s %s %s 2" % (nar, ar_dir, nde, de_dir)
-        self.main.guiding_toolbar.arduino.serial_connection.flushInput()
-        self.main.guiding_toolbar.arduino.send_command(command)
-        while self.main.guiding_toolbar.arduino.serial_connection.in_waiting == 0:
+        self.main.waiting_commands.append(command)
+        self.main.arduino.serial_connection.flushInput()
+        while self.main.arduino.serial_connection.in_waiting == 0:
             time.sleep(0.01)
             pass
-        self.main.guiding_toolbar.arduino.serial_connection.flushInput()
+        self.main.arduino.serial_connection.flushInput()
 
         # Do tracking or not depending on tracking button status
-        if self.main.guiding_toolbar.keep_on_enable:
-            self.main.guiding_toolbar.arduino.send_command("1 0 0 0 0 0")
+        if self.main.guiding_toolbar.tracking_enable:
+            self.main.waiting_commands.append("1 0 0 0 0 0")
             print("Tracking")
         else:
-            self.main.guiding_toolbar.arduino.send_command("0 0 0 0 0 0")
+            self.main.waiting_commands.append("0 0 0 0 0 0")
             print("Stop")
 
         return 0
