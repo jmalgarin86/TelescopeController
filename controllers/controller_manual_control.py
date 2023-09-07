@@ -93,10 +93,16 @@ class ManualController(ManualWidget):
             period = int(52 / speed)
 
             # Set command to arduino
-            if self.dec_dir == 1:
-                command = "3 0 0 0 0 " + str(period) + "\n"
+            if self.main.guiding_toolbar.tracking_enable:
+                if self.dec_dir == 1:
+                    command = "3 0 0 0 0 " + str(period) + "\n"
+                else:
+                    command = "3 0 0 0 1 " + str(period) + "\n"
             else:
-                command = "3 0 0 0 1 " + str(period) + "\n"
+                if self.dec_dir == 1:
+                    command = "4 0 0 0 0 " + str(period) + "\n"
+                else:
+                    command = "4 0 0 0 1 " + str(period) + "\n"
 
             # Send command
             self.main.waiting_commands.append(command)
@@ -124,10 +130,16 @@ class ManualController(ManualWidget):
             speed = float(self.speed_combo.currentText()[1::])
             period = int(52 / speed)
 
-            if self.dec_dir == 1:
-                command = "3 0 0 0 1 " + str(period) + "\n"
+            if self.main.guiding_toolbar.tracking_enable:
+                if self.dec_dir == 1:
+                    command = "3 0 0 0 1 " + str(period) + "\n"
+                else:
+                    command = "3 0 0 0 0 " + str(period) + "\n"
             else:
-                command = "3 0 0 0 0 " + str(period) + "\n"
+                if self.dec_dir == 1:
+                    command = "4 0 0 0 1 " + str(period) + "\n"
+                else:
+                    command = "4 0 0 0 0 " + str(period) + "\n"
 
             # Send command
             self.main.waiting_commands.append(command)

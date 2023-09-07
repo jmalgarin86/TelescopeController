@@ -56,6 +56,60 @@ void setup() {
 
 }
 
+void moveDEC(){
+  // empty serial buffer
+  while (Serial.available() > 0) {
+    char _ = Serial.read(); // Read and discard the character
+  }
+
+  // set pins
+  digitalWrite(SLP_PIN_DEC, HIGH);
+  digitalWrite(SLP_PIN_AR, HIGH);
+  digitalWrite(DIR_PIN_DEC, dec_dir);
+  digitalWrite(DIR_PIN_AR, 0);
+
+  // Steps ratio
+  int n0 = 52/period;
+  int n = 0;
+  int ar_state = 0;
+
+  // New step while no new serial available
+  while (BT1.available()==0 && Serial.available()==0){
+    for (int i = 0; i<4; i++){
+      digitalWrite(STP_PIN_DEC, HIGH);
+      if (n==0){
+        if (ar_state==0){
+          digitalWrite(STP_PIN_AR, HIGH);
+          ar_state = 1;
+        }
+        else{
+          digitalWrite(STP_PIN_AR, LOW);
+          ar_state = 0;
+        }
+      }
+      delay(period);
+      n++;
+      if (n==n0){n = 0;}
+      digitalWrite(STP_PIN_DEC, LOW);
+      if (n==0){
+        if (ar_state==0){
+          digitalWrite(STP_PIN_AR, HIGH);
+          ar_state = 1;
+        }
+        else{
+          digitalWrite(STP_PIN_AR, LOW);
+          ar_state = 0;
+        }
+      }
+      delay(period);
+      n++;
+      if (n==n0){n = 0;}
+    }
+  }
+  digitalWrite(SLP_PIN_DEC, LOW);
+  digitalWrite(SLP_PIN_AR, LOW);
+}
+
 void followStepper(int DIR_PIN, int SLP_PIN, int STP_PIN, int dir){
   // empty serial buffer
   while (Serial.available() > 0) {
@@ -129,6 +183,9 @@ void moveSteppers(){
     followStepper(DIR_PIN_AR, SLP_PIN_AR, STP_PIN_AR, ar_dir);
   }
   else if (follow==3){
+    moveDEC();
+  }
+  else if (follow==4){
     followStepper(DIR_PIN_DEC, SLP_PIN_DEC, STP_PIN_DEC, dec_dir);
   }
 }

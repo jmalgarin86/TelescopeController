@@ -72,7 +72,7 @@ class TelescopeController(QMainWindow):
         sys.stdout = sys.__stdout__
         self.gui_open = False
         self.arduino.stop_tracking()
-        self.guiding_toolbar.arduino.disconnect()
+        self.arduino.disconnect()
         print('\nGUI closed successfully!')
         super().closeEvent(event)
 
