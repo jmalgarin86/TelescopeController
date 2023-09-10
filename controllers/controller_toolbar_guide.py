@@ -12,7 +12,7 @@ class GuideController(GuideToolBar):
         self.action_processing.triggered.connect(self.open_processing_gui)
 
     def open_processing_gui(self):
-        self.main.pro.show()
+        self.main.pro.showMaximized()
 
     def connect_arduino(self):
         if self.action_arduino.isChecked():

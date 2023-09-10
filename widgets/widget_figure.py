@@ -6,6 +6,6 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 
 class FigureWidget(pg.ImageView):
 
-    def __init__(self, main, *args):
-        super().__init__(*args)
+    def __init__(self, main):
         self.main = main
+        super().__init__()

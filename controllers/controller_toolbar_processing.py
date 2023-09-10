@@ -47,14 +47,11 @@ class ProcessingToolBarController(ProcessingToolBarWidget):
         self.frames = np.array(self.frames)
         self.frames = self.frames[:, :, :, ::-1]
 
-        # Create figure controller and show image
-        self.figure_rgb = FigureController(self.main)
-        self.main.figure_layout.addWidget(self.figure_rgb)
-        self.figure_rgb.setImage(self.frames)
+        # Delete widgets from figure_layout
+        self.main.figure_layout.clearFiguresLayout()
 
-        # Create figure controller to show grayscale image
-        self.figure_gray = FigureController(self.main)
-        self.main.figure_layout.addWidget(self.figure_gray)
-        self.figure_gray.setImage(self.frames_grayscale)
+        # Create figure controller and show image
+        self.figure_rgb = FigureController(main=self.main, data=self.frames)
+        self.main.figure_layout.addWidget(self.figure_rgb)
 
         return 0

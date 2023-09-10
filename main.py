@@ -3,14 +3,18 @@ import threading
 import time
 
 import qdarkstyle
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QGridLayout
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QGridLayout, QHBoxLayout, QSizePolicy, \
+    QSpacerItem
 
+from controllers.controller_align import AlignController
 from controllers.controller_arduino import ArduinoController
 from controllers.controller_console import ConsoleController
+from controllers.controller_figures_layout import FiguresLayoutController
 from controllers.controller_toolbar_guide import GuideController
 from controllers.controller_manual_control import ManualController
 from controllers.controller_auto_control import AutoController
 from controllers.controller_toolbar_processing import ProcessingToolBarController
+from controllers.controller_menu import MenuController
 
 
 class TelescopeController(QMainWindow):
@@ -96,9 +100,32 @@ class Processing(QMainWindow):
         # Create guiding toolbar
         self.processing_toolbar = ProcessingToolBarController(self, "Processing toolbar")
 
-        self.figure_layout = QGridLayout()
-        central_widget.setLayout(self.figure_layout)
+        # Define the main layout
+        self.main_layout = QHBoxLayout()
+        central_widget.setLayout(self.main_layout)
 
+        # Show menu bar
+        self.menu = self.menuBar()
+        MenuController(main=self)
+
+        # Define the actions layout
+        self.left_layout = QVBoxLayout()
+        self.main_layout.addLayout(self.left_layout)
+
+        # Define the output layout
+        self.right_layout = QVBoxLayout()
+        self.main_layout.addLayout(self.right_layout)
+
+        # Widget for alignment
+        self.align_controller = AlignController(self)
+        self.left_layout.addWidget(self.align_controller)
+
+        # Define the figures layout
+        self.figure_layout = FiguresLayoutController()
+        self.right_layout.addWidget(self.figure_layout)
+
+        # Add spacer
+        self.left_layout.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
 
 
 def main():
