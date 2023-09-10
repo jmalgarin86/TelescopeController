@@ -9,6 +9,10 @@ class GuideController(GuideToolBar):
 
         self.action_arduino.triggered.connect(self.connect_arduino)
         self.action_tracking.triggered.connect(self.tracking)
+        self.action_processing.triggered.connect(self.open_processing_gui)
+
+    def open_processing_gui(self):
+        self.main.pro.show()
 
     def connect_arduino(self):
         if self.action_arduino.isChecked():

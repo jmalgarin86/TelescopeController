@@ -3,14 +3,14 @@ import threading
 import time
 
 import qdarkstyle
-from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QGridLayout
 
 from controllers.controller_arduino import ArduinoController
 from controllers.controller_console import ConsoleController
 from controllers.controller_toolbar_guide import GuideController
 from controllers.controller_manual_control import ManualController
 from controllers.controller_auto_control import AutoController
+from controllers.controller_toolbar_processing import ProcessingToolBarController
 
 
 class TelescopeController(QMainWindow):
@@ -60,6 +60,8 @@ class TelescopeController(QMainWindow):
         thread = threading.Thread(target=self.sniffer)
         thread.start()
 
+        self.pro = Processing()
+
     def sniffer(self):
         while self.gui_open:
             if self.waiting_commands:
@@ -75,6 +77,28 @@ class TelescopeController(QMainWindow):
         self.arduino.disconnect()
         print('\nGUI closed successfully!')
         super().closeEvent(event)
+
+class Processing(QMainWindow):
+    def __init__(self):
+        super().__init__()
+
+        # Set the stylesheet
+        style_sheet = qdarkstyle.load_stylesheet_pyqt5()
+        self.setStyleSheet(style_sheet)
+
+        # Set the window title
+        self.setWindowTitle("TelescopeController")
+
+        # Create a central widget to hold the content
+        central_widget = QWidget(self)
+        self.setCentralWidget(central_widget)
+
+        # Create guiding toolbar
+        self.processing_toolbar = ProcessingToolBarController(self, "Processing toolbar")
+
+        self.figure_layout = QGridLayout()
+        central_widget.setLayout(self.figure_layout)
+
 
 
 def main():

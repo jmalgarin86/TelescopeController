@@ -21,4 +21,9 @@ class GuideToolBar(QToolBar):
         self.action_tracking.setEnabled(False)
         self.addAction(self.action_tracking)
 
+        # Open processing GUI
+        self.action_processing = QAction(QIcon("icons/goto.png"), "Init processing GUI", self)
+        self.action_processing.setStatusTip("Init processing GUI")
+        self.addAction(self.action_processing)
+
 
