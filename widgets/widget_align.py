@@ -10,8 +10,6 @@ class AlignWidget(QGroupBox):
         self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.setMaximumWidth(300)
         self.setMinimumWidth(300)
-        # self.setMaximumHeight(400)
-        # self.setMinimumHeight(400)
 
         self.hide()
 
