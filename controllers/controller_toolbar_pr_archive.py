@@ -1,8 +1,8 @@
+import datetime
+
 import cv2
 import numpy as np
 from PyQt5.QtWidgets import QFileDialog
-
-from controllers.controller_figure import FigureController
 from widgets.widget_toolbar_pr_archive import PrArchiveToolBarWidget
 
 
@@ -48,11 +48,17 @@ class PrArchiveToolBarController(PrArchiveToolBarWidget):
         self.main.frames = np.array(self.main.frames)
         self.main.frames = self.main.frames[:, :, :, ::-1]
 
-        # Delete widgets from figure_layout
-        self.main.figure_layout.clearFiguresLayout()
+        # Create resulting dictionary
+        result = {
+            'kind': 'image',
+            'data_rgb': self.main.frames * 1,
+            'data_gra': self.main.frames_grayscale * 1,
+        }
 
-        # Create figure controller and show image
-        figure = FigureController(main=self.main, data=self.main.frames)
-        self.main.figure_layout.addWidget(figure)
+        # Get the current time
+        current_time = datetime.datetime.now()
+        time_string = current_time.strftime("%Y-%m-%d %H:%M:%S")
+        self.main.history_controller.addItem(time_string)
+        self.main.history_controller.history_dictionary[time_string] = result
 
         return 0

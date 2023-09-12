@@ -9,8 +9,10 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QGr
 
 from controllers.controller_align import AlignController
 from controllers.controller_arduino import ArduinoController
+from controllers.controller_background import BackgroundController
 from controllers.controller_console import ConsoleController
 from controllers.controller_figures_layout import FiguresLayoutController
+from controllers.controller_history import HistoryController
 from controllers.controller_selection import SelectionController
 from controllers.controller_toolbar_guide import GuideController
 from controllers.controller_manual_control import ManualController
@@ -129,6 +131,14 @@ class Processing(QMainWindow):
         # Widget for sorting
         self.sort_controller = SelectionController(self)
         self.left_layout.addWidget(self.sort_controller)
+
+        # Widget for background
+        self.background_controller = BackgroundController(self)
+        self.left_layout.addWidget(self.background_controller)
+
+        # Widget with history list
+        self.history_controller = HistoryController(self)
+        self.left_layout.addWidget(self.history_controller)
 
         # Define the figures layout
         self.figure_layout = FiguresLayoutController()

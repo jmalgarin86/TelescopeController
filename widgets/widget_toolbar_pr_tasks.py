@@ -17,4 +17,8 @@ class PrTasksToolBarWidget(QToolBar):
         self.actionSort.setStatusTip("Sort frames")
         self.addAction(self.actionSort)
 
+        # Background action button
+        self.actionBackground = QAction(QIcon("icons/background.png"), "Background", self)
+        self.addAction(self.actionBackground)
+
         self.main.addToolBar(self)
