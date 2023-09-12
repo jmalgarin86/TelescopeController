@@ -18,14 +18,14 @@ class AlignController(AlignWidget):
 
     def alignImages(self):
         # Get frames
-        frames = self.main.processing_toolbar.frames
-        frames_grayscale = self.main.processing_toolbar.frames_grayscale
+        frames = self.main.frames
+        frames_grayscale = self.main.frames_grayscale
         x = []
         y = []
 
         # Match roi with frames to find the image displacement
         for frame_grayscale in frames_grayscale:
-            result = cv2.matchTemplate(frame_grayscale, self.main.roi_data, cv2.TM_CCOEFF_NORMED)
+            result = cv2.matchTemplate(frame_grayscale, self.main.roi_data[self.main.roi_ind], cv2.TM_CCOEFF_NORMED)
             min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
             x0, y0 = max_loc
             x.append(x0)
@@ -60,6 +60,10 @@ class AlignController(AlignWidget):
             frames0[ii, y1_dst:y2_dst, x1_dst:x2_dst] = frames[ii, y1:y2, x1:x2, :]
             frames0_grayscale[ii, y1_dst:y2_dst, x1_dst:x2_dst] = frames_grayscale[ii, y1:y2, x1:x2]
 
+        self.main.frames = frames0
+        self.main.frames_grayscale = frames0_grayscale
+
+        # Clear figure layout
         self.main.figure_layout.clearFiguresLayout()
 
         # Create figure controller and show image

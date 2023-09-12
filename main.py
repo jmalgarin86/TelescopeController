@@ -2,19 +2,22 @@ import sys
 import threading
 import time
 
+import numpy as np
 import qdarkstyle
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QGridLayout, QHBoxLayout, QSizePolicy, \
-    QSpacerItem
+    QSpacerItem, QPushButton
 
 from controllers.controller_align import AlignController
 from controllers.controller_arduino import ArduinoController
 from controllers.controller_console import ConsoleController
 from controllers.controller_figures_layout import FiguresLayoutController
+from controllers.controller_selection import SelectionController
 from controllers.controller_toolbar_guide import GuideController
 from controllers.controller_manual_control import ManualController
 from controllers.controller_auto_control import AutoController
-from controllers.controller_toolbar_processing import ProcessingToolBarController
+from controllers.controller_toolbar_pr_archive import PrArchiveToolBarController
 from controllers.controller_menu import MenuController
+from controllers.controller_toolbar_pr_tasks import PrTasksToolBarController
 
 
 class TelescopeController(QMainWindow):
@@ -97,8 +100,11 @@ class Processing(QMainWindow):
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
 
-        # Create guiding toolbar
-        self.processing_toolbar = ProcessingToolBarController(self, "Processing toolbar")
+        # Create archive toolbar
+        self.archive_toolbar = PrArchiveToolBarController(self, "Archive toolbar")
+
+        # Create tasks toolbar
+        self.tasks_toolbar = PrTasksToolBarController(self, "Tasks toolbar")
 
         # Define the main layout
         self.main_layout = QHBoxLayout()
@@ -119,6 +125,10 @@ class Processing(QMainWindow):
         # Widget for alignment
         self.align_controller = AlignController(self)
         self.left_layout.addWidget(self.align_controller)
+
+        # Widget for sorting
+        self.sort_controller = SelectionController(self)
+        self.left_layout.addWidget(self.sort_controller)
 
         # Define the figures layout
         self.figure_layout = FiguresLayoutController()

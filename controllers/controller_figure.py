@@ -89,5 +89,6 @@ class FigureController(FigureWidget):
         x_max = np.max(points[0, :, :])+1
         y_min = np.min(points[1, :, :])
         y_max = np.max(points[1, :, :])+1
-        self.main.roi_data = self.main.processing_toolbar.frames_grayscale[ind, x_min:x_max, y_min:y_max]
+        self.main.roi_ind = ind
+        self.main.roi_data = self.main.frames_grayscale[:, x_min:x_max, y_min:y_max]
         self.main.roi_points = points

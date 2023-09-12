@@ -8,10 +8,12 @@ class AlignWidget(QGroupBox):
 
         # Geometry constraints
         self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        # self.setMaximumWidth(400)
-        # self.setMinimumWidth(400)
+        self.setMaximumWidth(300)
+        self.setMinimumWidth(300)
         # self.setMaximumHeight(400)
         # self.setMinimumHeight(400)
+
+        self.hide()
 
         # Add QPushButtons
         self.button_align = QPushButton("Align")
