@@ -13,6 +13,10 @@ class PrTasksToolBarController(PrTasksToolBarWidget):
         self.actionAlign.triggered.connect(self.alignImages)
         self.actionSort.triggered.connect(self.sortImages)
         self.actionBackground.triggered.connect(self.showBackground)
+        self.actionAberration.triggered.connect(self.showAberration)
+
+    def showAberration(self):
+        self.hideAllWidgetsExcept(self.main.left_layout, self.main.aberration_controller, self.main.history_controller)
 
     def showBackground(self):
         self.hideAllWidgetsExcept(self.main.left_layout, self.main.background_controller, self.main.history_controller)

@@ -91,3 +91,4 @@ class FigureController(FigureWidget):
         y_max = np.max(points[1, :, :]) + 1
         self.main.roi_ind = ind
         self.main.roi_points = [x_min, x_max, y_min, y_max]
+        self.main.roi_coords = points

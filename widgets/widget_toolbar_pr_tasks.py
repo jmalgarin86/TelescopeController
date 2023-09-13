@@ -21,4 +21,8 @@ class PrTasksToolBarWidget(QToolBar):
         self.actionBackground = QAction(QIcon("icons/background.png"), "Background", self)
         self.addAction(self.actionBackground)
 
+        # Aberration action button
+        self.actionAberration = QAction(QIcon("icons/aberration.png"), "Aberration", self)
+        self.addAction(self.actionAberration)
+
         self.main.addToolBar(self)
