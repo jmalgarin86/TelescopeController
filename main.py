@@ -4,23 +4,19 @@ import time
 
 import numpy as np
 import qdarkstyle
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QGridLayout, QHBoxLayout, QSizePolicy, \
-    QSpacerItem, QPushButton
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QHBoxLayout, QSizePolicy, \
+    QSpacerItem, QStatusBar
 
-from controllers.controller_align import AlignController
 from controllers.controller_arduino import ArduinoController
-from controllers.controller_background import BackgroundController
 from controllers.controller_console import ConsoleController
 from controllers.controller_figures_layout import FiguresLayoutController
 from controllers.controller_history import HistoryController
-from controllers.controller_selection import SelectionController
+from controllers.controller_tasks import TasksController
 from controllers.controller_toolbar_guide import GuideController
 from controllers.controller_manual_control import ManualController
 from controllers.controller_auto_control import AutoController
 from controllers.controller_toolbar_pr_archive import PrArchiveToolBarController
 from controllers.controller_menu import MenuController
-from controllers.controller_toolbar_pr_tasks import PrTasksToolBarController
-
 
 class TelescopeController(QMainWindow):
     def __init__(self):
@@ -105,9 +101,6 @@ class Processing(QMainWindow):
         # Create archive toolbar
         self.archive_toolbar = PrArchiveToolBarController(self, "Archive toolbar")
 
-        # Create tasks toolbar
-        self.tasks_toolbar = PrTasksToolBarController(self, "Tasks toolbar")
-
         # Define the main layout
         self.main_layout = QHBoxLayout()
         central_widget.setLayout(self.main_layout)
@@ -125,16 +118,8 @@ class Processing(QMainWindow):
         self.main_layout.addLayout(self.right_layout)
 
         # Widget for alignment
-        self.align_controller = AlignController(self)
-        self.left_layout.addWidget(self.align_controller)
-
-        # Widget for sorting
-        self.sort_controller = SelectionController(self)
-        self.left_layout.addWidget(self.sort_controller)
-
-        # Widget for background
-        self.background_controller = BackgroundController(self)
-        self.left_layout.addWidget(self.background_controller)
+        self.tasks_controller = TasksController(self)
+        self.left_layout.addWidget(self.tasks_controller)
 
         # Widget with history list
         self.history_controller = HistoryController(self)
@@ -147,6 +132,8 @@ class Processing(QMainWindow):
         # Add spacer
         self.left_layout.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
 
+        # Status bar
+        self.setStatusBar(QStatusBar(self))
 
 def main():
     app = QApplication(sys.argv)
