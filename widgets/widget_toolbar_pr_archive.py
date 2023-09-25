@@ -17,4 +17,8 @@ class PrArchiveToolBarWidget(QToolBar):
         self.actionLoadDarkFrames.setStatusTip("Load light frames")
         self.addAction(self.actionLoadDarkFrames)
 
+        # Save images
+        self.actionSaveImage = QAction(QIcon("icons/save.png"), "Save frames, self")
+        self.addAction(self.actionSaveImage)
+
         self.main.addToolBar(self)

@@ -17,6 +17,20 @@ class PrArchiveToolBarController(PrArchiveToolBarWidget):
 
         self.actionLoadLightFrames.triggered.connect(self.loadLightFrames)
         self.actionLoadDarkFrames.triggered.connect(self.loadDarkFrames)
+        self.actionSaveImage.triggered.connect(self.saveImage)
+
+    def saveImage(self):
+        # Convert image_rgb to uint8
+        image_rgb = (self.main.frames / np.max(self.main.frames[:]) * 255.0).astype(np.uint8)
+
+        # Reorganize
+        image_rgb = image_rgb[:, :, ::-1]
+        image_rgb = np.transpose(image_rgb, [1, 0, 2])
+
+        cv2.imwrite(filename='results/image.png', img=image_rgb)
+        cv2.imwrite(filename='results/image_r.png', img=image_rgb[:, :, 2])
+        cv2.imwrite(filename='results/image_g.png', img=image_rgb[:, :, 1])
+        cv2.imwrite(filename='results/image_b.png', img=image_rgb[:, :, 0])
 
     def loadDarkFrames(self):
         # Load file
