@@ -1,19 +1,20 @@
-from PyQt5.QtWidgets import QGroupBox, QLabel, QLineEdit, QGridLayout, QPushButton, QComboBox
+from PyQt5.QtWidgets import QGroupBox, QLabel, QLineEdit, QGridLayout, QPushButton, QComboBox, QSizePolicy
 from catalogs.catalog import catalog
 
 class AutoWidget(QGroupBox):
     def __init__(self, main=None):
         super().__init__("Auto Control")
         self.main = main
+        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.setMaximumWidth(300)
+        self.setMinimumWidth(300)
 
         # Initially disabled
-        self.setEnabled(False)
+        # self.setEnabled(False)
 
         # QLabels
         origin_label1 = QLabel("Origin")
         target_label1 = QLabel("Target")
-        origin_label2 = QLabel("Origin")
-        target_label2 = QLabel("Target")
         ar_label = QLabel("AR")
         dec_label = QLabel("DEC")
 

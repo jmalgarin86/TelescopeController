@@ -140,7 +140,7 @@ class AutoController(AutoWidget):
         tde = int(nde) * bt
         t = np.max(np.array([np.abs(tar), np.abs(tde)]))
         minutes = int(t/60)
-        seconds = int(t-int(t/60))
+        seconds = int(t-int(t/60)*60)
 
         # Send instruction to arduino
         print("Go to the target")

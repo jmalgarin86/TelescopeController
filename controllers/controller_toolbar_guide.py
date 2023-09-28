@@ -1,3 +1,8 @@
+import time
+
+import cv2
+import numpy as np
+
 from widgets.widget_toolbar_guide import GuideToolBar
 
 
@@ -9,7 +14,56 @@ class GuideController(GuideToolBar):
 
         self.action_arduino.triggered.connect(self.connect_arduino)
         self.action_tracking.triggered.connect(self.tracking)
-        self.action_processing.triggered.connect(self.open_processing_gui)
+        self.action_guide.triggered.connect(self.guiding)
+        self.action_camera.triggered.connect(self.start_camera)
+
+    def guiding(self):
+        if self.action_guide.isChecked():
+            print("Guiding started")
+        else:
+            print("Guiding stoped")
+
+    def start_camera(self):
+        # Create a VideoCapture object to access the camera.
+        cap = cv2.VideoCapture(0)  # 0 for the default camera, you can specify a different camera index if needed.
+
+        # Check if the camera was opened successfully.
+        if not cap.isOpened():
+            print("Error: Could not open camera.")
+            exit()
+
+        while True:
+            # Read a frame from the camera.
+            ret, frame = cap.read()
+
+            if not ret:
+                print("Error: Could not read a frame from the camera.")
+                break
+
+            # Get frame in grayscale
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+            # Display the frame in a window.
+            self.main.figure_controller.data = np.transpose(frame)
+            self.main.figure_controller.setImage(np.transpose(frame))
+
+            # If guide is activated
+            if self.action_guide.isChecked():
+                # Get centroid of the star
+                self.main.figure_controller.getCentroid()
+
+                # # Update indicator
+                # self.main.figure_controller.updateIndicator()
+
+            # Check for the 'q' key to exit the loop.
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
+            time.sleep(0.1)
+
+        # Release the camera and close the OpenCV window.
+        cap.release()
+        cv2.destroyAllWindows()
 
     def open_processing_gui(self):
         self.main.pro.showMaximized()

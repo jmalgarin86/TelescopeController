@@ -7,6 +7,10 @@ class ManualWidget(QGroupBox):
         super().__init__("Manual Control")
         self.main = main
 
+        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.setMaximumWidth(300)
+        self.setMinimumWidth(300)
+
         # Initially disabled
         self.setEnabled(False)
 

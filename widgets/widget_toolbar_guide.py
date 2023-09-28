@@ -21,9 +21,14 @@ class GuideToolBar(QToolBar):
         self.action_tracking.setEnabled(False)
         self.addAction(self.action_tracking)
 
-        # Open processing GUI
-        self.action_processing = QAction(QIcon("icons/goto.png"), "Init processing GUI", self)
-        self.action_processing.setStatusTip("Init processing GUI")
-        self.addAction(self.action_processing)
+        # Camera button
+        self.action_camera = QAction(QIcon("icons/camera.png"), "Open the camera", self)
+        self.action_camera.setStatusTip("Open default camera")
+        self.addAction(self.action_camera)
 
+        # Autoguiding
+        self.action_guide = QAction(QIcon("icons/goto.png"), "Init auto guide", self)
+        self.action_guide.setStatusTip("Init auto guide")
+        self.addAction(self.action_guide)
+        self.action_guide.setCheckable(True)
 

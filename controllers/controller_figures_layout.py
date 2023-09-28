@@ -15,15 +15,18 @@ class FiguresLayoutController(FiguresLayoutWidget):
     def firstPlot(self):
         logo = imageio.imread("icons/wellcome.png")
         self.clearFiguresLayout()
-        welcome = FigureController(main=self, data=logo.transpose([1, 0, 2]))
+        self.figure_controller = FigureController(main=self.main, data=logo.transpose([1, 0, 2]))
         # welcome.hideAxis('bottom')
         # welcome.hideAxis('left')
         # welcome.showHistogram(False)
         # welcome.ui.menuBtn.hide()
         # welcome.ui.roiBtn.hide()
-        self.addWidget(welcome)
+        self.addWidget(self.figure)
 
         pass
+
+    def setImage(self, data=None):
+        self.figure.setImage(data=data)
 
     def clearFiguresLayout(self):
         """
