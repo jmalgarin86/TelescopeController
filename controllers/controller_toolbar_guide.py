@@ -10,12 +10,32 @@ class GuideController(GuideToolBar):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.x_vec = []
+        self.y_vec = []
         self.tracking_enable = False
 
         self.action_arduino.triggered.connect(self.connect_arduino)
         self.action_tracking.triggered.connect(self.tracking)
         self.action_guide.triggered.connect(self.guiding)
         self.action_camera.triggered.connect(self.start_camera)
+        self.action_calibration.triggered.connect(self.calibration)
+
+    def calibration(self):
+        if self.action_calibration.isChecked():
+            # Stop motors
+            self.x_vec = []
+            self.y_vec = []
+            self.main.waiting_commands.append("0 0 0 0 0 0\n")
+            print("Start axis calibration")
+            pass
+        else:
+            # Start motors
+            self.main.waiting_commands.append("1 0 0 0 0 52\n")
+            print(self.x_vec)
+            print(self.y_vec)
+            pass
+
+
 
     def guiding(self):
         if self.action_guide.isChecked():
@@ -51,9 +71,25 @@ class GuideController(GuideToolBar):
             if self.action_guide.isChecked():
                 # Get centroid of the star
                 self.main.figure_controller.getCentroid()
+                x0, y0 = self.main.figure_controller.getCoordinates()
+                n = 100
+                if len(self.x_vec) > n:
+                    self.x_vec = self.x_vec[1::]
+                    self.y_vec = self.y_vec[1::]
+                self.x_vec.append(x0)
+                self.y_vec.append(y0)
+                self.main.plot_controller.updatePlot(self.x_vec, self.y_vec)
 
-                # # Update indicator
-                # self.main.figure_controller.updateIndicator()
+            if self.action_calibration.isChecked():
+                self.main.figure_controller.getCentroid()
+                x0, y0 = self.main.figure_controller.getCoordinates()
+                n = 100
+                if len(self.x_vec) > n:
+                    self.x_vec = self.x_vec[1::]
+                    self.y_vec = self.y_vec[1::]
+                self.x_vec.append(x0)
+                self.y_vec.append(y0)
+                self.main.plot_controller.updatePlot(self.x_vec, self.y_vec)
 
             # Check for the 'q' key to exit the loop.
             if cv2.waitKey(1) & 0xFF == ord('q'):

@@ -2,6 +2,7 @@ import sys
 import threading
 import time
 import imageio.v2 as imageio
+import numpy as np
 
 import qdarkstyle
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QHBoxLayout
@@ -9,14 +10,18 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QHB
 from controllers.controller_arduino import ArduinoController
 from controllers.controller_console import ConsoleController
 from controllers.controller_figure import FigureController
+from controllers.controller_plot import PlotController
 from controllers.controller_toolbar_guide import GuideController
 from controllers.controller_manual_control import ManualController
 from controllers.controller_auto_control import AutoController
+
+import pyqtgraph as pg
 
 class TelescopeController(QMainWindow):
     def __init__(self):
         super().__init__()
         self.gui_open = True
+        self.setGeometry(100, 100, 1600, 900)
 
         # Set the stylesheet
         style_sheet = qdarkstyle.load_stylesheet_pyqt5()
@@ -59,6 +64,39 @@ class TelescopeController(QMainWindow):
         self.figure_controller = FigureController(main=self, data=logo.transpose([1, 0, 2]))
         right_layout.addWidget(self.figure_controller)
 
+        # Create space for 1d plot
+        self.plot_controller = PlotController(self)
+        right_layout.addWidget(self.plot_controller)
+
+        # # Create a Plot Widget
+        # self.plotWidget = pg.PlotWidget(self)
+        # right_layout.addWidget(self.plotWidget)
+        # self.plotWidget.setGeometry(50, 50, 700, 500)
+        #
+        # # Generate some data points for the curve
+        # t = np.linspace(1, 100, 100)
+        # x = 10+t*0.1
+        # y = 20+t*0.12
+        # data = np.concatenate((x, y), axis=0)
+        #
+        # # Add the curve to the plot
+        # self.plot_x = self.plotWidget.plot(t, x, pen='b', symbol='o', symbolSize=8)
+        # self.plot_y = self.plotWidget.plot(t, y, pen='r', symbol='o', symbolSize=8)
+        #
+        # # Set initial range for x and y axes
+        # self.plotWidget.setRange(xRange=[0, 100], yRange=[np.min(data), np.max(data)])
+        #
+        # # Create a TextItem to display the last 'y' value with reduced font size
+        # font_size = 10  # Set the desired font size
+        # last_x_position = x[-1]  # X position of the last data point
+        # last_y_position = y[-1]  # Y position of the last data point
+        # text = pg.TextItem(f'Last Y Value: {last_y_position}', color=(255, 0, 0), anchor=(1, 1))
+        # text.setFont(pg.QtGui.QFont("", font_size))  # Set font size
+        # text.setPos(last_x_position, last_y_position)  # Set position to the last data point
+        #
+        # # Add the TextItem to the plot
+        # self.plotWidget.addItem(text)
+
         # Connect to Arduino
         self.arduino = ArduinoController()
 
@@ -68,6 +106,8 @@ class TelescopeController(QMainWindow):
         # Call the sniffer in a parallel thread
         thread = threading.Thread(target=self.sniffer)
         thread.start()
+
+        self.showMaximized()
 
     def sniffer(self):
         while self.gui_open:
@@ -140,7 +180,6 @@ class TelescopeController(QMainWindow):
 def main():
     app = QApplication(sys.argv)
     window = TelescopeController()
-    window.show()
     sys.exit(app.exec_())
 
 

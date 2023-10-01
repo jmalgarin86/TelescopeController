@@ -11,6 +11,8 @@ class FigureController(FigureWidget):
 
         self.x0 = None
         self.y0 = None
+        self.x_ref = None
+        self.y_ref = None
 
         self.data = data
         self.setImage(data)
@@ -90,6 +92,8 @@ class FigureController(FigureWidget):
 
         # Get position of star in the roi
         self.getCentroid()
+        self.x_ref = self.x0 * 1
+        self.y_ref = self.y0 * 1
 
         # Show lines and roi
         self.ui.roiBtn.setChecked(True)
@@ -162,18 +166,5 @@ class FigureController(FigureWidget):
             self.horizontal_line.setPos(self.y0)
             self.roi.blockSignals(False)
 
-        # # Star detection using thresholding
-        # threshold = 140  # Adjust this threshold as needed
-        # _, binary_image = cv2.threshold(self.data, threshold, 255, cv2.THRESH_BINARY)
-        #
-        # # Find connected components
-        # num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(binary_image, connectivity=8)
-        #
-        # # Find the label of the target star based on proximity to the approximate coordinates
-        # target_label = labels[int(self.x0), int(self.y0)]
-        #
-        # # Get the center of the target star
-        # self.y0, self.x0 = centroids[target_label]
-        #
-        # # Print or use the coordinates as needed
-        # print("Image coordinates: %0.1f, %0.1f" % (self.x0, self.y0))
+    def getCoordinates(self):
+        return self.x0, self.y0
