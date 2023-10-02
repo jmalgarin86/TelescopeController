@@ -35,7 +35,8 @@ class ManualController(ManualWidget):
             period = int(52 / speed)
 
             # Set command to arduino
-            command = "2 0 0 0 0 " + str(period) + "\n"
+            print(str(period))
+            command = "0 0 0 " + str(period) + " 0 0 0\n"
 
             # Send command
             self.main.waiting_commands.append(command)
@@ -43,10 +44,10 @@ class ManualController(ManualWidget):
         else:
             self.speed_combo.setEnabled(True)
             if self.main.guiding_toolbar.tracking_enable:
-                self.main.waiting_commands.append("1 0 0 0 0 52\n")
+                self.main.waiting_commands.append("0 0 0 52 0 0 0\n")
                 print("Tracking")
             else:
-                self.main.waiting_commands.append("0 0 0 0 0 0\n")
+                self.main.waiting_commands.append("0 0 0 0 0 0 0\n")
                 print("Stop")
 
         return 0
@@ -64,7 +65,8 @@ class ManualController(ManualWidget):
             period = int(52 / speed)
 
             # Set command to arduino
-            command = "2 0 1 0 0 " + str(period) + "\n"
+            print(str(period))
+            command = "0 0 1 " + str(period) + " 0 0 0\n"
 
             # Send command
             self.main.waiting_commands.append(command)
@@ -72,10 +74,10 @@ class ManualController(ManualWidget):
         else:
             self.speed_combo.setEnabled(True)
             if self.main.guiding_toolbar.tracking_enable:
-                self.main.waiting_commands.append("1 0 0 0 0 52\n")
+                self.main.waiting_commands.append("0 0 0 52 0 0 0\n")
                 print("Tracking")
             else:
-                self.main.waiting_commands.append("0 0 0 0 0 0\n")
+                self.main.waiting_commands.append("0 0 0 0 0 0 0\n")
                 print("Stop")
 
         return 0
@@ -93,16 +95,17 @@ class ManualController(ManualWidget):
             period = int(52 / speed)
 
             # Set command to arduino
+            print(str(period))
             if self.main.guiding_toolbar.tracking_enable:
                 if self.dec_dir == 1:
-                    command = "3 0 0 0 0 " + str(period) + "\n"
+                    command = "0 0 0 52 0 0 " + str(period) + "\n"
                 else:
-                    command = "3 0 0 0 1 " + str(period) + "\n"
+                    command = "0 0 0 52 0 1 " + str(period) + "\n"
             else:
                 if self.dec_dir == 1:
-                    command = "4 0 0 0 0 " + str(period) + "\n"
+                    command = "0 0 0 0 0 0 " + str(period) + "\n"
                 else:
-                    command = "4 0 0 0 1 " + str(period) + "\n"
+                    command = "0 0 0 0 0 1 " + str(period) + "\n"
 
             # Send command
             self.main.waiting_commands.append(command)
@@ -110,10 +113,10 @@ class ManualController(ManualWidget):
         else:
             self.speed_combo.setEnabled(True)
             if self.main.guiding_toolbar.tracking_enable:
-                self.main.waiting_commands.append("1 0 0 0 0 52\n")
+                self.main.waiting_commands.append("0 0 0 52 0 0 0\n")
                 print("Tracking")
             else:
-                self.main.waiting_commands.append("0 0 0 0 0 0\n")
+                self.main.waiting_commands.append("0 0 0 0 0 0 0\n")
                 print("Stop")
 
         return 0
@@ -130,16 +133,17 @@ class ManualController(ManualWidget):
             speed = float(self.speed_combo.currentText()[1::])
             period = int(52 / speed)
 
+            print(str(period))
             if self.main.guiding_toolbar.tracking_enable:
                 if self.dec_dir == 1:
-                    command = "3 0 0 0 1 " + str(period) + "\n"
+                    command = "0 0 0 52 0 1 " + str(period) + "\n"
                 else:
-                    command = "3 0 0 0 0 " + str(period) + "\n"
+                    command = "0 0 0 52 0 0 " + str(period) + "\n"
             else:
                 if self.dec_dir == 1:
-                    command = "4 0 0 0 1 " + str(period) + "\n"
+                    command = "0 0 0 0 0 1 " + str(period) + "\n"
                 else:
-                    command = "4 0 0 0 0 " + str(period) + "\n"
+                    command = "0 0 0 0 0 0 " + str(period) + "\n"
 
             # Send command
             self.main.waiting_commands.append(command)
@@ -147,10 +151,10 @@ class ManualController(ManualWidget):
         else:
             self.speed_combo.setEnabled(True)
             if self.main.guiding_toolbar.tracking_enable:
-                self.main.waiting_commands.append("1 0 0 0 0 52\n")
+                self.main.waiting_commands.append("0 0 0 52 0 0 0\n")
                 print("Tracking")
             else:
-                self.main.waiting_commands.append("0 0 0 0 0 0\n")
+                self.main.waiting_commands.append("0 0 0 0 0 0 0\n")
                 print("Stop")
 
         return 0

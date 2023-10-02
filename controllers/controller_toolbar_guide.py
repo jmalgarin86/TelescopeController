@@ -25,12 +25,12 @@ class GuideController(GuideToolBar):
             # Stop motors
             self.x_vec = []
             self.y_vec = []
-            self.main.waiting_commands.append("0 0 0 0 0 0\n")
+            self.main.waiting_commands.append("0 0 0 0 0 0 0\n")
             print("Start axis calibration")
             pass
         else:
             # Start motors
-            self.main.waiting_commands.append("1 0 0 0 0 52\n")
+            self.main.waiting_commands.append("0 0 0 52 0 0 0\n")
             print(self.x_vec)
             print(self.y_vec)
             pass
@@ -129,10 +129,10 @@ class GuideController(GuideToolBar):
         if self.action_tracking.isChecked():
             self.tracking_enable = True
             self.action_tracking.setText("Stop Guiding")
-            self.main.waiting_commands.append("1 0 0 0 0 52\n")
+            self.main.waiting_commands.append("0 0 0 52 0 0 0\n")
             print("Tracking")
         else:
             self.tracking_enable = False
             self.action_tracking.setText("Start Guiding")
-            self.main.waiting_commands.append("0 0 0 0 0 0\n")
+            self.main.waiting_commands.append("0 0 0 0 0 0 0\n")
             print("Stop")

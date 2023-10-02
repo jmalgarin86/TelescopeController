@@ -12,8 +12,8 @@ class AutoController(AutoWidget):
         super().__init__(*args, **kwargs)
 
         # Atributes
-        self.motor_period_x1 = 0.416  # s/step or "/step
-        self.motor_period_x26 = 0.016  # s/step or "/step
+        self.motor_period_x1 = 0.52  # s/step or "/step
+        self.motor_period_x26 = 0.002  # s/step or "/step
 
         # Updtate coordinates according to first element in the catalog
         self.update_origen()
@@ -145,7 +145,7 @@ class AutoController(AutoWidget):
         # Send instruction to arduino
         print("Go to the target")
         print("Time: %im %is" % (minutes, seconds))
-        command = "0 %s %s %s %s 2" % (nar, ar_dir, nde, de_dir)
+        command = "0 %s %s 2 %s %s 2\n" % (nar, ar_dir, nde, de_dir)
         self.main.waiting_commands.append(command)
         self.main.arduino.serial_connection.flushInput()
         while self.main.arduino.serial_connection.in_waiting == 0:
@@ -155,10 +155,10 @@ class AutoController(AutoWidget):
 
         # Do tracking or not depending on tracking button status
         if self.main.guiding_toolbar.tracking_enable:
-            self.main.waiting_commands.append("1 0 0 0 0 0")
+            self.main.waiting_commands.append("0 0 0 52 0 0 0\n")
             print("Tracking")
         else:
-            self.main.waiting_commands.append("0 0 0 0 0 0")
+            self.main.waiting_commands.append("0 0 0 0 0 0 0\n")
             print("Stop")
 
         return 0

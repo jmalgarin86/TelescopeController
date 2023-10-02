@@ -20,8 +20,10 @@ SoftwareSerial BT1(7,13); // RX, TX
 //Variables globales
 int ar_steps = 0;
 int ar_dir = 1;
+int ar_per = 0;
 int dec_steps = 0;
 int dec_dir = 1;
+int dec_per = 0;
 int follow = 0;
 int period = 0;
 
@@ -56,162 +58,121 @@ void setup() {
 
 }
 
-void moveDEC(){
-  // empty serial buffer
+void moveSteppers() {
+  // Empty serial buffer
   while (Serial.available() > 0) {
     char _ = Serial.read(); // Read and discard the character
   }
+  
+  int n_ar = 0;
+  int n_de = 0;
+  int step_ar = 0;
+  int step_de = 0;
+  int next_ar = 1;
+  int next_de = 1;
 
-  // set pins
-  digitalWrite(SLP_PIN_DEC, HIGH);
-  digitalWrite(SLP_PIN_AR, HIGH);
+  // Avoid axis if perio is zero
+  if (ar_per==0) {
+    next_ar = 0;
+  }
+  if (dec_per==0) {
+    next_de = 0;
+  }
+
+  // Set pins
+  digitalWrite(DIR_PIN_AR, ar_dir);
   digitalWrite(DIR_PIN_DEC, dec_dir);
-  digitalWrite(DIR_PIN_AR, 0);
+  digitalWrite(SLP_PIN_AR, HIGH);
+  digitalWrite(SLP_PIN_DEC, HIGH);
 
-  // Steps ratio
-  int n0 = 52/period;
-  int n = 0;
-  int ar_state = 0;
+  // Variables to store the last time the LEDs were updated
+  unsigned long t0_ar  = 0;
+  unsigned long t0_dec = 0;
 
   // New step while no new serial available
-  while (BT1.available()==0 && Serial.available()==0){
-    for (int i = 0; i<4; i++){
-      digitalWrite(STP_PIN_DEC, HIGH);
-      if (n==0){
-        if (ar_state==0){
-          digitalWrite(STP_PIN_AR, HIGH);
-          ar_state = 1;
-        }
-        else{
-          digitalWrite(STP_PIN_AR, LOW);
-          ar_state = 0;
-        }
+  while (BT1.available()==0 && Serial.available()==0 && (next_ar+next_de>0)){
+    // Get the current time
+    unsigned long t1 = millis();
+    
+    // Check if it's time to blink the AR
+    if (t1 - t0_ar >= ar_per && next_ar == 1) {
+      // Save the current time
+      t0_ar = t1;
+
+      // Toggle the AR pin
+      digitalWrite(STP_PIN_AR, !digitalRead(STP_PIN_AR));
+
+      // Count the switch
+      n_ar = n_ar + 1;
+
+      // Add step
+      if (n_ar==2) {
+        n_ar = 0;
+        step_ar = step_ar + 1;
       }
-      delay(period);
-      n++;
-      if (n==n0){n = 0;}
-      digitalWrite(STP_PIN_DEC, LOW);
-      if (n==0){
-        if (ar_state==0){
-          digitalWrite(STP_PIN_AR, HIGH);
-          ar_state = 1;
-        }
-        else{
-          digitalWrite(STP_PIN_AR, LOW);
-          ar_state = 0;
-        }
+
+      // Check if final step
+      if (ar_steps==0) {
+        next_ar = 1;
       }
-      delay(period);
-      n++;
-      if (n==n0){n = 0;}
+      else if (step_ar>=ar_steps) {
+        next_ar = 0;
+      }
+    }
+
+    // Check if it's time to blink the DEC
+    if (t1 - t0_dec >= dec_per && next_de == 1) {
+      // Save the current time
+      t0_dec = t1;
+
+      // Togle the DEC pin
+      digitalWrite(STP_PIN_DEC, !digitalRead(STP_PIN_DEC));
+
+      // Count the switch
+      n_de = n_de + 1;
+
+      // Add step
+      if (n_de==2) {
+        n_de = 0;
+        step_de = step_de + 1;
+      }
+
+      // Check if final step
+      if (dec_steps==0) {
+        next_de = 1;
+      }
+      else if (step_de>=dec_steps) {
+        next_de = 0;
+      }
     }
   }
-  digitalWrite(SLP_PIN_DEC, LOW);
+
   digitalWrite(SLP_PIN_AR, LOW);
+  digitalWrite(SLP_PIN_DEC, LOW);
+
+  Serial.println("Ready!")
+
 }
-
-void followStepper(int DIR_PIN, int SLP_PIN, int STP_PIN, int dir){
-  // empty serial buffer
-  while (Serial.available() > 0) {
-    char _ = Serial.read(); // Read and discard the character
-  }
-
-  // set pins
-  digitalWrite(DIR_PIN, dir);
-  digitalWrite(SLP_PIN, HIGH);
-  
-  // Follow while no new serial available
-  while (BT1.available()==0 && Serial.available()==0){
-    for (int i = 0; i<4; i++){
-      digitalWrite(STP_PIN, HIGH);
-      delay(period);
-      digitalWrite(STP_PIN, LOW);
-      delay(period);
-    }
-  }
-  digitalWrite(SLP_PIN, LOW);
-}
-
-void moveSteppers(){
-  if (ar_steps>0 || dec_steps>0){
-    digitalWrite(DIR_PIN_AR, ar_dir);
-    digitalWrite(DIR_PIN_DEC, dec_dir);
-    digitalWrite(SLP_PIN_AR, HIGH);
-    digitalWrite(SLP_PIN_DEC, HIGH);
-    if(ar_steps<=dec_steps){
-      for (int i = 0; i<4*ar_steps; i++){
-        digitalWrite(STP_PIN_DEC, HIGH);
-        digitalWrite(STP_PIN_AR, HIGH);
-        delay(period);
-        digitalWrite(STP_PIN_DEC, LOW);
-        digitalWrite(STP_PIN_AR, LOW);
-        delay(period);
-      }
-      for (int i = 0; i<4*(dec_steps-ar_steps); i++){
-        digitalWrite(STP_PIN_DEC, HIGH);
-        delay(period);
-        digitalWrite(STP_PIN_DEC, LOW);
-        delay(period);
-      }
-    }
-    else{
-      for (int i = 0; i<4*(dec_steps); i++){
-        digitalWrite(STP_PIN_DEC, HIGH);
-        digitalWrite(STP_PIN_AR, HIGH);
-        delay(period);
-        digitalWrite(STP_PIN_DEC, LOW);
-        digitalWrite(STP_PIN_AR, LOW);
-        delay(period);
-      }
-      for (int i = 0; i<4*(ar_steps-dec_steps); i++){
-        digitalWrite(STP_PIN_AR, HIGH);
-        delay(period);
-        digitalWrite(STP_PIN_AR, LOW);
-        delay(period);
-      }
-    }
-    Serial.println("Ready!");
-    digitalWrite(SLP_PIN_AR, LOW);
-    digitalWrite(SLP_PIN_DEC, LOW);
-  }
-  if (follow==1){
-    period = 52;
-    ar_dir = 0;
-    followStepper(DIR_PIN_AR, SLP_PIN_AR, STP_PIN_AR, ar_dir);
-  }
-  else if (follow==2){
-    followStepper(DIR_PIN_AR, SLP_PIN_AR, STP_PIN_AR, ar_dir);
-  }
-  else if (follow==3){
-    moveDEC();
-  }
-  else if (follow==4){
-    followStepper(DIR_PIN_DEC, SLP_PIN_DEC, STP_PIN_DEC, dec_dir);
-  }
-}
-
 
 void loop() {
-  if (BT1.available()>6 || Serial.available()>6)
+  if (BT1.available()>7 || Serial.available()>7)
   {
-    if (BT1.available()>6)
-    {
-      follow = Serial.parseInt();
-      ar_steps = Serial.parseInt();
-      ar_dir = Serial.parseInt();
-      dec_steps = Serial.parseInt();
-      dec_dir = Serial.parseInt();
-      period = Serial.parseInt();
-    }
-    else if (Serial.available()>6)
-    {
-      follow = Serial.parseInt();
-      ar_steps = Serial.parseInt();
-      ar_dir = Serial.parseInt();
-      dec_steps = Serial.parseInt();
-      dec_dir = Serial.parseInt();
-      period = Serial.parseInt();
-    }
+    follow = Serial.parseInt();
+    ar_steps = Serial.parseInt();
+    ar_dir = Serial.parseInt();
+    ar_per = Serial.parseInt();
+    dec_steps = Serial.parseInt();
+    dec_dir = Serial.parseInt();
+    dec_per = Serial.parseInt();
     moveSteppers();
+    if (follow==1) {
+      ar_steps = 0;
+      ar_dir = 0;
+      ar_per = 52;
+      dec_steps = 0;
+      dec_dir = 0;
+      dec_per = 0;
+      moveSteppers();
+    }
   }
 }

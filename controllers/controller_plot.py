@@ -23,7 +23,7 @@ class PlotController(PlotWidget):
         m_y = np.sum((t - mean_t) * (y - mean_y)) / np.sum((t - mean_t) ** 2)
 
         # Update the info in the figure title
-        self.setTitle('<font color="#FF0000">x, y, mx, my: %i, %i, %0.3f, %0.3f</font>' % (x0, y0, m_x, m_y))
+        self.setTitle('<font color="#FF0000">x, y, mx, my: %i, %i, %0.3f, %0.3f</font>' % (x[-1], y[-1], m_x, m_y))
 
         # Set axes range
         data = np.concatenate((np.array(x), np.array(y)), axis=0)
