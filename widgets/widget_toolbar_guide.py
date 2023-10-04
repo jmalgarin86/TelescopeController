@@ -20,22 +20,19 @@ class GuideToolBar(QToolBar):
         self.addAction(self.action_camera)
 
         # Setup guide
-        self.action_tracking = QAction(QIcon("icons/guide.png"), "Start guide", self)
-        self.action_tracking.setStatusTip("Start guide")
-        self.action_tracking.setCheckable(True)
-        self.action_tracking.setEnabled(False)
-        self.addAction(self.action_tracking)
-
-        # Calibration
-        self.action_calibration = QAction(QIcon("icons/calibrate.png"), "Start calibration", self)
-        self.addAction(self.action_calibration)
-        self.action_calibration.setCheckable(True)
-        # self.action_calibration.setEnabled(False)
+        self.action_guide = QAction(QIcon("icons/guide.png"), "Start guide", self)
+        self.action_guide.setStatusTip("Start guide")
+        self.action_guide.setCheckable(True)
+        self.action_guide.setEnabled(False)
+        self.addAction(self.action_guide)
 
         # Autoguiding
-        self.action_guide = QAction(QIcon("icons/goto.png"), "Init auto guide", self)
-        self.action_guide.setStatusTip("Init auto guide")
-        self.addAction(self.action_guide)
-        self.action_guide.setCheckable(True)
+        self.action_tracking = QAction(QIcon("icons/tracking.png"), "Init auto guide", self)
+        self.action_tracking.setStatusTip("Init auto guide")
+        self.addAction(self.action_tracking)
+        self.action_tracking.setCheckable(True)
 
-
+        # Calibration
+        self.action_select_position = QAction(QIcon("icons/position.png"), "Select current position", self)
+        self.addAction(self.action_select_position)
+        # self.action_calibration.setEnabled(False)

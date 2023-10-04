@@ -12,7 +12,7 @@ class ManualWidget(QGroupBox):
         self.setMinimumWidth(300)
 
         # Initially disabled
-        self.setEnabled(False)
+        # self.setEnabled(False)
 
         # Create QPushButtons
         self.button_ar_p = QPushButton("AR  +")

@@ -117,6 +117,9 @@ void moveSteppers() {
       }
       else if (step_ar>=ar_steps) {
         next_ar = 0;
+        if (stop==1) {
+          next_de = 0;
+        }
       }
     }
 
@@ -143,6 +146,9 @@ void moveSteppers() {
       }
       else if (step_de>=dec_steps) {
         next_de = 0;
+        if (stop==1) {
+          next_ar = 0;
+        }
       }
     }
   }
@@ -150,14 +156,11 @@ void moveSteppers() {
   digitalWrite(SLP_PIN_AR, LOW);
   digitalWrite(SLP_PIN_DEC, LOW);
 
-  Serial.println("Ready!")
-
 }
 
 void loop() {
-  if (BT1.available()>7 || Serial.available()>7)
-  {
-    follow = Serial.parseInt();
+  if (BT1.available()>7 || Serial.available()>7) {
+    stop = Serial.parseInt();
     ar_steps = Serial.parseInt();
     ar_dir = Serial.parseInt();
     ar_per = Serial.parseInt();
@@ -165,14 +168,6 @@ void loop() {
     dec_dir = Serial.parseInt();
     dec_per = Serial.parseInt();
     moveSteppers();
-    if (follow==1) {
-      ar_steps = 0;
-      ar_dir = 0;
-      ar_per = 52;
-      dec_steps = 0;
-      dec_dir = 0;
-      dec_per = 0;
-      moveSteppers();
-    }
+    Serial.println("Ready!");
   }
 }

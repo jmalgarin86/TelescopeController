@@ -8,6 +8,7 @@ import qdarkstyle
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QHBoxLayout
 
 from controllers.controller_arduino import ArduinoController
+from controllers.controller_calibration import CalibrationController
 from controllers.controller_console import ConsoleController
 from controllers.controller_figure import FigureController
 from controllers.controller_plot import PlotController
@@ -55,6 +56,10 @@ class TelescopeController(QMainWindow):
         self.auto_controller = AutoController(self)
         left_layout.addWidget(self.auto_controller)
 
+        # Create calibration controller
+        self.calibration_controller = CalibrationController(self)
+        left_layout.addWidget(self.calibration_controller)
+
         # Create the ConsoleController widget
         self.console_controller = ConsoleController()
         left_layout.addWidget(self.console_controller)  # Add it to the left_layout
@@ -64,38 +69,17 @@ class TelescopeController(QMainWindow):
         self.figure_controller = FigureController(main=self, data=logo.transpose([1, 0, 2]))
         right_layout.addWidget(self.figure_controller)
 
-        # Create space for 1d plot
-        self.plot_controller = PlotController(self)
-        right_layout.addWidget(self.plot_controller)
+        # Layout for plots
+        plots_layout = QHBoxLayout()
+        right_layout.addLayout(plots_layout)
 
-        # # Create a Plot Widget
-        # self.plotWidget = pg.PlotWidget(self)
-        # right_layout.addWidget(self.plotWidget)
-        # self.plotWidget.setGeometry(50, 50, 700, 500)
-        #
-        # # Generate some data points for the curve
-        # t = np.linspace(1, 100, 100)
-        # x = 10+t*0.1
-        # y = 20+t*0.12
-        # data = np.concatenate((x, y), axis=0)
-        #
-        # # Add the curve to the plot
-        # self.plot_x = self.plotWidget.plot(t, x, pen='b', symbol='o', symbolSize=8)
-        # self.plot_y = self.plotWidget.plot(t, y, pen='r', symbol='o', symbolSize=8)
-        #
-        # # Set initial range for x and y axes
-        # self.plotWidget.setRange(xRange=[0, 100], yRange=[np.min(data), np.max(data)])
-        #
-        # # Create a TextItem to display the last 'y' value with reduced font size
-        # font_size = 10  # Set the desired font size
-        # last_x_position = x[-1]  # X position of the last data point
-        # last_y_position = y[-1]  # Y position of the last data point
-        # text = pg.TextItem(f'Last Y Value: {last_y_position}', color=(255, 0, 0), anchor=(1, 1))
-        # text.setFont(pg.QtGui.QFont("", font_size))  # Set font size
-        # text.setPos(last_x_position, last_y_position)  # Set position to the last data point
-        #
-        # # Add the TextItem to the plot
-        # self.plotWidget.addItem(text)
+        # Create space for 1d plot
+        self.plot_controller_x = PlotController(self, text='X')
+        plots_layout.addWidget(self.plot_controller_x)
+
+        # Create space for 1d plot
+        self.plot_controller_y = PlotController(self, text='Y')
+        plots_layout.addWidget(self.plot_controller_y)
 
         # Connect to Arduino
         self.arduino = ArduinoController()

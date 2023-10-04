@@ -152,9 +152,6 @@ class FigureController(FigureWidget):
             self.x0 += x_min  # Add the x-coordinate of the ROI within the full image
             self.y0 += y_min  # Add the y-coordinate of the ROI within the full image
 
-            # Print or use the coordinates as needed
-            print("Image coordinates: %0.1f, %0.1f" % (self.x0, self.y0))
-
             # Calculate new top-left corner coordinates for the ROI
             roi_width, roi_height = data.shape[0], data.shape[1]
             x_min = int(self.x0 - roi_width / 2)

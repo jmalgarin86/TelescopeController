@@ -43,7 +43,7 @@ class ManualController(ManualWidget):
             print("Moving AR in negative direction")
         else:
             self.speed_combo.setEnabled(True)
-            if self.main.guiding_toolbar.tracking_enable:
+            if self.main.guiding_toolbar.action_guide.isChecked():
                 self.main.waiting_commands.append("0 0 0 52 0 0 0\n")
                 print("Tracking")
             else:
@@ -73,7 +73,7 @@ class ManualController(ManualWidget):
             print("Moving AR in positive direction")
         else:
             self.speed_combo.setEnabled(True)
-            if self.main.guiding_toolbar.tracking_enable:
+            if self.main.guiding_toolbar.action_guide.isChecked():
                 self.main.waiting_commands.append("0 0 0 52 0 0 0\n")
                 print("Tracking")
             else:
@@ -96,7 +96,7 @@ class ManualController(ManualWidget):
 
             # Set command to arduino
             print(str(period))
-            if self.main.guiding_toolbar.tracking_enable:
+            if self.main.guiding_toolbar.action_guide.isChecked():
                 if self.dec_dir == 1:
                     command = "0 0 0 52 0 0 " + str(period) + "\n"
                 else:
@@ -112,7 +112,7 @@ class ManualController(ManualWidget):
             print("Moving DEC in negative direction")
         else:
             self.speed_combo.setEnabled(True)
-            if self.main.guiding_toolbar.tracking_enable:
+            if self.main.guiding_toolbar.action_guide.isChecked():
                 self.main.waiting_commands.append("0 0 0 52 0 0 0\n")
                 print("Tracking")
             else:
@@ -134,7 +134,7 @@ class ManualController(ManualWidget):
             period = int(52 / speed)
 
             print(str(period))
-            if self.main.guiding_toolbar.tracking_enable:
+            if self.main.guiding_toolbar.action_guide.isChecked():
                 if self.dec_dir == 1:
                     command = "0 0 0 52 0 1 " + str(period) + "\n"
                 else:
@@ -150,7 +150,7 @@ class ManualController(ManualWidget):
             print("Moving DEC in positive direction")
         else:
             self.speed_combo.setEnabled(True)
-            if self.main.guiding_toolbar.tracking_enable:
+            if self.main.guiding_toolbar.action_guide.isChecked():
                 self.main.waiting_commands.append("0 0 0 52 0 0 0\n")
                 print("Tracking")
             else:

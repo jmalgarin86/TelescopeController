@@ -1,3 +1,4 @@
+import threading
 import time
 
 import cv2
@@ -10,38 +11,100 @@ class GuideController(GuideToolBar):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # Define parameters
+        self.y_star = 0
+        self.x_star = 0
         self.x_vec = []
         self.y_vec = []
         self.tracking_enable = False
 
+        # Connect buttons to actions
         self.action_arduino.triggered.connect(self.connect_arduino)
         self.action_tracking.triggered.connect(self.tracking)
         self.action_guide.triggered.connect(self.guiding)
         self.action_camera.triggered.connect(self.start_camera)
-        self.action_calibration.triggered.connect(self.calibration)
+        self.action_select_position.triggered.connect(self.select_position)
 
-    def calibration(self):
-        if self.action_calibration.isChecked():
-            # Stop motors
-            self.x_vec = []
-            self.y_vec = []
-            self.main.waiting_commands.append("0 0 0 0 0 0 0\n")
-            print("Start axis calibration")
-            pass
-        else:
-            # Start motors
-            self.main.waiting_commands.append("0 0 0 52 0 0 0\n")
-            print(self.x_vec)
-            print(self.y_vec)
-            pass
-
-
+    def select_position(self):
+        self.x_star, self.y_star = self.main.figure_controller.getCoordinates()
+        print("Reference position: x, y: %0.1f, %0.1f" % (self.x_star, self.y_star))
 
     def guiding(self):
+        # Check if calibration is done
+        check_de = self.main.calibration_controller.checkbox_dec.isChecked()
+        check_ar_p = self.main.calibration_controller.checkbox_ar_p.isChecked()
+        check_ar_n = self.main.calibration_controller.checkbox_ar_n.isChecked()
         if self.action_guide.isChecked():
-            print("Guiding started")
+            print("Guiding start")
+            if check_de and check_ar_p and check_ar_n:
+                thread = threading.Thread(target=self.do_guiding)
+                thread.start()
+            else:
+                self.main.waiting_commands.append("0 0 0 52 0 0 0\n")
         else:
-            print("Guiding stoped")
+            print("Guide stop")
+            self.main.waiting_commands.append("0 0 0 0 0 0 0\n")
+
+    def do_guiding(self):
+        # Check for speed
+        speed = float(self.main.manual_controller.speed_combo.currentText()[1::])
+        period = str(int(52 / speed))
+
+        # Get data from calibration
+        vx_de = self.main.calibration_controller.vx_de
+        vy_de = self.main.calibration_controller.vy_de
+        vx_ra_p = self.main.calibration_controller.vx_ra_p
+        vy_ra_p = self.main.calibration_controller.vy_ra_p
+        vx_ra_n = self.main.calibration_controller.vx_ra_n
+        vy_ra_n = self.main.calibration_controller.vy_ra_n
+
+        # Create matrix
+        v_p = np.array([[vx_de, vx_ra_p], [vy_de, vy_ra_p]])
+        v_n = np.array([[vx_de, vx_ra_n], [vy_de, vy_ra_n]])
+
+        while self.action_guide.isChecked():
+            # Get required displacement
+            x1, y1 = self.main.figure_controller.getCoordinates()
+            dr = np.array([x1 - self.x_star, y1 - self.y_star])
+            dr = np.reshape(dr, (2, 1))
+
+            # Get required steps
+            n_steps = np.linalg.inv(v_p) @ dr
+            if n_steps[1] < 0:
+                n_steps = np.linalg.inv(v_n) @ dr
+
+            # Set directions
+            if n_steps[0] >= 0 and self.main.manual_controller.dec_dir == 1:
+                de_dir = str(0)
+            elif n_steps[0] >= 0 and self.main.manual_controller.dec_dir == -1:
+                de_dir = str(1)
+            elif n_steps[0] < 0 and self.main.manual_controller.dec_dir == 1:
+                de_dir = str(1)
+            elif n_steps[0] < 0 and self.main.manual_controller.dec_dir == -1:
+                de_dir = str(0)
+            if n_steps[1] >= 0:
+                ra_dir = str(0)
+            else:
+                ra_dir = str(1)
+
+            # Send instructions
+            de_steps = str(int(np.abs(n_steps[0])))
+            ra_steps = str(int(np.abs(n_steps[1])))
+            command = "0 %s %s %s %s %s %s\n" % (ra_steps, ra_dir, period, de_steps, de_dir, period)
+            self.main.waiting_commands.append(command)
+
+            # Wait until it finish
+            self.main.arduino.serial_connection.flushInput()
+            while self.main.arduino.serial_connection.in_waiting == 0:
+                time.sleep(0.01)
+                pass
+            self.main.arduino.serial_connection.flushInput()
+
+            # Normal tracking
+            self.main.waiting_commands.append("0 0 0 52 0 0 0\n")
+
+            # Wait to next correction
+            time.sleep(1)
 
     def start_camera(self):
         # Create a VideoCapture object to access the camera.
@@ -68,7 +131,7 @@ class GuideController(GuideToolBar):
             self.main.figure_controller.setImage(np.transpose(frame))
 
             # If guide is activated
-            if self.action_guide.isChecked():
+            if self.action_tracking.isChecked():
                 # Get centroid of the star
                 self.main.figure_controller.getCentroid()
                 x0, y0 = self.main.figure_controller.getCoordinates()
@@ -78,18 +141,8 @@ class GuideController(GuideToolBar):
                     self.y_vec = self.y_vec[1::]
                 self.x_vec.append(x0)
                 self.y_vec.append(y0)
-                self.main.plot_controller.updatePlot(self.x_vec, self.y_vec)
-
-            if self.action_calibration.isChecked():
-                self.main.figure_controller.getCentroid()
-                x0, y0 = self.main.figure_controller.getCoordinates()
-                n = 100
-                if len(self.x_vec) > n:
-                    self.x_vec = self.x_vec[1::]
-                    self.y_vec = self.y_vec[1::]
-                self.x_vec.append(x0)
-                self.y_vec.append(y0)
-                self.main.plot_controller.updatePlot(self.x_vec, self.y_vec)
+                self.main.plot_controller_x.updatePlot(self.x_vec)
+                self.main.plot_controller_y.updatePlot(self.y_vec)
 
             # Check for the 'q' key to exit the loop.
             if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -101,14 +154,11 @@ class GuideController(GuideToolBar):
         cap.release()
         cv2.destroyAllWindows()
 
-    def open_processing_gui(self):
-        self.main.pro.showMaximized()
-
     def connect_arduino(self):
         if self.action_arduino.isChecked():
             if not self.main.arduino.serial_connection or not self.main.arduino.serial_connection.is_open:
                 if self.main.arduino.connect():
-                    self.action_tracking.setEnabled(True)
+                    self.action_guide.setEnabled(True)
                     self.main.manual_controller.setEnabled(True)
                     self.main.auto_controller.setEnabled(True)
                     self.action_arduino.setStatusTip("Disconnect Arduino")
@@ -127,12 +177,6 @@ class GuideController(GuideToolBar):
 
     def tracking(self):
         if self.action_tracking.isChecked():
-            self.tracking_enable = True
-            self.action_tracking.setText("Stop Guiding")
-            self.main.waiting_commands.append("0 0 0 52 0 0 0\n")
-            print("Tracking")
+            print("Tracking Start")
         else:
-            self.tracking_enable = False
-            self.action_tracking.setText("Start Guiding")
-            self.main.waiting_commands.append("0 0 0 0 0 0 0\n")
-            print("Stop")
+            print("Tracking Stop")
