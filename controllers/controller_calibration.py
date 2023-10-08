@@ -78,6 +78,9 @@ class CalibrationController(CalibrationWidget):
         self.vx_de = (x1 - x0) / n_steps
         self.vy_de = (y1 - y0) / n_steps
 
+        print("vx_de: %0.5f" % self.vx_de)
+        print("vy_de: %0.5f" % self.vy_de)
+
         # Show the check in the checkbox
         self.checkbox_dec.setChecked(True)
 
@@ -112,6 +115,9 @@ class CalibrationController(CalibrationWidget):
         # Get characteristics
         self.vx_ar_p = (x1 - x0) / n_steps
         self.vy_ar_p = (y1 - y0) / n_steps
+
+        print("vx_ar_p: %0.5f" % self.vx_ar_p)
+        print("vy_ar_p: %0.5f" % self.vy_ar_p)
 
         # Show the check in the checkbox
         self.checkbox_ar_p.setChecked(True)
@@ -152,6 +158,9 @@ class CalibrationController(CalibrationWidget):
         # Get characteristics
         self.vx_ar_n = - (x1 - x0) / n_steps
         self.vy_ar_n = - (y1 - y0) / n_steps
+
+        print("vx_ar_n: %0.5f" % self.vx_ar_n)
+        print("vy_ar_n: %0.5f" % self.vy_ar_n)
 
         # Show the check in the checkbox
         self.checkbox_ar_n.setChecked(True)

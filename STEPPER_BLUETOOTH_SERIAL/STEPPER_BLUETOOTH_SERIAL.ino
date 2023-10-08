@@ -164,6 +164,8 @@ void moveSteppers() {
 }
 
 void loop() {
+  // stop = 1 is used to finish AR axis once DEC axis is ready
+  // stop = 2 is used to do not blank the signal that do the steps, so the moveSteppers just wait until the number of steps is done
   if (BT1.available()>7 || Serial.available()>7) {
     stop = Serial.parseInt();
     ar_steps = Serial.parseInt();
@@ -176,3 +178,4 @@ void loop() {
     Serial.println("Ready!");
   }
 }
+
