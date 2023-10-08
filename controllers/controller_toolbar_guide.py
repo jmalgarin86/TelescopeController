@@ -47,16 +47,15 @@ class GuideController(GuideToolBar):
 
     def do_guiding(self):
         # Check for speed
-        speed = float(self.main.manual_controller.speed_combo.currentText()[1::])
-        period = str(int(52 / speed))
+        period = str(10)
 
         # Get data from calibration
         vx_de = self.main.calibration_controller.vx_de
         vy_de = self.main.calibration_controller.vy_de
-        vx_ra_p = self.main.calibration_controller.vx_ra_p
-        vy_ra_p = self.main.calibration_controller.vy_ra_p
-        vx_ra_n = self.main.calibration_controller.vx_ra_n
-        vy_ra_n = self.main.calibration_controller.vy_ra_n
+        vx_ra_p = self.main.calibration_controller.vx_ar_p
+        vy_ra_p = self.main.calibration_controller.vy_ar_p
+        vx_ra_n = self.main.calibration_controller.vx_ar_n
+        vy_ra_n = self.main.calibration_controller.vy_ar_n
 
         # Create matrix
         v_p = np.array([[vx_de, vx_ra_p], [vy_de, vy_ra_p]])
@@ -83,28 +82,35 @@ class GuideController(GuideToolBar):
             elif n_steps[0] < 0 and self.main.manual_controller.dec_dir == -1:
                 de_dir = str(0)
             if n_steps[1] >= 0:
-                ra_dir = str(0)
+                ar_dir = str(0)
+                stop = str(0)
+                ar_per = period
             else:
-                ra_dir = str(1)
+                ar_dir = str(1)
+                stop = str(0)
+                ar_per = period
 
             # Send instructions
             de_steps = str(int(np.abs(n_steps[0])))
-            ra_steps = str(int(np.abs(n_steps[1])))
-            command = "0 %s %s %s %s %s %s\n" % (ra_steps, ra_dir, period, de_steps, de_dir, period)
+            ar_steps = str(int(np.abs(n_steps[1])))
+            command = "%s %s %s %s %s %s %s\n" % (stop, ar_steps, ar_dir, ar_per, de_steps, de_dir, period)
             self.main.waiting_commands.append(command)
 
             # Wait until it finish
-            self.main.arduino.serial_connection.flushInput()
-            while self.main.arduino.serial_connection.in_waiting == 0:
-                time.sleep(0.01)
-                pass
-            self.main.arduino.serial_connection.flushInput()
+            time1 = int(ar_steps) * int(ar_per) * 2e-3
+            time2 = int(de_steps) * int(period) * 2e-3
+            time.sleep(np.max(np.array([time1, time2])))
+            # self.main.arduino.serial_connection.flushInput()
+            # while self.main.arduino.serial_connection.in_waiting == 0:
+            #     time.sleep(0.01)
+            #     pass
+            # self.main.arduino.serial_connection.flushInput()
 
             # Normal tracking
             self.main.waiting_commands.append("0 0 0 52 0 0 0\n")
 
             # Wait to next correction
-            time.sleep(1)
+            time.sleep(0.1)
 
     def start_camera(self):
         # Create a VideoCapture object to access the camera.

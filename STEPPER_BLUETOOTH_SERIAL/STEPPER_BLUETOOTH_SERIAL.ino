@@ -24,7 +24,7 @@ int ar_per = 0;
 int dec_steps = 0;
 int dec_dir = 1;
 int dec_per = 0;
-int follow = 0;
+int stop = 0;
 int period = 0;
 
 void setup() {
@@ -88,7 +88,7 @@ void moveSteppers() {
   // Variables to store the last time the LEDs were updated
   unsigned long t0_ar  = 0;
   unsigned long t0_dec = 0;
-
+  Serial.println("Lets go!");
   // New step while no new serial available
   while (BT1.available()==0 && Serial.available()==0 && (next_ar+next_de>0)){
     // Get the current time
@@ -100,8 +100,13 @@ void moveSteppers() {
       t0_ar = t1;
 
       // Toggle the AR pin
-      digitalWrite(STP_PIN_AR, !digitalRead(STP_PIN_AR));
-
+      if (stop==2) {
+        digitalWrite(STP_PIN_AR, LOW);
+      }
+      else {
+        digitalWrite(STP_PIN_AR, !digitalRead(STP_PIN_AR));
+      }
+      
       // Count the switch
       n_ar = n_ar + 1;
 

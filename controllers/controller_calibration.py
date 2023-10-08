@@ -39,29 +39,31 @@ class CalibrationController(CalibrationWidget):
     def doCalibrateDec(self):
         print('Start DEC calibration')
 
-        # Check for speed
-        speed = float(self.main.manual_controller.speed_combo.currentText()[1::])
-        period = int(52 / speed)
+        # Check for speed x2
+        period = 26
 
         # Number of steps (to be changed by an input)
-        n_steps = 200
+        n_steps = 100
 
         # Get initial coordinates
         x0, y0 = self.main.figure_controller.getCoordinates()
 
         # Set command to arduino
         if self.main.manual_controller.dec_dir == 1:
-            command = "1 0 0 52 " + str(n_steps) + " 0 " + str(period) + "\n"
-        else:
             command = "1 0 0 52 " + str(n_steps) + " 1 " + str(period) + "\n"
+        else:
+            command = "1 0 0 52 " + str(n_steps) + " 0 " + str(period) + "\n"
         self.main.waiting_commands.append(command)
 
         # Wait until it finish
-        self.main.arduino.serial_connection.flushInput()
-        while self.main.arduino.serial_connection.in_waiting == 0:
-            time.sleep(0.01)
-            pass
-        self.main.arduino.serial_connection.flushInput()
+        time.sleep(period * n_steps * 2e-3)
+        # self.main.arduino.serial_connection.flushInput()
+        # while self.main.arduino.serial_connection.in_waiting == 0:
+        #     time.sleep(0.01)
+        #     pass
+        # self.main.arduino.serial_connection.flushInput()
+
+        print('Ready!')
 
         # Get final coordinates
         x1, y1 = self.main.figure_controller.getCoordinates()
@@ -82,26 +84,21 @@ class CalibrationController(CalibrationWidget):
     def doCalibrateArP(self):
         print('Start AR + calibration')
 
-        # Check for speed
-        speed = float(self.main.manual_controller.speed_combo.currentText()[1::])
-        period = int(52 / speed)
+        # Period is x0
+        period = 26
 
         # Number of steps (to be changed by an input)
-        n_steps = 200
+        n_steps = 100
 
         # Get initial coordinates
         x0, y0 = self.main.figure_controller.getCoordinates()
 
         # Set command to arduino
-        command = "1 " + str(n_steps) + " 0 " + str(period) + " 0 0 0\n"
+        command = "1 " + str(n_steps) + " 1 " + str(period) + " 0 0 0\n"
         self.main.waiting_commands.append(command)
 
         # Wait until it finish
-        self.main.arduino.serial_connection.flushInput()
-        while self.main.arduino.serial_connection.in_waiting == 0:
-            time.sleep(0.01)
-            pass
-        self.main.arduino.serial_connection.flushInput()
+        time.sleep(n_steps * period * 2e-3)
 
         # Get final coordinates
         x1, y1 = self.main.figure_controller.getCoordinates()
@@ -122,26 +119,26 @@ class CalibrationController(CalibrationWidget):
     def doCalibrateArN(self):
         print('Start AR - calibration')
 
-        # Check for speed
-        speed = float(self.main.manual_controller.speed_combo.currentText()[1::])
-        period = int(52 / speed)
+        # Speed x2 in negative direction
+        period = 26
 
         # Number of steps (to be changed by an input)
-        n_steps = 200
+        n_steps = 100
 
         # Get initial coordinates
         x0, y0 = self.main.figure_controller.getCoordinates()
 
         # Set command to arduino
-        command = "1 " + str(n_steps) + " 1 " + str(period) + " 0 0 0\n"
+        command = "1 " + str(n_steps) + " 0 " + str(period) + " 0 0 0\n"
         self.main.waiting_commands.append(command)
 
         # Wait until it finish
-        self.main.arduino.serial_connection.flushInput()
-        while self.main.arduino.serial_connection.in_waiting == 0:
-            time.sleep(0.01)
-            pass
-        self.main.arduino.serial_connection.flushInput()
+        time.sleep(period * n_steps * 2e-3)
+        # self.main.arduino.serial_connection.flushInput()
+        # while self.main.arduino.serial_connection.in_waiting == 0:
+        #     time.sleep(0.01)
+        #     pass
+        # self.main.arduino.serial_connection.flushInput()
 
         # Get final coordinates
         x1, y1 = self.main.figure_controller.getCoordinates()
