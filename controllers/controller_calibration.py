@@ -56,12 +56,12 @@ class CalibrationController(CalibrationWidget):
         self.main.waiting_commands.append(command)
 
         # Wait until it finish
-        time.sleep(period * n_steps * 2e-3)
+        # time.sleep(period * n_steps * 2e-3)
         # self.main.arduino.serial_connection.flushInput()
-        # while self.main.arduino.serial_connection.in_waiting == 0:
-        #     time.sleep(0.01)
-        #     pass
-        # self.main.arduino.serial_connection.flushInput()
+        while self.main.arduino.serial_connection.in_waiting == 0:
+            time.sleep(0.01)
+            pass
+        self.main.arduino.serial_connection.flushInput()
 
         print('Ready!')
 
@@ -101,7 +101,11 @@ class CalibrationController(CalibrationWidget):
         self.main.waiting_commands.append(command)
 
         # Wait until it finish
-        time.sleep(n_steps * period * 2e-3)
+        # time.sleep(n_steps * period * 2e-3)
+        while self.main.arduino.serial_connection.in_waiting == 0:
+            time.sleep(0.01)
+            pass
+        self.main.arduino.serial_connection.flushInput()
 
         # Get final coordinates
         x1, y1 = self.main.figure_controller.getCoordinates()
@@ -139,12 +143,12 @@ class CalibrationController(CalibrationWidget):
         self.main.waiting_commands.append(command)
 
         # Wait until it finish
-        time.sleep(period * n_steps * 2e-3)
+        # time.sleep(period * n_steps * 2e-3)
         # self.main.arduino.serial_connection.flushInput()
-        # while self.main.arduino.serial_connection.in_waiting == 0:
-        #     time.sleep(0.01)
-        #     pass
-        # self.main.arduino.serial_connection.flushInput()
+        while self.main.arduino.serial_connection.in_waiting == 0:
+            time.sleep(0.01)
+            pass
+        self.main.arduino.serial_connection.flushInput()
 
         # Get final coordinates
         x1, y1 = self.main.figure_controller.getCoordinates()

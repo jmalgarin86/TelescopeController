@@ -88,7 +88,6 @@ void moveSteppers() {
   // Variables to store the last time the LEDs were updated
   unsigned long t0_ar  = 0;
   unsigned long t0_dec = 0;
-  Serial.println("Lets go!");
   // New step while no new serial available
   while (BT1.available()==0 && Serial.available()==0 && (next_ar+next_de>0)){
     // Get the current time
@@ -161,6 +160,10 @@ void moveSteppers() {
   digitalWrite(SLP_PIN_AR, LOW);
   digitalWrite(SLP_PIN_DEC, LOW);
 
+  if (next_ar+next_de==0) {
+    Serial.println("Ready!");
+  }
+
 }
 
 void loop() {
@@ -175,7 +178,6 @@ void loop() {
     dec_dir = Serial.parseInt();
     dec_per = Serial.parseInt();
     moveSteppers();
-    Serial.println("Ready!");
   }
 }
 
