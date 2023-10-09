@@ -19,13 +19,27 @@ SoftwareSerial BT1(7,13); // RX, TX
 
 //Variables globales
 int ar_steps = 0;
-int ar_dir = 1;
-int ar_per = 0;
+int ar_dir = 0;
+int ar_per = 52;
 int dec_steps = 0;
-int dec_dir = 1;
+int dec_dir = 0;
 int dec_per = 0;
 int stop = 0;
 int period = 0;
+
+// Variables to store the last time the LEDs were updated
+unsigned long t0_ar  = 0;
+unsigned long t0_dec = 0;
+
+// Define counters
+int n_ar = 0;
+int n_de = 0;
+int step_ar = 0;
+int step_de = 0;
+
+// Define checkers
+int de_ready = 0;
+int ar_ready = 0;
 
 void setup() {
   //Inicio módulo Bluetooth
@@ -56,113 +70,9 @@ void setup() {
   digitalWrite(MS1_PIN_DEC,LOW);
   digitalWrite(MS2_PIN_DEC,LOW);
 
-}
-
-void moveSteppers() {
-  // Empty serial buffer
-  while (Serial.available() > 0) {
-    char _ = Serial.read(); // Read and discard the character
-  }
-  
-  int n_ar = 0;
-  int n_de = 0;
-  int step_ar = 0;
-  int step_de = 0;
-  int next_ar = 1;
-  int next_de = 1;
-
-  // Avoid axis if perio is zero
-  if (ar_per==0) {
-    next_ar = 0;
-  }
-  if (dec_per==0) {
-    next_de = 0;
-  }
-
-  // Set pins
-  digitalWrite(DIR_PIN_AR, ar_dir);
-  digitalWrite(DIR_PIN_DEC, dec_dir);
+  // Turn on AR and DEC motors
   digitalWrite(SLP_PIN_AR, HIGH);
   digitalWrite(SLP_PIN_DEC, HIGH);
-
-  // Variables to store the last time the LEDs were updated
-  unsigned long t0_ar  = 0;
-  unsigned long t0_dec = 0;
-  // New step while no new serial available
-  while (BT1.available()==0 && Serial.available()==0 && (next_ar+next_de>0)){
-    // Get the current time
-    unsigned long t1 = millis();
-    
-    // Check if it's time to blink the AR
-    if (t1 - t0_ar >= ar_per && next_ar == 1) {
-      // Save the current time
-      t0_ar = t1;
-
-      // Toggle the AR pin
-      if (stop==2) {
-        digitalWrite(STP_PIN_AR, LOW);
-      }
-      else {
-        digitalWrite(STP_PIN_AR, !digitalRead(STP_PIN_AR));
-      }
-      
-      // Count the switch
-      n_ar = n_ar + 1;
-
-      // Add step
-      if (n_ar==2) {
-        n_ar = 0;
-        step_ar = step_ar + 1;
-      }
-
-      // Check if final step
-      if (ar_steps==0) {
-        next_ar = 1;
-      }
-      else if (step_ar>=ar_steps) {
-        next_ar = 0;
-        if (stop==1) {
-          next_de = 0;
-        }
-      }
-    }
-
-    // Check if it's time to blink the DEC
-    if (t1 - t0_dec >= dec_per && next_de == 1) {
-      // Save the current time
-      t0_dec = t1;
-
-      // Togle the DEC pin
-      digitalWrite(STP_PIN_DEC, !digitalRead(STP_PIN_DEC));
-
-      // Count the switch
-      n_de = n_de + 1;
-
-      // Add step
-      if (n_de==2) {
-        n_de = 0;
-        step_de = step_de + 1;
-      }
-
-      // Check if final step
-      if (dec_steps==0) {
-        next_de = 1;
-      }
-      else if (step_de>=dec_steps) {
-        next_de = 0;
-        if (stop==1) {
-          next_ar = 0;
-        }
-      }
-    }
-  }
-
-  digitalWrite(SLP_PIN_AR, LOW);
-  digitalWrite(SLP_PIN_DEC, LOW);
-
-  if (next_ar+next_de==0) {
-    Serial.println("Ready!");
-  }
 
 }
 
@@ -177,7 +87,97 @@ void loop() {
     dec_steps = Serial.parseInt();
     dec_dir = Serial.parseInt();
     dec_per = Serial.parseInt();
-    moveSteppers();
+
+    // Set the pins on
+    digitalWrite(DIR_PIN_AR, ar_dir);
+    digitalWrite(DIR_PIN_DEC, dec_dir);
+    
+    // Set counter to zero
+    n_ar = 0;
+    n_de = 0;
+    step_ar = 0;
+    step_de = 0;
+
+    // Set checkers to 0
+    if (ar_steps>0) {
+      ar_ready = 0;
+    }
+    else {
+      ar_ready = 1;
+    }
+    if (dec_steps > 0) {
+      de_ready = 0;
+    }
+    else {
+      de_ready = 1;
+    }
+    
+    Serial.println("Datos Cargados");
+  }
+
+  // Get the current time
+  unsigned long t1 = millis();
+  
+  // Check if it's time to blink the AR
+  if (t1 - t0_ar >= ar_per && ar_per > 0) {
+    // Save the current time
+    t0_ar = t1;
+
+    // Toggle the AR pin
+    digitalWrite(STP_PIN_AR, !digitalRead(STP_PIN_AR));
+    
+    // Count the switch
+    n_ar = n_ar + 1;
+
+    // Add step
+    if (n_ar==2) {
+      n_ar = 0;
+      step_ar = step_ar + 1;
+    }
+
+    // Check if final step
+    if (step_ar>=ar_steps && ar_steps>0) {
+      step_ar = 0;
+      ar_steps = 0;
+      ar_per = 52;
+      ar_dir = 0;
+      digitalWrite(DIR_PIN_AR, ar_dir);
+      ar_ready = 1;
+      if (ar_ready + de_ready == 2) {
+        Serial.println("Ready!");
+      }
+    }
+  }
+
+  // Check if it's time to blink the DEC
+  if (t1 - t0_dec >= dec_per && dec_per > 0) {
+    // Save the current time
+    t0_dec = t1;
+
+    // Toggle the AR pin
+    digitalWrite(STP_PIN_DEC, !digitalRead(STP_PIN_DEC));
+    
+    // Count the switch
+    n_de = n_de + 1;
+
+    // Add step
+    if (n_de==2) {
+      n_de = 0;
+      step_de = step_de + 1;
+    }
+
+    // Check if final step
+    if (step_de>=dec_steps && dec_steps > 0) {
+      step_de = 0;
+      dec_steps = 0;
+      dec_per = 0;
+      dec_dir = 0;
+      digitalWrite(DIR_PIN_DEC, dec_dir);
+      de_ready = 1;
+      if (ar_ready + de_ready == 2) {
+        Serial.println("Ready!");
+      }
+    }
   }
 }
 
