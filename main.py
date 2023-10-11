@@ -11,6 +11,7 @@ from controllers.controller_arduino import ArduinoController
 from controllers.controller_calibration import CalibrationController
 from controllers.controller_console import ConsoleController
 from controllers.controller_figure import FigureController
+from controllers.controller_joystick import JoyStickController
 from controllers.controller_plot import PlotController
 from controllers.controller_toolbar_guide import GuideController
 from controllers.controller_manual_control import ManualController
@@ -83,6 +84,9 @@ class TelescopeController(QMainWindow):
 
         # Connect to Arduino
         self.arduino = ArduinoController()
+
+        # Create joystick controller
+        JoyStickController(self)
 
         # Create list that contains the instructions to execute
         self.waiting_commands = []

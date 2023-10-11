@@ -31,26 +31,54 @@ class JoyStickController:
             # Handle events
             events = pygame.event.get()
             for event in events:
-                # D-Pad
-                if event.type == pygame.JOYHATMOTION:
-                    if event.value == (1, 0):
-                        print("Right")
-                    elif event.value == (-1, 0):
-                        print("Left")
-                    elif event.value == (0, 1):
-                        print("Up")
-                    elif event.value == (0, -1):
-                        print("Down")
                 # Buttons
                 if event.type == pygame.JOYBUTTONDOWN:
                     if event.button == 4:
-                        print("Speed down")
+                        self.speedDown()
                     elif event.button == 5:
-                        print("Speed up")
+                        self.speedUp()
                     elif event.button == 6:
                         print("Stop guide")
                     elif event.button == 7:
                         print("Start guide")
+                    elif event.button == 0:
+                        self.main.manual_controller.button_ar_n.toggle()
+                        self.main.manual_controller.move_ar_n()
+                    elif event.button == 1:
+                        self.main.manual_controller.button_dec_p.toggle()
+                        self.main.manual_controller.move_dec_p()
+                    elif event.button == 2:
+                        self.main.manual_controller.button_dec_n.toggle()
+                        self.main.manual_controller.move_dec_n()
+                    elif event.button == 3:
+                        self.main.manual_controller.button_ar_p.toggle()
+                        self.main.manual_controller.move_ar_p()
+
+                if event.type == pygame.JOYBUTTONUP:
+                    if event.button == 0:
+                        self.main.manual_controller.button_ar_n.toggle()
+                        self.main.manual_controller.move_ar_n()
+                    elif event.button == 1:
+                        self.main.manual_controller.button_dec_p.toggle()
+                        self.main.manual_controller.move_dec_p()
+                    elif event.button == 2:
+                        self.main.manual_controller.button_dec_n.toggle()
+                        self.main.manual_controller.move_dec_n()
+                    elif event.button == 3:
+                        self.main.manual_controller.button_ar_p.toggle()
+                        self.main.manual_controller.move_ar_p()
 
             # Add a delay to avoid printing too quickly
             pygame.time.delay(100)  # Delay in milliseconds
+
+    def speedUp(self):
+        current_index = self.main.manual_controller.speed_combo.currentIndex()
+        if current_index < self.main.manual_controller.speed_combo.count() - 1:
+            next_index = current_index + 1
+            self.main.manual_controller.speed_combo.setCurrentIndex(next_index)
+
+    def speedDown(self):
+        current_index = self.main.manual_controller.speed_combo.currentIndex()
+        if current_index > 0:
+            next_index = current_index - 1
+            self.main.manual_controller.speed_combo.setCurrentIndex(next_index)

@@ -112,7 +112,6 @@ void loop() {
       de_ready = 1;
     }
     
-    Serial.println("Datos Cargados");
   }
 
   // Get the current time

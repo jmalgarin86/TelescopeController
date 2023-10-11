@@ -50,29 +50,20 @@ class CalibrationController(CalibrationWidget):
 
         # Set command to arduino
         if self.main.manual_controller.dec_dir == 1:
-            command = "1 0 0 52 " + str(n_steps) + " 1 " + str(period) + "\n"
+            command = "0 0 0 52 " + str(n_steps) + " 1 " + str(period) + "\n"
         else:
             command = "1 0 0 52 " + str(n_steps) + " 0 " + str(period) + "\n"
         self.main.waiting_commands.append(command)
 
         # Wait until it finish
-        # time.sleep(period * n_steps * 2e-3)
-        # self.main.arduino.serial_connection.flushInput()
-        while self.main.arduino.serial_connection.in_waiting == 0:
+        ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
+        while ser_input != "Ready!":
+            ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
             time.sleep(0.01)
-            pass
-        self.main.arduino.serial_connection.flushInput()
-
-        print('Ready!')
+        print(ser_input)
 
         # Get final coordinates
         x1, y1 = self.main.figure_controller.getCoordinates()
-
-        # Restart state previous to calibration
-        if self.main.guiding_toolbar.action_guide.isChecked():
-            self.main.waiting_commands.append("0 0 0 52 0 0 0\n")
-        else:
-            self.main.waiting_commands.append("0 0 0 0 0 0 0\n")
 
         # Get characteristics
         self.vx_de = (x1 - x0) / n_steps
@@ -97,24 +88,18 @@ class CalibrationController(CalibrationWidget):
         x0, y0 = self.main.figure_controller.getCoordinates()
 
         # Set command to arduino
-        command = "1 " + str(n_steps) + " 1 " + str(period) + " 0 0 0\n"
+        command = "0 " + str(n_steps) + " 1 " + str(period) + " 0 0 0\n"
         self.main.waiting_commands.append(command)
 
         # Wait until it finish
-        # time.sleep(n_steps * period * 2e-3)
-        while self.main.arduino.serial_connection.in_waiting == 0:
+        ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
+        while ser_input != "Ready!":
+            ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
             time.sleep(0.01)
-            pass
-        self.main.arduino.serial_connection.flushInput()
+        print(ser_input)
 
         # Get final coordinates
         x1, y1 = self.main.figure_controller.getCoordinates()
-
-        # Restart state previous to calibration
-        if self.main.guiding_toolbar.action_guide.isChecked():
-            self.main.waiting_commands.append("0 0 0 52 0 0 0\n")
-        else:
-            self.main.waiting_commands.append("0 0 0 0 0 0 0\n")
 
         # Get characteristics
         self.vx_ar_p = (x1 - x0) / n_steps
@@ -139,25 +124,18 @@ class CalibrationController(CalibrationWidget):
         x0, y0 = self.main.figure_controller.getCoordinates()
 
         # Set command to arduino
-        command = "1 " + str(n_steps) + " 0 " + str(period) + " 0 0 0\n"
+        command = "0 " + str(n_steps) + " 0 " + str(period) + " 0 0 0\n"
         self.main.waiting_commands.append(command)
 
         # Wait until it finish
-        # time.sleep(period * n_steps * 2e-3)
-        # self.main.arduino.serial_connection.flushInput()
-        while self.main.arduino.serial_connection.in_waiting == 0:
+        ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
+        while ser_input != "Ready!":
+            ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
             time.sleep(0.01)
-            pass
-        self.main.arduino.serial_connection.flushInput()
+        print(ser_input)
 
         # Get final coordinates
         x1, y1 = self.main.figure_controller.getCoordinates()
-
-        # Restart state previous to calibration
-        if self.main.guiding_toolbar.action_guide.isChecked():
-            self.main.waiting_commands.append("0 0 0 52 0 0 0\n")
-        else:
-            self.main.waiting_commands.append("0 0 0 0 0 0 0\n")
 
         # Get characteristics
         self.vx_ar_n = - (x1 - x0) / n_steps

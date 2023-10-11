@@ -42,8 +42,8 @@ class ArduinoController:
                 self.serial_connection.write(command.encode())
 
     def start_tracking(self):
-        self.send_command("0 0 0 52 0 0 0")
+        self.send_command("0 0 0 52 0 0 0\n")
 
     def stop_tracking(self):
-        self.send_command("0 0 0 0 0 0 0")
+        self.send_command("0 0 0 52 0 0 0\n")
 

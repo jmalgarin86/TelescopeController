@@ -7,6 +7,7 @@ from catalogs.catalog import catalog
 
 import time
 
+
 class AutoController(AutoWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -139,8 +140,8 @@ class AutoController(AutoWidget):
         tar = int(nar) * bt
         tde = int(nde) * bt
         t = np.max(np.array([np.abs(tar), np.abs(tde)]))
-        minutes = int(t/60)
-        seconds = int(t-int(t/60)*60)
+        minutes = int(t / 60)
+        seconds = int(t - int(t / 60) * 60)
 
         # Send instruction to arduino
         print("Go to the target")
@@ -153,12 +154,7 @@ class AutoController(AutoWidget):
             pass
         self.main.arduino.serial_connection.flushInput()
 
-        # Do tracking or not depending on tracking button status
-        if self.main.guiding_toolbar.tracking_enable:
-            self.main.waiting_commands.append("0 0 0 52 0 0 0\n")
-            print("Tracking")
-        else:
-            self.main.waiting_commands.append("0 0 0 0 0 0 0\n")
-            print("Stop")
+        # Print
+        print("Ready!")
 
         return 0

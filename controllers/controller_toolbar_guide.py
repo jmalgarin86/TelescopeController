@@ -34,18 +34,19 @@ class GuideController(GuideToolBar):
         check_de = self.main.calibration_controller.checkbox_dec.isChecked()
         check_ar_p = self.main.calibration_controller.checkbox_ar_p.isChecked()
         check_ar_n = self.main.calibration_controller.checkbox_ar_n.isChecked()
-        if self.action_guide.isChecked():
+        if self.action_guide.isChecked() and check_de and check_ar_p and check_ar_n:
             print("Guiding start")
-            if check_de and check_ar_p and check_ar_n:
-                thread = threading.Thread(target=self.do_guiding)
-                thread.start()
-            else:
-                self.main.waiting_commands.append("0 0 0 52 0 0 0\n")
+            thread = threading.Thread(target=self.do_guiding)
+            thread.start()
         else:
             print("Guide stop")
-            self.main.waiting_commands.append("0 0 0 0 0 0 0\n")
 
     def do_guiding(self):
+        self.x_star, self.y_star = self.main.figure_controller.getCoordinates()
+        self.x_star = int(self.x_star)
+        self.y_star = int(self.y_star)
+        print("Reference position: x, y: %0.1f, %0.1f" % (self.x_star, self.y_star))
+
         # Check for speed
         period = str(10)
 
@@ -65,67 +66,54 @@ class GuideController(GuideToolBar):
             # Get required displacement
             x1, y1 = self.main.figure_controller.getCoordinates()
             dr = np.array([x1 - self.x_star, y1 - self.y_star])
-            dr = np.reshape(dr, (2, 1))
-            print("\nDeviation:")
-            print(dr)
+            dr = -np.reshape(dr, (2, 1))
 
             # Get required steps
             n_steps = np.linalg.inv(v_p) @ dr
             if n_steps[1] < 0:
                 n_steps = np.linalg.inv(v_n) @ dr
-            print("Steps:")
-            print(n_steps)
 
             # Set directions
             if n_steps[0] >= 0 and self.main.manual_controller.dec_dir == 1:
-                de_dir = str(0)
+                de_dir = str(1)
             elif n_steps[0] >= 0 and self.main.manual_controller.dec_dir == -1:
-                de_dir = str(1)
-            elif n_steps[0] < 0 and self.main.manual_controller.dec_dir == 1:
-                de_dir = str(1)
-            elif n_steps[0] < 0 and self.main.manual_controller.dec_dir == -1:
                 de_dir = str(0)
+            elif n_steps[0] < 0 and self.main.manual_controller.dec_dir == 1:
+                de_dir = str(0)
+            elif n_steps[0] < 0 and self.main.manual_controller.dec_dir == -1:
+                de_dir = str(1)
             if n_steps[1] >= 0:
-                ar_dir = str(0)
-                ar_per = period
-            else:
                 ar_dir = str(1)
-                ar_per = period
+            else:
+                ar_dir = str(0)
 
             # Send instructions
             de_steps = str(int(np.abs(n_steps[0])))
             ar_steps = str(int(np.abs(n_steps[1])))
             if de_steps == "0":
                 de_command = " 0 0 0"
-                stop = str(1)
             else:
-                stop = str(0)
                 de_command = " %s %s %s" % (de_steps, de_dir, period)
             if ar_steps == "0":
                 ar_command = " 0 0 52"
-                stop = str(1)
             else:
-                stop = str(0)
                 ar_command = " %s %s %s" % (ar_steps, ar_dir, period)
-            command = stop + ar_command + de_command
-            print(command)
-            self.main.waiting_commands.append(command)
 
-            # Wait until it finish
-            time1 = int(ar_steps) * int(period) * 2e-3
-            time2 = int(de_steps) * int(period) * 2e-3
-            # time.sleep(np.max(np.array([time1, time2])))
-            # self.main.arduino.serial_connection.flushInput()
-            while self.main.arduino.serial_connection.in_waiting == 0:
-                time.sleep(0.01)
+            if de_steps == "0" and ar_steps == "0":
                 pass
-            self.main.arduino.serial_connection.flushInput()
+            else:
+                command = "0" + ar_command + de_command + "\n"
+                print(command)
+                self.main.waiting_commands.append(command)
 
-            # Normal tracking
-            # self.main.waiting_commands.append("0 0 0 52 0 0 0\n")
+                # Wait until it finish
+                ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
+                while ser_input != "Ready!":
+                    ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
+                    time.sleep(0.01)
 
             # Wait to next correction
-            time.sleep(0.1)
+            time.sleep(1)
 
     def start_camera(self):
         # Create a VideoCapture object to access the camera.
@@ -136,7 +124,7 @@ class GuideController(GuideToolBar):
             print("Error: Could not open camera.")
             exit()
 
-        while True:
+        while self.main.gui_open:
             # Read a frame from the camera.
             ret, frame = cap.read()
 
@@ -160,8 +148,8 @@ class GuideController(GuideToolBar):
                 if len(self.x_vec) > n:
                     self.x_vec = self.x_vec[1::]
                     self.y_vec = self.y_vec[1::]
-                self.x_vec.append(x0)
-                self.y_vec.append(y0)
+                self.x_vec.append(int(x0)-self.x_star)
+                self.y_vec.append(int(y0)-self.y_star)
                 self.main.plot_controller_x.updatePlot(self.x_vec)
                 self.main.plot_controller_y.updatePlot(self.y_vec)
 
