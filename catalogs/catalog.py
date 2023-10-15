@@ -1,80 +1,119 @@
 import csv
 import re
 
+def csv_to_dict(csv_file):
+    """
+    Reads a CSV file and converts it to a dictionary.
 
-def get_catalog(file=None):
-    # Initialize an empty dictionary to store the data
-    dict = {}
+    Args:
+        csv_file (str): File name for the CSV file.
 
-    # Select collumns to read
-    if file == 'Messier.csv':
-        ii = 4
-        jj = 5
-    elif file == 'Starname.csv':
-        ii = 7
-        jj = 8
+    Returns:
+        dict: Dictionary containing the data from the CSV file.
+    """
+    data = {}
+    with open(csv_file, 'r') as csvfile:
+        csv_reader = csv.DictReader(csvfile)
+        for row in csv_reader:
+            for key, value in row.items():
+                if key in data:
+                    data[key].append(value)
+                else:
+                    data[key] = [value]
+    return data
 
-    # Open and read the CSV file
-    with open(file, mode='r', newline='') as csv_file:
-        csv_reader = csv.reader(csv_file)
-        next(csv_reader)  # Skip the header row
+
+def write_dict_to_csv(data, csv_file):
+    """
+    Writes a dictionary to a CSV file.
+
+    Args:
+        data (dict): Dictionary containing the data to be written to the CSV file.
+        csv_file (str): File name for the CSV file.
+    """
+    with open(csv_file, 'w', newline='') as csvfile:
+        fieldnames = data.keys()
+        csv_writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        csv_writer.writeheader()
+
+        for i in range(len(data[list(data.keys())[0]])):
+            row_data = {key: data[key][i] for key in fieldnames}
+            csv_writer.writerow(row_data)
+
+    print(f'CSV file "{csv_file}" has been created successfully.')
+
+
+def update_csv_column(csv_file, heading, new_values):
+    """
+    Updates an entire column in the CSV file corresponding to the specified heading.
+
+    Args:
+        csv_file (str): File name for the CSV file.
+        heading (str): Heading of the column to be updated.
+        new_values (list): List of new values for the specified column.
+    """
+    rows = []
+    with open(csv_file, 'r') as csvfile:
+        csv_reader = csv.DictReader(csvfile)
+        fieldnames = csv_reader.fieldnames
 
         for row in csv_reader:
-            # Object
-            key = row[0]
+            if heading in fieldnames:
+                row[heading] = new_values.pop(0)
+            rows.append(row)
 
-            # AR
-            ar = row[ii]
-            match = re.match(r'(\d+)h (\d+(?:\.\d+)?)m', ar)
-            try:
-                ar_hours = int(match.group(1))
-                ar_minutes = int(float(match.group(2)))
-                try:
-                    ar_seconds = int(float("0." + match.group(2).split('.')[1]) * 60)
-                except:
-                    ar_seconds = 0
-            except:
-                pass
+    with open(csv_file, 'w', newline='') as csvfile:
+        csv_writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        csv_writer.writeheader()
+        csv_writer.writerows(rows)
 
-            # DE
-            de = row[jj]
-            if file == 'Messier.csv':
-                match = re.match(r"(-?\d+)d (\d+)'", de)
-                try:
-                    de_degrees = int(match.group(1))
-                    de_minutes = int(match.group(2))
-                    de_seconds = 0
-                except:
-                    pass
-            elif file == 'Starname.csv':
-                match = re.match(r"(-?\d+)d (\d+\.\d+)'", de)
-                try:
-                    de_degrees = int(match.group(1))
-                    de_minutes = int(float(match.group(2)))
-                    de_seconds = int(float("0." + match.group(2).split('.')[1]) * 60)
-                except:
-                    pass
-            # Check if the key already exists in the dictionary
-            if key not in dict:
-                dict[key] = [ar_hours, ar_minutes, ar_seconds, de_degrees, de_minutes, de_seconds]
-    return dict
+    print(f'Column "{heading}" in CSV file "{csv_file}" has been updated successfully.')
 
 
-def join_catalogs():
-    catalogs = {
-        'Messier': get_catalog('Messier.csv'),
-        'Stars': get_catalog('Starname.csv')
-    }
+def add_or_update_field(csv_file, field_name, field_values):
+    """
+    Adds a new field to a CSV file. If the field already exists, it updates the values.
 
-    # Merge the dictionaries using the update() method
-    catalog_full = catalogs['Messier'].copy()
-    catalog_full.update(catalogs['Stars'])
+    Args:
+        csv_file (str): File name for the CSV file.
+        field_name (str): Name of the field to be added or updated.
+        field_values (list): List of values for the specified field.
+    """
+    data = {}
+    fieldnames = []
 
-    # Sort the merged dictionary by keys in alphabetical order
-    # return dict(sorted(catalog_full.items()))
+    # Read existing data from CSV file
+    try:
+        with open(csv_file, 'r') as csvfile:
+            csv_reader = csv.DictReader(csvfile)
+            fieldnames = csv_reader.fieldnames
 
-    # Return the catalog
-    return catalog_full
+            # Populate data dictionary with existing data
+            for field in fieldnames:
+                data[field] = []
+            for row in csv_reader:
+                for field in fieldnames:
+                    data[field].append(row[field])
+    except FileNotFoundError:
+        pass
 
+    # Update or add new field values
+    data[field_name] = field_values
 
-catalog = join_catalogs()
+    # Write data back to CSV file
+    with open(csv_file, 'w', newline='') as csvfile:
+        fieldnames = list(data.keys())
+        csv_writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        csv_writer.writeheader()
+
+        for i in range(len(field_values)):
+            row_data = {key: data[key][i] for key in fieldnames}
+            csv_writer.writerow(row_data)
+
+    print(f'Field "{field_name}" has been added or updated in CSV file "{csv_file}".')
+
+# Example usage:
+csv_file = 'catalog.csv'
+catalog = csv_to_dict(csv_file)
