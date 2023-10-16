@@ -12,37 +12,45 @@ class GuideController(GuideToolBar):
         super().__init__(*args, **kwargs)
 
         # Define parameters
+        self.camera_main = None
+        self.camera_guide = None
         self.y_star = 0
         self.x_star = 0
-        self.x_vec = []
-        self.y_vec = []
+        self.x_vec = [0]
+        self.y_vec = [0]
+        self.s_vec = [0]
         self.tracking_enable = False
 
         # Connect buttons to actions
         self.action_arduino.triggered.connect(self.connect_arduino)
         self.action_tracking.triggered.connect(self.tracking)
         self.action_guide.triggered.connect(self.guiding)
-        self.action_camera.triggered.connect(self.start_camera)
-        self.action_select_position.triggered.connect(self.select_position)
+        self.action_camera.triggered.connect(self.start_cameras)
+        self.action_switch_cameras.triggered.connect(self.switch_cameras)
 
-    def select_position(self):
-        self.x_star, self.y_star = self.main.figure_controller.getCoordinates()
-        print("Reference position: x, y: %0.1f, %0.1f" % (self.x_star, self.y_star))
+    def switch_cameras(self):
+        self.camera_main, self.camera_guide = self.get_cameras()
+
+    def get_cameras(self):
+        return self.camera_guide, self.camera_main
 
     def guiding(self):
         # Check if calibration is done
         check_de = self.main.calibration_controller.checkbox_dec.isChecked()
         check_ar_p = self.main.calibration_controller.checkbox_ar_p.isChecked()
         check_ar_n = self.main.calibration_controller.checkbox_ar_n.isChecked()
-        if self.action_guide.isChecked() and check_de and check_ar_p and check_ar_n:
-            print("Guiding start")
-            thread = threading.Thread(target=self.do_guiding)
-            thread.start()
+        if self.action_guide.isChecked():
+            if check_de and check_ar_p and check_ar_n:
+                print("Calibrated guide start")
+                thread = threading.Thread(target=self.do_guiding)
+                thread.start()
+            else:
+                print("Auto guide")
         else:
-            print("Guide stop")
+            print("Auto guide")
 
     def do_guiding(self):
-        self.x_star, self.y_star = self.main.figure_controller.getCoordinates()
+        self.x_star, self.y_star = self.main.guide_figure_controller.getCoordinates()
         self.x_star = int(self.x_star)
         self.y_star = int(self.y_star)
         print("Reference position: x, y: %0.1f, %0.1f" % (self.x_star, self.y_star))
@@ -64,7 +72,7 @@ class GuideController(GuideToolBar):
 
         while self.action_guide.isChecked():
             # Get required displacement
-            x1, y1 = self.main.figure_controller.getCoordinates()
+            x1, y1 = self.main.guide_figure_controller.getCoordinates()
             dr = np.array([x1 - self.x_star, y1 - self.y_star])
             dr = -np.reshape(dr, (2, 1))
 
@@ -103,7 +111,6 @@ class GuideController(GuideToolBar):
                 pass
             else:
                 command = "0" + ar_command + de_command + "\n"
-                print(command)
                 self.main.waiting_commands.append(command)
 
                 # Wait until it finish
@@ -115,18 +122,57 @@ class GuideController(GuideToolBar):
             # Wait to next correction
             time.sleep(1)
 
-    def start_camera(self):
-        # Create a VideoCapture object to access the camera.
-        cap = cv2.VideoCapture(0)  # 0 for the default camera, you can specify a different camera index if needed.
+    def start_cameras(self):
+        # Open camera 0
+        self.camera_main = cv2.VideoCapture(0)
+        if self.camera_main.isOpened():
+            print("Camera 0 is ready!")
+        else:
+            print("Error: Could not open camera 0.")
 
-        # Check if the camera was opened successfully.
-        if not cap.isOpened():
-            print("Error: Could not open camera.")
-            exit()
+        # Open camera 1
+        self.camera_guide = cv2.VideoCapture(1)
+        if self.camera_guide.isOpened():
+            print("Camera 1 is ready!")
+        else:
+            print("Error: Could not open camera 1.")
+
+        # Start thread with guide camera
+        thread_guide = threading.Thread(target=self.guide_camera)
+        thread_guide.start()
+
+        # Start thread with main camera
+        thread_main = threading.Thread(target=self.main_camera)
+        thread_main.start()
+
+        return 0
+
+    def main_camera(self):
+        # Stop method if no camera is open
+        if not self.camera_main.isOpened():
+            return False
 
         while self.main.gui_open:
             # Read a frame from the camera.
-            ret, frame = cap.read()
+            ret, frame = self.camera_main.read()
+
+            if not ret:
+                print("Error: Could not read a frame from the camera.")
+                break
+
+            # Display the frame in a window.
+            self.main.main_figure_controller.setImage(np.transpose(frame[:, :, -1::-1], (1, 0, 2)))
+
+            time.sleep(0.1)
+
+    def guide_camera(self):
+        # Stop method if no camera is open
+        if not self.camera_guide.isOpened():
+            return False
+
+        while self.main.gui_open:
+            # Read a frame from the camera.
+            ret, frame = self.camera_guide.read()
 
             if not ret:
                 print("Error: Could not read a frame from the camera.")
@@ -136,32 +182,29 @@ class GuideController(GuideToolBar):
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
             # Display the frame in a window.
-            self.main.figure_controller.data = np.transpose(frame)
-            self.main.figure_controller.setImage(np.transpose(frame))
+            self.main.guide_figure_controller.setImage(np.transpose(frame))
 
             # If guide is activated
             if self.action_tracking.isChecked():
                 # Get centroid of the star
-                self.main.figure_controller.getCentroid()
-                x0, y0 = self.main.figure_controller.getCoordinates()
+                self.main.guide_figure_controller.getCentroid()
+                x0, y0, s0 = self.main.guide_figure_controller.getCoordinates()
                 n = 100
                 if len(self.x_vec) > n:
                     self.x_vec = self.x_vec[1::]
                     self.y_vec = self.y_vec[1::]
-                self.x_vec.append(int(x0)-self.x_star)
-                self.y_vec.append(int(y0)-self.y_star)
-                self.main.plot_controller_x.updatePlot(self.x_vec)
-                self.main.plot_controller_y.updatePlot(self.y_vec)
-
-            # Check for the 'q' key to exit the loop.
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+                    self.s_vec = self.s_vec[1::]
+                self.x_vec.append(int(x0) - self.x_star)
+                self.y_vec.append(int(y0) - self.y_star)
+                self.s_vec.append(s0)
+                self.main.plot_controller_pixel.updatePlot(x=self.x_vec, y=self.y_vec)
+                self.main.plot_controller_surface.updatePlot(x=self.s_vec)
 
             time.sleep(0.1)
 
         # Release the camera and close the OpenCV window.
-        cap.release()
-        cv2.destroyAllWindows()
+        self.camera_guide.release()
+
 
     def connect_arduino(self):
         if self.action_arduino.isChecked():

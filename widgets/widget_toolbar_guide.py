@@ -19,6 +19,10 @@ class GuideToolBar(QToolBar):
         self.action_camera.setStatusTip("Open default camera")
         self.addAction(self.action_camera)
 
+        # Switch camera button
+        self.action_switch_cameras = QAction(QIcon("icons/switch_camera.png"), "Switch cameras", self)
+        self.addAction(self.action_switch_cameras)
+
         # Setup guide
         self.action_guide = QAction(QIcon("icons/guide.png"), "Start guide", self)
         self.action_guide.setStatusTip("Start guide")

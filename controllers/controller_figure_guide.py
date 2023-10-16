@@ -4,11 +4,12 @@ import pyqtgraph as pg
 from widgets.widget_figure import FigureWidget
 
 
-class FigureController(FigureWidget):
+class GuideFigureController(FigureWidget):
 
     def __init__(self, data=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.surface = None
         self.x0 = None
         self.y0 = None
         self.x_ref = None
@@ -17,9 +18,7 @@ class FigureController(FigureWidget):
         self.data = data
         self.setImage(data, levels=(0, 255))
 
-        # Hide histogram and meny button
-        # hist = self.getHistogramWidget()
-        # hist.setVisible(False)
+        # Hide menu button
         self.ui.menuBtn.hide()
 
         # Connect the mouse click signal to a custom slot
@@ -177,5 +176,7 @@ class FigureController(FigureWidget):
             self.horizontal_line.setPos(self.y0)
             self.roi.blockSignals(False)
 
+        self.surface = np.sum(binary_image)
+
     def getCoordinates(self):
-        return self.x0, self.y0
+        return self.x0, self.y0, self.surface

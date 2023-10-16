@@ -2,7 +2,6 @@ import sys
 import threading
 import time
 import imageio.v2 as imageio
-import numpy as np
 
 import qdarkstyle
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QHBoxLayout
@@ -10,14 +9,13 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QHB
 from controllers.controller_arduino import ArduinoController
 from controllers.controller_calibration import CalibrationController
 from controllers.controller_console import ConsoleController
-from controllers.controller_figure import FigureController
+from controllers.controller_figure_main import MainFigureController
+from controllers.controller_figure_guide import GuideFigureController
 from controllers.controller_joystick import JoyStickController
 from controllers.controller_plot import PlotController
 from controllers.controller_toolbar_guide import GuideController
 from controllers.controller_manual_control import ManualController
 from controllers.controller_auto_control import AutoController
-
-import pyqtgraph as pg
 
 class TelescopeController(QMainWindow):
     def __init__(self):
@@ -65,22 +63,30 @@ class TelescopeController(QMainWindow):
         self.console_controller = ConsoleController()
         left_layout.addWidget(self.console_controller)  # Add it to the left_layout
 
-        # Create space for images
+        # Layout for figures
+        figure_layout = QHBoxLayout()
+        right_layout.addLayout(figure_layout)
+
+        # Create space for main image
         logo = imageio.imread("icons/wellcome.png")
-        self.figure_controller = FigureController(main=self, data=logo.transpose([1, 0, 2]))
-        right_layout.addWidget(self.figure_controller)
+        self.main_figure_controller = MainFigureController(main=self, data=logo.transpose([1, 0, 2]))
+        figure_layout.addWidget(self.main_figure_controller)
+
+        # Create space for guide image
+        self.guide_figure_controller = GuideFigureController(main=self, data=logo.transpose([1, 0, 2]))
+        figure_layout.addWidget(self.guide_figure_controller)
 
         # Layout for plots
         plots_layout = QHBoxLayout()
         right_layout.addLayout(plots_layout)
 
         # Create space for 1d plot
-        self.plot_controller_x = PlotController(self, text='X')
-        plots_layout.addWidget(self.plot_controller_x)
+        self.plot_controller_pixel = PlotController(self, text='pixel')
+        plots_layout.addWidget(self.plot_controller_pixel)
 
         # Create space for 1d plot
-        self.plot_controller_y = PlotController(self, text='Y')
-        plots_layout.addWidget(self.plot_controller_y)
+        self.plot_controller_surface = PlotController(self, text='surface')
+        plots_layout.addWidget(self.plot_controller_surface)
 
         # Connect to Arduino
         self.arduino = ArduinoController()
