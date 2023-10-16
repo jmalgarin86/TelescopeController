@@ -124,15 +124,15 @@ class GuideController(GuideToolBar):
 
     def start_cameras(self):
         # Open camera 0
-        self.camera_main = cv2.VideoCapture(0)
-        if self.camera_main.isOpened():
+        self.camera_guide = cv2.VideoCapture(0)
+        if self.camera_guide.isOpened():
             print("Camera 0 is ready!")
         else:
             print("Error: Could not open camera 0.")
 
         # Open camera 1
-        self.camera_guide = cv2.VideoCapture(1)
-        if self.camera_guide.isOpened():
+        self.camera_main = cv2.VideoCapture(1)
+        if self.camera_main.isOpened():
             print("Camera 1 is ready!")
         else:
             print("Error: Could not open camera 1.")

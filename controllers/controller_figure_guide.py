@@ -176,7 +176,7 @@ class GuideFigureController(FigureWidget):
             self.horizontal_line.setPos(self.y0)
             self.roi.blockSignals(False)
 
-        self.surface = np.sum(binary_image)
+        self.surface = np.sum(binary_image)/255
 
     def getCoordinates(self):
         return self.x0, self.y0, self.surface
