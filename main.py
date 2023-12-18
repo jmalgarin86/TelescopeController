@@ -9,7 +9,6 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QHB
 from controllers.controller_arduino import ArduinoController
 from controllers.controller_calibration import CalibrationController
 from controllers.controller_console import ConsoleController
-from controllers.controller_figure_main import MainFigureController
 from controllers.controller_figure_guide import GuideFigureController
 from controllers.controller_joystick import JoyStickController
 from controllers.controller_plot import PlotController
@@ -63,18 +62,10 @@ class TelescopeController(QMainWindow):
         self.console_controller = ConsoleController()
         left_layout.addWidget(self.console_controller)  # Add it to the left_layout
 
-        # Layout for figures
-        figure_layout = QHBoxLayout()
-        right_layout.addLayout(figure_layout)
-
         # Create space for main image
         logo = imageio.imread("icons/wellcome.png")
-        self.main_figure_controller = MainFigureController(main=self, data=logo.transpose([1, 0, 2]))
-        figure_layout.addWidget(self.main_figure_controller)
-
-        # Create space for guide image
         self.guide_figure_controller = GuideFigureController(main=self, data=logo.transpose([1, 0, 2]))
-        figure_layout.addWidget(self.guide_figure_controller)
+        right_layout.addWidget(self.guide_figure_controller)
 
         # Layout for plots
         plots_layout = QHBoxLayout()

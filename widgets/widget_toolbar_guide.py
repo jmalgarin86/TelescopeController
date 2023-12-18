@@ -19,24 +19,19 @@ class GuideToolBar(QToolBar):
         self.action_camera.setStatusTip("Open default camera")
         self.addAction(self.action_camera)
 
-        # Switch camera button
-        self.action_switch_cameras = QAction(QIcon("icons/switch_camera.png"), "Switch cameras", self)
-        self.addAction(self.action_switch_cameras)
-
         # Setup guide
         self.action_guide = QAction(QIcon("icons/guide.png"), "Start guide", self)
         self.action_guide.setStatusTip("Start guide")
         self.action_guide.setCheckable(True)
-        self.action_guide.setEnabled(False)
+        # self.action_guide.setEnabled(False)
         self.addAction(self.action_guide)
 
         # Autoguiding
-        self.action_tracking = QAction(QIcon("icons/tracking.png"), "Init auto guide", self)
-        self.action_tracking.setStatusTip("Init auto guide")
+        self.action_tracking = QAction(QIcon("icons/tracking.png"), "Init tracking", self)
+        self.action_tracking.setStatusTip("Init tracking")
         self.addAction(self.action_tracking)
         self.action_tracking.setCheckable(True)
 
-        # Calibration
-        self.action_select_position = QAction(QIcon("icons/position.png"), "Select current position", self)
-        self.addAction(self.action_select_position)
-        # self.action_calibration.setEnabled(False)
+        # # Select current position
+        # self.action_select_position = QAction(QIcon("icons/position.png"), "Select current position", self)
+        # self.addAction(self.action_select_position)

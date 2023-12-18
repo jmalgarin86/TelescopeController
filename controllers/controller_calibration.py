@@ -46,7 +46,7 @@ class CalibrationController(CalibrationWidget):
         n_steps = 100
 
         # Get initial coordinates
-        x0, y0 = self.main.guide_figure_controller.getCoordinates()
+        x0, y0, s0 = self.main.guide_figure_controller.getCoordinates()
 
         # Set command to arduino
         if self.main.manual_controller.dec_dir == 1:
@@ -63,7 +63,7 @@ class CalibrationController(CalibrationWidget):
         print(ser_input)
 
         # Get final coordinates
-        x1, y1 = self.main.guide_figure_controller.getCoordinates()
+        x1, y1, s1 = self.main.guide_figure_controller.getCoordinates()
 
         # Get characteristics
         self.vx_de = (x1 - x0) / n_steps
@@ -85,7 +85,7 @@ class CalibrationController(CalibrationWidget):
         n_steps = 100
 
         # Get initial coordinates
-        x0, y0 = self.main.guide_figure_controller.getCoordinates()
+        x0, y0, s0 = self.main.guide_figure_controller.getCoordinates()
 
         # Set command to arduino
         command = "0 " + str(n_steps) + " 1 " + str(period) + " 0 0 0\n"
@@ -99,7 +99,7 @@ class CalibrationController(CalibrationWidget):
         print(ser_input)
 
         # Get final coordinates
-        x1, y1 = self.main.guide_figure_controller.getCoordinates()
+        x1, y1, s1 = self.main.guide_figure_controller.getCoordinates()
 
         # Get characteristics
         self.vx_ar_p = (x1 - x0) / n_steps
@@ -121,7 +121,7 @@ class CalibrationController(CalibrationWidget):
         n_steps = 100
 
         # Get initial coordinates
-        x0, y0 = self.main.guide_figure_controller.getCoordinates()
+        x0, y0, s0 = self.main.guide_figure_controller.getCoordinates()
 
         # Set command to arduino
         command = "0 " + str(n_steps) + " 0 " + str(period) + " 0 0 0\n"
@@ -135,7 +135,7 @@ class CalibrationController(CalibrationWidget):
         print(ser_input)
 
         # Get final coordinates
-        x1, y1 = self.main.guide_figure_controller.getCoordinates()
+        x1, y1, s1 = self.main.guide_figure_controller.getCoordinates()
 
         # Get characteristics
         self.vx_ar_n = - (x1 - x0) / n_steps

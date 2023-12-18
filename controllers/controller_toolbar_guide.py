@@ -1,3 +1,4 @@
+import os
 import threading
 import time
 
@@ -23,16 +24,9 @@ class GuideController(GuideToolBar):
 
         # Connect buttons to actions
         self.action_arduino.triggered.connect(self.connect_arduino)
-        self.action_tracking.triggered.connect(self.tracking)
+        self.action_camera.triggered.connect(self.start_camera)
         self.action_guide.triggered.connect(self.guiding)
-        self.action_camera.triggered.connect(self.start_cameras)
-        self.action_switch_cameras.triggered.connect(self.switch_cameras)
-
-    def switch_cameras(self):
-        self.camera_main, self.camera_guide = self.get_cameras()
-
-    def get_cameras(self):
-        return self.camera_guide, self.camera_main
+        self.action_tracking.triggered.connect(self.tracking)
 
     def guiding(self):
         # Check if calibration is done
@@ -41,16 +35,16 @@ class GuideController(GuideToolBar):
         check_ar_n = self.main.calibration_controller.checkbox_ar_n.isChecked()
         if self.action_guide.isChecked():
             if check_de and check_ar_p and check_ar_n:
-                print("Calibrated guide start")
+                print("Auto guide start")
                 thread = threading.Thread(target=self.do_guiding)
                 thread.start()
             else:
-                print("Auto guide")
+                print("No auto-guide")
         else:
-            print("Auto guide")
+            print("No auto-guide")
 
     def do_guiding(self):
-        self.x_star, self.y_star = self.main.guide_figure_controller.getCoordinates()
+        self.x_star, self.y_star, s0 = self.main.guide_figure_controller.getCoordinates()
         self.x_star = int(self.x_star)
         self.y_star = int(self.y_star)
         print("Reference position: x, y: %0.1f, %0.1f" % (self.x_star, self.y_star))
@@ -70,9 +64,43 @@ class GuideController(GuideToolBar):
         v_p = np.array([[vx_de, vx_ra_p], [vy_de, vy_ra_p]])
         v_n = np.array([[vx_de, vx_ra_n], [vy_de, vy_ra_n]])
 
+        # Get the initial list of files and folders in the directory
+        initial_files = os.listdir("sharpcap")
+        n_new_files = 0
+        new_folder = None
+
         while self.action_guide.isChecked():
+            # Get the updated list of files and folders in the directory
+            current_files = os.listdir("sharpcap")
+
+            # Check for new folder
+            if len(current_files) > len(initial_files):
+                n_new_files = 0
+
+                # Check for new folders
+                new_folders = [folder for folder in current_files if
+                               folder not in initial_files and os.path.isdir(os.path.join("sharpcap", folder))]
+                new_folder = new_folders[0]
+
+                # Reset initial_files
+                initial_files = current_files
+
+            if new_folder is None:
+                pass
+            else:
+                folder_path = os.path.join("sharpcap", new_folder)
+                folder_files = os.listdir(folder_path)
+                if len(folder_files) > n_new_files:
+                    n_new_files = len(folder_files)
+                    dx = vx_ra_n * 2
+                    dy = vy_ra_n * 2
+                    self.x_star += dx
+                    self.y_star += dy
+                    print("Reference position: x, y: %0.1f, %0.1f" % (self.x_star, self.y_star))
+
+
             # Get required displacement
-            x1, y1 = self.main.guide_figure_controller.getCoordinates()
+            x1, y1, s1 = self.main.guide_figure_controller.getCoordinates()
             dr = np.array([x1 - self.x_star, y1 - self.y_star])
             dr = -np.reshape(dr, (2, 1))
 
@@ -112,6 +140,7 @@ class GuideController(GuideToolBar):
             else:
                 command = "0" + ar_command + de_command + "\n"
                 self.main.waiting_commands.append(command)
+                print(command)
 
                 # Wait until it finish
                 ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
@@ -122,7 +151,34 @@ class GuideController(GuideToolBar):
             # Wait to next correction
             time.sleep(1)
 
-    def start_cameras(self):
+    def monitor_directory(self, directory_path):
+        # Get the initial list of files and folders in the directory
+        initial_files = os.listdir(directory_path)
+
+        while True:
+            # Wait for a few seconds before checking again
+            time.sleep(5)
+
+            # Get the updated list of files and folders in the directory
+            current_files = os.listdir(directory_path)
+
+            # Check for new folders
+            new_folders = [folder for folder in current_files if
+                           folder not in initial_files and os.path.isdir(os.path.join(directory_path, folder))]
+
+            # Check for new files within new folders
+            for folder in new_folders:
+                folder_path = os.path.join(directory_path, folder)
+                folder_files = os.listdir(folder_path)
+                new_files = [file for file in folder_files if
+                             file not in initial_files and os.path.isfile(os.path.join(folder_path, file))]
+                for new_file in new_files:
+                    print(f"New file '{new_file}' created in folder '{folder}'")
+
+            # Update the initial files list for the next iteration
+            initial_files = current_files
+
+    def start_camera(self):
         # Open camera 0
         self.camera_guide = cv2.VideoCapture(0)
         if self.camera_guide.isOpened():
@@ -130,40 +186,11 @@ class GuideController(GuideToolBar):
         else:
             print("Error: Could not open camera 0.")
 
-        # Open camera 1
-        self.camera_main = cv2.VideoCapture(1)
-        if self.camera_main.isOpened():
-            print("Camera 1 is ready!")
-        else:
-            print("Error: Could not open camera 1.")
-
         # Start thread with guide camera
         thread_guide = threading.Thread(target=self.guide_camera)
         thread_guide.start()
 
-        # Start thread with main camera
-        thread_main = threading.Thread(target=self.main_camera)
-        thread_main.start()
-
         return 0
-
-    def main_camera(self):
-        # Stop method if no camera is open
-        if not self.camera_main.isOpened():
-            return False
-
-        while self.main.gui_open:
-            # Read a frame from the camera.
-            ret, frame = self.camera_main.read()
-
-            if not ret:
-                print("Error: Could not read a frame from the camera.")
-                break
-
-            # Display the frame in a window.
-            self.main.main_figure_controller.setImage(np.transpose(frame[:, :, -1::-1], (1, 0, 2)))
-
-            time.sleep(0.1)
 
     def guide_camera(self):
         # Stop method if no camera is open
@@ -210,9 +237,9 @@ class GuideController(GuideToolBar):
         if self.action_arduino.isChecked():
             if not self.main.arduino.serial_connection or not self.main.arduino.serial_connection.is_open:
                 if self.main.arduino.connect():
-                    self.action_guide.setEnabled(True)
-                    self.main.manual_controller.setEnabled(True)
-                    self.main.auto_controller.setEnabled(True)
+                    # self.action_guide.setEnabled(True)
+                    # self.main.manual_controller.setEnabled(True)
+                    # self.main.auto_controller.setEnabled(True)
                     self.action_arduino.setStatusTip("Disconnect Arduino")
                     self.action_arduino.setToolTip("Disconnect Arduino")
                     print("Arduino connected!")
@@ -220,9 +247,9 @@ class GuideController(GuideToolBar):
                     self.action_arduino.setChecked(False)
         else:
             self.main.arduino.disconnect()
-            self.action_tracking.setEnabled(False)  # Disable the "Guiding" button
-            self.main.manual_controller.setEnabled(False)
-            self.main.auto_controller.setEnabled(False)
+            # self.action_guide.setEnabled(False)  # Disable the "Guiding" button
+            # self.main.manual_controller.setEnabled(False)
+            # self.main.auto_controller.setEnabled(False)
             self.action_arduino.setStatusTip("Connect Arduino")
             self.action_arduino.setToolTip("Connect Arduino")
             print("Arduino disconnected!")
