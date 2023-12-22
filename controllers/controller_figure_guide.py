@@ -155,6 +155,9 @@ class GuideCameraController(FigureWidget):
         # Return None if square position or size is not valid
         return None, None
 
+    def get_coordinates(self):
+        return self.square_position
+
 
 class GuideFigureController(FigureWidget):
 
