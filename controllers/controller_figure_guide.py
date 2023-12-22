@@ -1,7 +1,153 @@
+import sys
+
 import cv2
 import numpy as np
 import pyqtgraph as pg
+from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtWidgets import QApplication
+
 from widgets.widget_figure import FigureWidget
+
+
+class GuideCameraController(FigureWidget):
+
+    def __init__(self, data=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.frame = None
+        self.square_position = None
+        self.camera_guide = None
+        self.square_position = (25, 25)
+        self.square_size = (50, 50)
+        self.timer = QTimer(self)
+
+    def start_camera(self):
+        if not self.camera_guide:
+            self.camera_guide = cv2.VideoCapture(0)
+            if self.camera_guide.isOpened():
+                print("Camera 0 is ready!")
+            else:
+                print("Error: Could not open camera 0.")
+
+            # # Set exposure time (value is in milliseconds)
+            # exposure_time = -1  # Set your desired exposure time in milliseconds
+            #
+            # # Set exposure property (works for some cameras, not all)
+            # self.camera_guide.set(cv2.CAP_PROP_EXPOSURE, exposure_time)
+
+            # Create a timer to update the webcam feed
+            self.timer.timeout.connect(self.update_frame)
+        else:
+            pass
+
+        print("Start camera")
+
+        # Start the timer
+        self.timer.start(100)  # Update every 250 milliseconds (10 fps)
+
+    def stop_camera(self):
+        print("Stop camera")
+        self.timer.stop()
+
+    def update_frame(self):
+        # Read a frame from the webcam
+        ret, self.frame = self.camera_guide.read()
+
+        # Check if the frame was read successfully
+        if ret:
+            # Draw a red square on the grayscale frame
+            frame_with_square = self.draw_square(self.frame)
+
+            # Convert the frame to RGB format
+            rgb_image = cv2.cvtColor(frame_with_square, cv2.COLOR_BGR2RGB)
+
+            # Convert the image to a format suitable for QLabel
+            h, w, ch = rgb_image.shape
+            bytes_per_line = ch * w
+            q_image = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
+
+            # Add the image to the QGraphicsScene
+            self.scene.clear()
+            self.scene.addPixmap(QPixmap.fromImage(q_image))
+
+    def draw_square(self, frame):
+        # Create a copy of the frame to draw on
+        frame_with_square = frame.copy()
+
+        # Draw a red square on the frame at the stored position
+        square_color = (255, 255, 255)  # Red color in BGR format
+        center = self.square_position
+        top_left = (center[0] - int(self.square_size[0]/2), center[1] - int(self.square_size[1]/2))
+        bottom_right = (center[0] + int(self.square_size[0]/2), center[1] + int(self.square_size[1]/2))
+        cv2.rectangle(frame_with_square, top_left, bottom_right, square_color, 2)
+
+        return frame_with_square
+
+    def mousePressEvent(self, event):
+        # Capture the pixel position when the left mouse button is clicked
+        if event.button() == Qt.LeftButton:
+            # Get the position in image coordinates
+            img_coords = self.view.mapToScene(event.pos())
+            x, y = int(img_coords.x()), int(img_coords.y())
+
+            # Check if the click is within the image area
+            h, w, _ = self.camera_guide.read()[1].shape  # Get the actual image dimensions
+            if 0 <= x < w and 0 <= y < h:
+                self.square_position = (x, y)
+                print("Square position set to (x, y):", self.square_position)
+
+        elif event.button() == Qt.RightButton:
+            # Get the position in image coordinates
+            img_coords = self.view.mapToScene(event.pos())
+            x, y = int(img_coords.x()), int(img_coords.y())
+
+            # Check if the click is within the image area
+            h, w, _ = self.camera_guide.read()[1].shape  # Get the actual image dimensions
+            if 0 <= x < w and 0 <= y < h:
+                self.square_size = (int(np.abs(self.square_position[0]-x)*2), int(np.abs(self.square_position[1]-y)*2))
+                print("Square size set to (x, y):", self.square_size)
+
+    def calculate_star_centroid(self):
+        # Check if square position and size are valid
+        if self.square_position and self.square_size:
+            # Get the center and half-size of the square
+            center_x, center_y = self.square_position
+            half_width, half_height = [int(size / 2) for size in self.square_size]
+
+            # Calculate the top-left and bottom-right coordinates
+            x = max(center_x - half_width, 0)
+            y = max(center_y - half_height, 0)
+            w = min(center_x + half_width, self.frame.shape[1]) - x
+            h = min(center_y + half_height, self.frame.shape[0]) - y
+
+            # Get the region of interest (ROI) within the square
+            roi = self.frame[y:y+h, x:x+w]
+
+            # Convert the ROI to grayscale
+            gray_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+
+            # Threshold the grayscale image to highlight the star pixels
+            _, thresholded_roi = cv2.threshold(gray_roi, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+
+            # Find contours in the thresholded image
+            contours, _ = cv2.findContours(thresholded_roi, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+            # Check if any contours were found
+            if contours:
+                # Find the contour with the maximum area (assuming it represents the star)
+                max_contour = max(contours, key=cv2.contourArea)
+
+                # Calculate the centroid of the star
+                M = cv2.moments(max_contour)
+                if M["m00"] != 0:
+                    cx = int(M["m10"] / M["m00"]) + x
+                    cy = int(M["m01"] / M["m00"]) + y
+
+                    print("Star centroid:", (cx, cy))
+                    return cx, cy
+
+        # Return None if square position or size is not valid
+        return None
 
 
 class GuideFigureController(FigureWidget):
@@ -99,7 +245,7 @@ class GuideFigureController(FigureWidget):
         self.y0 = int(img_coord.y())
 
         roi_width, roi_height = self.roi.size()
-        self.roi.setPos(self.x0-roi_width/2, self.y0-roi_height/2)
+        self.roi.setPos(self.x0 - roi_width / 2, self.y0 - roi_height / 2)
         self.vertical_line.setPos(self.x0)
         self.horizontal_line.setPos(self.y0)
 
@@ -176,7 +322,15 @@ class GuideFigureController(FigureWidget):
             self.horizontal_line.setPos(self.y0)
             self.roi.blockSignals(False)
 
-        self.surface = np.sum(binary_image)/255
+        self.surface = np.sum(binary_image) / 255
 
     def getCoordinates(self):
         return self.x0, self.y0, self.surface
+
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    main_window = GuideCameraController(main=True)
+    main_window.show()
+    main_window.start_camera()
+    sys.exit(app.exec_())

@@ -17,6 +17,7 @@ class GuideToolBar(QToolBar):
         # Camera button
         self.action_camera = QAction(QIcon("icons/camera.png"), "Open the camera", self)
         self.action_camera.setStatusTip("Open default camera")
+        self.action_camera.setCheckable(True)
         self.addAction(self.action_camera)
 
         # Setup guide

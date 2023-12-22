@@ -4,6 +4,7 @@ import time
 
 import cv2
 import numpy as np
+from PyQt5.QtCore import QTimer
 
 from widgets.widget_toolbar_guide import GuideToolBar
 
@@ -13,6 +14,7 @@ class GuideController(GuideToolBar):
         super().__init__(*args, **kwargs)
 
         # Define parameters
+        self.timer = None
         self.camera_main = None
         self.camera_guide = None
         self.y_star = 0
@@ -44,7 +46,7 @@ class GuideController(GuideToolBar):
             print("No auto-guide")
 
     def do_guiding(self):
-        self.x_star, self.y_star, s0 = self.main.guide_figure_controller.getCoordinates()
+        self.x_star, self.y_star, s0 = self.main.guide_camera_controller.getCoordinates()
         self.x_star = int(self.x_star)
         self.y_star = int(self.y_star)
         print("Reference position: x, y: %0.1f, %0.1f" % (self.x_star, self.y_star))
@@ -100,7 +102,7 @@ class GuideController(GuideToolBar):
 
 
             # Get required displacement
-            x1, y1, s1 = self.main.guide_figure_controller.getCoordinates()
+            x1, y1, s1 = self.main.guide_camera_controller.getCoordinates()
             dr = np.array([x1 - self.x_star, y1 - self.y_star])
             dr = -np.reshape(dr, (2, 1))
 
@@ -179,16 +181,11 @@ class GuideController(GuideToolBar):
             initial_files = current_files
 
     def start_camera(self):
-        # Open camera 0
-        self.camera_guide = cv2.VideoCapture(0)
-        if self.camera_guide.isOpened():
-            print("Camera 0 is ready!")
+        if self.action_camera.isChecked():
+            # Open the camera 0 if it does not exist
+            self.main.guide_camera_controller.start_camera()
         else:
-            print("Error: Could not open camera 0.")
-
-        # Start thread with guide camera
-        thread_guide = threading.Thread(target=self.guide_camera)
-        thread_guide.start()
+            self.main.guide_camera_controller.stop_camera()
 
         return 0
 
@@ -209,13 +206,13 @@ class GuideController(GuideToolBar):
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
             # Display the frame in a window.
-            self.main.guide_figure_controller.setImage(np.transpose(frame))
+            self.main.guide_camera_controller.setImage(np.transpose(frame))
 
             # If guide is activated
             if self.action_tracking.isChecked():
                 # Get centroid of the star
-                self.main.guide_figure_controller.getCentroid()
-                x0, y0, s0 = self.main.guide_figure_controller.getCoordinates()
+                self.main.guide_camera_controller.getCentroid()
+                x0, y0, s0 = self.main.guide_camera_controller.getCoordinates()
                 n = 100
                 if len(self.x_vec) > n:
                     self.x_vec = self.x_vec[1::]

@@ -9,12 +9,15 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QHB
 from controllers.controller_arduino import ArduinoController
 from controllers.controller_calibration import CalibrationController
 from controllers.controller_console import ConsoleController
-from controllers.controller_figure_guide import GuideFigureController
+from controllers.controller_figure_guide import GuideFigureController, GuideCameraController
 from controllers.controller_joystick import JoyStickController
+from controllers.controller_multipicture import MultipictureController
 from controllers.controller_plot import PlotController
 from controllers.controller_toolbar_guide import GuideController
 from controllers.controller_manual_control import ManualController
 from controllers.controller_auto_control import AutoController
+from widgets.widget_multipicture import MultipictureWidget
+
 
 class TelescopeController(QMainWindow):
     def __init__(self):
@@ -58,14 +61,17 @@ class TelescopeController(QMainWindow):
         self.calibration_controller = CalibrationController(self)
         left_layout.addWidget(self.calibration_controller)
 
+        # Create the multipicture controller
+        self.multipicture_controller = MultipictureController(self)
+        left_layout.addWidget(self.multipicture_controller)
+
         # Create the ConsoleController widget
         self.console_controller = ConsoleController()
         left_layout.addWidget(self.console_controller)  # Add it to the left_layout
 
         # Create space for main image
-        logo = imageio.imread("icons/wellcome.png")
-        self.guide_figure_controller = GuideFigureController(main=self, data=logo.transpose([1, 0, 2]))
-        right_layout.addWidget(self.guide_figure_controller)
+        self.guide_camera_controller = GuideCameraController(main=self)
+        right_layout.addWidget(self.guide_camera_controller)
 
         # Layout for plots
         plots_layout = QHBoxLayout()
