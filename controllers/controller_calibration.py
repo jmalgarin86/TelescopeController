@@ -3,7 +3,6 @@ import time
 
 from widgets.widget_calibration import CalibrationWidget
 
-
 class CalibrationController(CalibrationWidget):
     def __init__(self, main):
         super().__init__(main)

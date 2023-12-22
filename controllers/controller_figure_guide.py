@@ -158,6 +158,45 @@ class GuideCameraController(FigureWidget):
     def get_coordinates(self):
         return self.square_position
 
+    def detect_and_select_star(self):
+        # Check if the frame is available
+        if self.frame is not None:
+            # Convert the frame to grayscale
+            gray_frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
+
+            # Threshold the grayscale frame to highlight stars
+            _, thresholded_frame = cv2.threshold(gray_frame, 150, 255, cv2.THRESH_BINARY)
+
+            # Find contours in the thresholded image
+            contours, _ = cv2.findContours(thresholded_frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+            # Initialize variables to store information about the biggest star
+            max_star_size = 0
+            max_star_centroid = None
+
+            # Iterate through detected contours
+            for contour in contours:
+                # Calculate the area of the contour
+                star_size = cv2.contourArea(contour)
+
+                # Update max_star_size and max_star_centroid if the current star is larger
+                if star_size > max_star_size:
+                    max_star_size = star_size
+
+                    # Calculate the centroid of the star
+                    M = cv2.moments(contour)
+                    if M["m00"] != 0:
+                        cx = int(M["m10"] / M["m00"])
+                        cy = int(M["m01"] / M["m00"])
+                        max_star_centroid = (cx, cy)
+
+            # Print information about the selected star
+            if max_star_centroid is not None:
+                print("Selected star centroid:", max_star_centroid)
+                print("Selected star size:", max_star_size)
+
+                # Set the square position to the centroid of the selected star
+                self.square_position = max_star_centroid
 
 class GuideFigureController(FigureWidget):
 

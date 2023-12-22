@@ -33,6 +33,6 @@ class GuideToolBar(QToolBar):
         self.addAction(self.action_tracking)
         self.action_tracking.setCheckable(True)
 
-        # # Select current position
-        # self.action_select_position = QAction(QIcon("icons/position.png"), "Select current position", self)
-        # self.addAction(self.action_select_position)
+        # Select current position
+        self.action_auto_star = QAction(QIcon("icons/auto-star.png"), "Select star automatically", self)
+        self.addAction(self.action_auto_star)
