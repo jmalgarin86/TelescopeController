@@ -70,6 +70,12 @@ class GuideCameraController(FigureWidget):
             self.scene.clear()
             self.scene.addPixmap(QPixmap.fromImage(q_image))
 
+            # Calculate the star centroid after each frame update
+            if self.main.guiding_toolbar.action_tracking.isChecked():
+                star_centroid, star_size = self.calculate_star_properties()
+                if star_centroid:
+                    self.square_position = star_centroid
+
     def draw_square(self, frame):
         # Create a copy of the frame to draw on
         frame_with_square = frame.copy()
@@ -94,7 +100,6 @@ class GuideCameraController(FigureWidget):
             h, w, _ = self.camera_guide.read()[1].shape  # Get the actual image dimensions
             if 0 <= x < w and 0 <= y < h:
                 self.square_position = (x, y)
-                print("Square position set to (x, y):", self.square_position)
 
         elif event.button() == Qt.RightButton:
             # Get the position in image coordinates
@@ -105,9 +110,8 @@ class GuideCameraController(FigureWidget):
             h, w, _ = self.camera_guide.read()[1].shape  # Get the actual image dimensions
             if 0 <= x < w and 0 <= y < h:
                 self.square_size = (int(np.abs(self.square_position[0]-x)*2), int(np.abs(self.square_position[1]-y)*2))
-                print("Square size set to (x, y):", self.square_size)
 
-    def calculate_star_centroid(self):
+    def calculate_star_properties(self):
         # Check if square position and size are valid
         if self.square_position and self.square_size:
             # Get the center and half-size of the square
@@ -143,11 +147,13 @@ class GuideCameraController(FigureWidget):
                     cx = int(M["m10"] / M["m00"]) + x
                     cy = int(M["m01"] / M["m00"]) + y
 
-                    print("Star centroid:", (cx, cy))
-                    return cx, cy
+                    # Calculate the size of the star (bounding box area)
+                    star_size = cv2.contourArea(max_contour)
+
+                    return (cx, cy), star_size
 
         # Return None if square position or size is not valid
-        return None
+        return None, None
 
 
 class GuideFigureController(FigureWidget):
