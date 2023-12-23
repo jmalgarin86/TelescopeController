@@ -33,38 +33,56 @@ class MultipictureController(MultipictureWidget):
         # Move the mount to the first frame
         n_ar = str(int(int(steps[0]) * (n[0] / 2 - 0.5)))
         n_de = str(int(int(steps[1]) * (n[1] / 2 - 0.5)))
-        command = "0 " + n_ar + "1 2 " + n_de + "1 2"
+        command = "0 " + n_ar + " 1 2 " + n_de + " 1 2"
         self.main.waiting_commands.append(command)
+        print(command)
 
         # Get number of frames until next region
         n_frames = int(self.framesLineEdit.text())
 
         # Get initial directory
-        initial_files = os.listdir("sharpcap")
+        items = os.listdir("sharpcap")
+        initial_folders = [item for item in items if os.path.isdir(os.path.join("sharpcap",item))]
 
         for ii in range(n[1]):
             for jj in range(n[0]):
                 new_folder = False
-                while not new_folder:
-                    current_files = os.listdir("sharpcap")
-                    if len(current_files) == len(initial_files):
-                        time.sleep(0.1)
-                    else:
+                while not new_folder and self.startButton.isChecked():
+                    items = os.listdir("sharpcap")
+                    current_folders = [item for item in items if os.path.isdir(os.path.join("sharpcap",item))]
+                    if len(current_folders) > len(initial_folders):
+                        # Print info of new sequence
+                        print("Start sequence %i, %i" % (jj + 1, ii + 1))
+
                         # Get the new folder and create the path to the new folder
-                        new_folders = [folder for folder in current_files if
-                                       folder not in initial_files and os.path.isdir(os.path.join("sharpcap", folder))]
-                        new_folder = new_folders[0]
+                        new_folders = [folder for folder in current_folders if
+                                       folder not in initial_folders and os.path.isdir(os.path.join("sharpcap", folder))]
+                        try:
+                            new_folder = new_folders[0]
+                        except:
+                            print("Fatal error, no new folder found")
+                            print(initial_folders)
+                            print(current_folders)
+                            return
                         folder_path = os.path.join("sharpcap", new_folder)
-                        print("Start sequence %i, %i" % (jj+1, ii+1))
 
                         # Update initial_files
-                        initial_files = copy.copy(current_files)
+                        initial_folders = current_folders
 
                         # Wait until number of frames is reached to move the mount
                         finish = False
-                        while not finish:
-                            n_files = len(os.listdir(folder_path)) - 1
-                            if n_files >= n_frames:
+                        n_files_0 = 0
+                        while not finish and self.startButton.isChecked():
+                            # Get number of files into the current folder
+                            n_files_1 = len(os.listdir(folder_path)) - 1
+
+                            # Print info if a new file is found
+                            if n_files_1 > n_files_0:
+                                n_files_0 = n_files_1
+                                print("Frames: %i" % n_files_1)
+
+                            # Move to next frame if n_files equals to desired n_frames
+                            if n_files_1 >= n_frames:
                                 finish = True
                                 command = "0 0 0 52 0 0 0\n"
 
@@ -88,3 +106,8 @@ class MultipictureController(MultipictureWidget):
                                     self.startButton.setChecked(False)
                                 else:
                                     self.main.waiting_commands.append(command)
+                                    print("Progress: %i %%" % (int((ii+1)*(jj+1)/(n[0]*n[1])*100)))
+                                    print("Moving to next sequence")
+                                    print(command)
+                            time.sleep(0.1)
+                    time.sleep(0.1)
