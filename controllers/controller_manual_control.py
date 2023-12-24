@@ -39,11 +39,9 @@ class ManualController(ManualWidget):
 
             # Send command
             self.main.waiting_commands.append(command)
-            print("Moving AR in negative direction")
         else:
             self.speed_combo.setEnabled(True)
             self.main.waiting_commands.append("0 0 0 52 0 0 0\n")
-            print("Stop")
 
         return 0
 
@@ -64,11 +62,9 @@ class ManualController(ManualWidget):
 
             # Send command
             self.main.waiting_commands.append(command)
-            print("Moving AR in positive direction")
         else:
             self.speed_combo.setEnabled(True)
             self.main.waiting_commands.append("0 0 0 52 0 0 0\n")
-            print("Stop")
 
         return 0
 
@@ -92,11 +88,9 @@ class ManualController(ManualWidget):
 
             # Send command
             self.main.waiting_commands.append(command)
-            print("Moving DEC in negative direction")
         else:
             self.speed_combo.setEnabled(True)
             self.main.waiting_commands.append("0 0 0 52 0 0 0\n")
-            print("Stop")
 
         return 0
 
@@ -119,10 +113,8 @@ class ManualController(ManualWidget):
 
             # Send command
             self.main.waiting_commands.append(command)
-            print("Moving DEC in positive direction")
         else:
             self.speed_combo.setEnabled(True)
             self.main.waiting_commands.append("0 0 0 52 0 0 0\n")
-            print("Stop")
 
         return 0

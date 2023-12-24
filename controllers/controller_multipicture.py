@@ -33,7 +33,10 @@ class MultipictureController(MultipictureWidget):
         # Move the mount to the first frame
         n_ar = str(int(int(steps[0]) * (n[0] / 2 - 0.5)))
         n_de = str(int(int(steps[1]) * (n[1] / 2 - 0.5)))
-        command = "0 " + n_ar + " 1 2 " + n_de + " 1 2"
+        if int(n_ar) > 0:
+            command = "0 " + n_ar + " 1 2 " + n_de + " 1 2"
+        else:
+            command = "0 0 0 52 " + n_de + " 1 2"
         self.main.waiting_commands.append(command)
         print(command)
 
@@ -84,20 +87,22 @@ class MultipictureController(MultipictureWidget):
                             # Move to next frame if n_files equals to desired n_frames
                             if n_files_1 >= n_frames:
                                 finish = True
-                                command = "0 0 0 52 0 0 0\n"
+                                ar_command = " 0 0 52"
 
                                 # Move frame position:
                                 if jj < n[0] - 1 and ii % 2 == 0:
-                                    ar_command = " " + steps[0] + " 0 2"
+                                    if int(steps[0]) > 0:
+                                        ar_command = " " + steps[0] + " 0 2"
                                     de_command = " 0 0 0"
                                     command = "0" + ar_command + de_command + "\n"
                                 elif jj < n[0] - 1 and ii % 2 == 1:
-                                    ar_command = " " + steps[0] + " 1 2"
+                                    if int(steps[0]) > 0:
+                                        ar_command = " " + steps[0] + " 1 2"
                                     de_command = " 0 0 0"
                                     command = "0" + ar_command + de_command + "\n"
                                 elif jj == n[0] - 1:
                                     ar_command = " 0 0 52"
-                                    de_command = " " + steps[1] + " 0 2"
+                                    de_command = " " + steps[1] + " 0 3"
                                     command = "0" + ar_command + de_command + "\n"
 
                                 # Send command to arduino
