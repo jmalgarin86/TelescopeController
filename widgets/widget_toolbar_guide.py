@@ -20,19 +20,18 @@ class GuideToolBar(QToolBar):
         self.action_camera.setCheckable(True)
         self.addAction(self.action_camera)
 
-        # Setup guide
-        self.action_guide = QAction(QIcon("icons/guide.png"), "Start guide", self)
-        self.action_guide.setStatusTip("Start guide")
-        self.action_guide.setCheckable(True)
-        # self.action_guide.setEnabled(False)
-        self.addAction(self.action_guide)
+        # Look for a star
+        self.action_auto_star = QAction(QIcon("icons/auto-star.png"), "Select star automatically", self)
+        self.addAction(self.action_auto_star)
 
-        # Autoguiding
+        # Track star position
         self.action_tracking = QAction(QIcon("icons/tracking.png"), "Init tracking", self)
         self.action_tracking.setStatusTip("Init tracking")
         self.addAction(self.action_tracking)
         self.action_tracking.setCheckable(True)
 
-        # Select current position
-        self.action_auto_star = QAction(QIcon("icons/auto-star.png"), "Select star automatically", self)
-        self.addAction(self.action_auto_star)
+        # Initialize guiding
+        self.action_guide = QAction(QIcon("icons/guide.png"), "Start guide", self)
+        self.action_guide.setStatusTip("Start guide")
+        self.action_guide.setCheckable(True)
+        self.addAction(self.action_guide)

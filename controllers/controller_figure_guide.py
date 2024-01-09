@@ -1,4 +1,7 @@
+import copy
+import os
 import sys
+import time
 
 import cv2
 import numpy as np
@@ -15,25 +18,33 @@ class GuideCameraController(FigureWidget):
     def __init__(self, data=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.frame = None
-        self.square_position = None
+        self.tracking = False
+        self.guiding = False
+        self.reference_position = (0, 0)
+        self.reference_position_prov = (0, 0)
         self.camera_guide = None
         self.square_position = (25, 25)
         self.square_size = (50, 50)
         self.timer = QTimer(self)
+        self.x_vec = []
+        self.y_vec = []
+        self.s_vec = []
 
     def start_camera(self):
         if not self.camera_guide:
-            self.camera_guide = cv2.VideoCapture(0)
+            self.camera_guide = cv2.VideoCapture(1)
             if self.camera_guide.isOpened():
                 print("Camera 0 is ready!")
             else:
                 print("Error: Could not open camera 0.")
 
-            # # Set exposure time (value is in milliseconds)
-            # exposure_time = -1  # Set your desired exposure time in milliseconds
-            #
-            # # Set exposure property (works for some cameras, not all)
-            # self.camera_guide.set(cv2.CAP_PROP_EXPOSURE, exposure_time)
+            # Set exposure time (value is in milliseconds)
+            exposure_time = -1  # Set your desired exposure time in milliseconds
+            self.camera_guide.set(cv2.CAP_PROP_EXPOSURE, exposure_time)
+
+            # Set the camera gain (adjust the value as needed)
+            gain_value = 5000  # Set your desired gain value
+            self.camera_guide.set(cv2.CAP_PROP_GAIN, gain_value)
 
             # Create a timer to update the webcam feed
             self.timer.timeout.connect(self.update_frame)
@@ -43,11 +54,47 @@ class GuideCameraController(FigureWidget):
         print("Start camera")
 
         # Start the timer
-        self.timer.start(100)  # Update every 250 milliseconds (10 fps)
+        self.timer.start(100)  # Update every 100 milliseconds (10 fps)
 
     def stop_camera(self):
         print("Stop camera")
         self.timer.stop()
+
+    def detect_and_select_star(self):
+        # Check if the frame is available
+        if self.frame is not None:
+            # Convert the frame to grayscale
+            gray_frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
+
+            # Threshold the grayscale frame to highlight stars
+            _, thresholded_frame = cv2.threshold(gray_frame, 50, 255, cv2.THRESH_BINARY)
+
+            # Find contours in the thresholded image
+            contours, _ = cv2.findContours(thresholded_frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+            # Initialize variables to store information about the biggest star
+            max_star_size = 0
+            max_star_centroid = None
+
+            # Iterate through detected contours
+            for contour in contours:
+                # Calculate the area of the contour
+                star_size = cv2.contourArea(contour)
+
+                # Update max_star_size and max_star_centroid if the current star is larger
+                if star_size > max_star_size:
+                    max_star_size = star_size
+
+                    # Calculate the centroid of the star
+                    M = cv2.moments(contour)
+                    if M["m00"] != 0:
+                        cx = int(M["m10"] / M["m00"])
+                        cy = int(M["m01"] / M["m00"])
+                        max_star_centroid = (cx, cy)
+
+            # Set the square position to the centroid of the selected star
+            if max_star_centroid is not None:
+                self.square_position = max_star_centroid
 
     def update_frame(self):
         # Read a frame from the webcam
@@ -55,8 +102,31 @@ class GuideCameraController(FigureWidget):
 
         # Check if the frame was read successfully
         if ret:
+            # Calculate the star centroid and size after each frame update
+            if self.tracking:
+                star_centroid, star_size = self.calculate_star_properties()
+                if star_centroid:
+                    self.square_position = star_centroid
+                    print("Star centroid: ", star_centroid)
+                    print("Reference: ", self.reference_position)
+
+                    # Ensure the length of the vectors is at most 100 elements
+                    if len(self.x_vec) == 100:
+                        self.x_vec.pop(0)  # Remove the first element
+                        self.y_vec.pop(0)
+                        self.s_vec.pop(0)
+
+                    # Append new data to the list
+                    self.x_vec.append(star_centroid[0])
+                    self.y_vec.append(star_centroid[1])
+                    self.s_vec.append(star_size)
+
+                    # Update plots
+                    self.main.plot_controller_pixel.updatePlot(x=self.x_vec, y=self.y_vec)
+                    self.main.plot_controller_surface.updatePlot(x=self.s_vec)
+
             # Draw a red square on the grayscale frame
-            frame_with_square = self.draw_square(self.frame)
+            frame_with_square = self.draw_square()
 
             # Convert the frame to RGB format
             rgb_image = cv2.cvtColor(frame_with_square, cv2.COLOR_BGR2RGB)
@@ -70,21 +140,168 @@ class GuideCameraController(FigureWidget):
             self.scene.clear()
             self.scene.addPixmap(QPixmap.fromImage(q_image))
 
-            # Calculate the star centroid after each frame update
-            if self.main.guiding_toolbar.action_tracking.isChecked():
-                star_centroid, star_size = self.calculate_star_properties()
-                if star_centroid:
-                    self.square_position = star_centroid
+    def do_guiding(self):
 
-    def draw_square(self, frame):
+        # Get data from calibration
+        vx_ra_p = self.main.calibration_controller.vx_ar_p
+        vy_ra_p = self.main.calibration_controller.vy_ar_p
+        vx_ra_n = self.main.calibration_controller.vx_ar_n
+        vy_ra_n = self.main.calibration_controller.vy_ar_n
+
+        # Get the initial list of folders in the directory
+        items = os.listdir("sharpcap")
+        initial_folders = [item for item in items if os.path.isdir(os.path.join("sharpcap", item))]
+        n_files = 0
+        new_folder = None
+        self.reference_position_prov = self.get_reference_position()
+
+        # Star guiding with updates in position after each frame
+        while self.guiding:
+            # Get reference position
+            r0 = self.reference_position_prov
+            x_star = r0[0]
+            y_star = r0[1]
+
+            # Get the updated list of folders in the directory
+            items = os.listdir("sharpcap")
+            current_folders = [item for item in items if os.path.isdir(os.path.join("sharpcap", item))]
+
+            # Check for new folder
+            if len(current_folders) > len(initial_folders):
+                n_files = 0
+
+                # Check for new folders
+                new_folders = [folder for folder in current_folders if
+                               folder not in initial_folders and os.path.isdir(os.path.join("sharpcap", folder))]
+                new_folder = new_folders[0]
+
+                # Reset initial_folders
+                initial_folders = current_folders
+
+            # Modify reference position in case new file is found
+            if new_folder is None:
+                pass
+            else:
+                time.sleep(0.1)
+                folder_path = os.path.join("sharpcap", new_folder)
+                folder_files = os.listdir(folder_path)
+                if len(folder_files) > n_files:
+                    n_files = len(folder_files)
+                    dx = int(vx_ra_n) * 2
+                    dy = int(vy_ra_n) * 2
+                    x_star += dx
+                    y_star += dy
+                    self.reference_position_prov = (x_star, y_star)
+                    print("Reference position: x, y: %0.1f, %0.1f" % (x_star, y_star))
+
+            # Align with actual reference position
+            self.align_position(r0=(x_star, y_star))
+
+            # Wait to next correction
+            time.sleep(1)
+
+    def go_to_reference(self):
+        # Try to align with reference position and try again until it reach reference position
+        while not self.check_position():
+            self.align_position()
+
+        return True
+
+    def check_position(self):
+        r0 = self.get_reference_position()
+        r1 = self.get_coordinates()
+        print("r0:")
+        if r0 == r1:
+            return True
+        else:
+            return False
+
+    def align_position(self, r0=None):
+        # Get reference position
+        if r0 is None:
+            r0 = self.reference_position
+
+        # Get current position
+        r1 = self.get_coordinates()
+
+        # Calculate required displacement
+        dr = np.array([r1[0] - r0[0], r1[1] - r0[1]])
+
+        # Move the camera
+        self.move_camera(dx=dr[0], dy=dr[1])
+
+    def move_camera(self, dx=0, dy=0):
+        # Set speed
+        period = str(10)
+
+        # Get data from calibration
+        vx_de = self.main.calibration_controller.vx_de
+        vy_de = self.main.calibration_controller.vy_de
+        vx_ra_p = self.main.calibration_controller.vx_ar_p
+        vy_ra_p = self.main.calibration_controller.vy_ar_p
+        vx_ra_n = self.main.calibration_controller.vx_ar_n
+        vy_ra_n = self.main.calibration_controller.vy_ar_n
+
+        # Create matrix
+        v_p = np.array([[vx_de, vx_ra_p], [vy_de, vy_ra_p]])
+        v_n = np.array([[vx_de, vx_ra_n], [vy_de, vy_ra_n]])
+
+        # Get required displacement
+        dr = np.array([dx, dy])
+        dr = -np.reshape(dr, (2, 1))
+
+        # Get required steps
+        n_steps = np.linalg.inv(v_p) @ dr
+        if n_steps[1] < 0:
+            n_steps = np.linalg.inv(v_n) @ dr
+
+        # Set directions
+        if n_steps[0] >= 0 and self.main.manual_controller.dec_dir == 1:
+            de_dir = str(1)
+        elif n_steps[0] >= 0 and self.main.manual_controller.dec_dir == -1:
+            de_dir = str(0)
+        elif n_steps[0] < 0 and self.main.manual_controller.dec_dir == 1:
+            de_dir = str(0)
+        elif n_steps[0] < 0 and self.main.manual_controller.dec_dir == -1:
+            de_dir = str(1)
+        if n_steps[1] >= 0:
+            ar_dir = str(1)
+        else:
+            ar_dir = str(0)
+
+        # Send instructions
+        de_steps = str(int(np.abs(n_steps[0])))
+        ar_steps = str(int(np.abs(n_steps[1])))
+        if de_steps == "0":
+            de_command = " 0 0 0"
+        else:
+            de_command = " %s %s %s" % (de_steps, de_dir, period)
+        if ar_steps == "0":
+            ar_command = " 0 0 52"
+        else:
+            ar_command = " %s %s %s" % (ar_steps, ar_dir, period)
+
+        if de_steps == "0" and ar_steps == "0":
+            pass
+        else:
+            command = "0" + ar_command + de_command + "\n"
+            self.main.waiting_commands.append(command)
+
+            # Wait until it finish
+            ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
+            while ser_input != "Ready!":
+                ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
+                time.sleep(0.01)
+
+    def draw_square(self):
         # Create a copy of the frame to draw on
-        frame_with_square = frame.copy()
+        frame_with_square = self.frame.copy()
 
-        # Draw a red square on the frame at the stored position
-        square_color = (255, 255, 255)  # Red color in BGR format
+        # Draw a white square on the frame at the stored position
+        square_color = (255, 255, 255)  # White color in BGR format
         center = self.square_position
-        top_left = (center[0] - int(self.square_size[0]/2), center[1] - int(self.square_size[1]/2))
-        bottom_right = (center[0] + int(self.square_size[0]/2), center[1] + int(self.square_size[1]/2))
+        top_left = (center[0] - int(self.square_size[0] / 2), center[1] - int(self.square_size[1] / 2))
+        bottom_right = (center[0] + int(self.square_size[0] / 2), center[1] + int(self.square_size[1] / 2))
         cv2.rectangle(frame_with_square, top_left, bottom_right, square_color, 2)
 
         return frame_with_square
@@ -100,6 +317,8 @@ class GuideCameraController(FigureWidget):
             h, w, _ = self.camera_guide.read()[1].shape  # Get the actual image dimensions
             if 0 <= x < w and 0 <= y < h:
                 self.square_position = (x, y)
+                self.set_reference_position(self.square_position)
+                print("Reference position: x, y: %0.1f, %0.1f" % (x, y))
 
         elif event.button() == Qt.RightButton:
             # Get the position in image coordinates
@@ -109,7 +328,8 @@ class GuideCameraController(FigureWidget):
             # Check if the click is within the image area
             h, w, _ = self.camera_guide.read()[1].shape  # Get the actual image dimensions
             if 0 <= x < w and 0 <= y < h:
-                self.square_size = (int(np.abs(self.square_position[0]-x)*2), int(np.abs(self.square_position[1]-y)*2))
+                self.square_size = (
+                    int(np.abs(self.square_position[0] - x) * 2), int(np.abs(self.square_position[1] - y) * 2))
 
     def calculate_star_properties(self):
         # Check if square position and size are valid
@@ -118,14 +338,14 @@ class GuideCameraController(FigureWidget):
             center_x, center_y = self.square_position
             half_width, half_height = [int(size / 2) for size in self.square_size]
 
-            # Calculate the top-left and bottom-right coordinates
+            # Calculate the top-left coordinates and size of square
             x = max(center_x - half_width, 0)
             y = max(center_y - half_height, 0)
             w = min(center_x + half_width, self.frame.shape[1]) - x
             h = min(center_y + half_height, self.frame.shape[0]) - y
 
             # Get the region of interest (ROI) within the square
-            roi = self.frame[y:y+h, x:x+w]
+            roi = self.frame[y:y + h, x:x + w]
 
             # Convert the ROI to grayscale
             gray_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
@@ -158,45 +378,18 @@ class GuideCameraController(FigureWidget):
     def get_coordinates(self):
         return self.square_position
 
-    def detect_and_select_star(self):
-        # Check if the frame is available
-        if self.frame is not None:
-            # Convert the frame to grayscale
-            gray_frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
+    def set_reference_position(self, position: tuple):
+        self.reference_position = copy.copy(position)
 
-            # Threshold the grayscale frame to highlight stars
-            _, thresholded_frame = cv2.threshold(gray_frame, 150, 255, cv2.THRESH_BINARY)
+    def get_reference_position(self):
+        return copy.copy(self.reference_position)
 
-            # Find contours in the thresholded image
-            contours, _ = cv2.findContours(thresholded_frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    def set_tracking(self, tracking: bool):
+        self.tracking = tracking
 
-            # Initialize variables to store information about the biggest star
-            max_star_size = 0
-            max_star_centroid = None
+    def set_guiding(self, guiding: bool):
+        self.guiding = guiding
 
-            # Iterate through detected contours
-            for contour in contours:
-                # Calculate the area of the contour
-                star_size = cv2.contourArea(contour)
-
-                # Update max_star_size and max_star_centroid if the current star is larger
-                if star_size > max_star_size:
-                    max_star_size = star_size
-
-                    # Calculate the centroid of the star
-                    M = cv2.moments(contour)
-                    if M["m00"] != 0:
-                        cx = int(M["m10"] / M["m00"])
-                        cy = int(M["m01"] / M["m00"])
-                        max_star_centroid = (cx, cy)
-
-            # Print information about the selected star
-            if max_star_centroid is not None:
-                print("Selected star centroid:", max_star_centroid)
-                print("Selected star size:", max_star_size)
-
-                # Set the square position to the centroid of the selected star
-                self.square_position = max_star_centroid
 
 class GuideFigureController(FigureWidget):
 

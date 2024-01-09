@@ -17,7 +17,7 @@ class MultipictureWidget(QGroupBox):
 
         # displacement
         stepMovementLabel = QLabel('Steps Movement (AR, DEC):')
-        self.stepMovementLineEdit = QLineEdit("100, 100")
+        self.stepMovementLineEdit = QLineEdit("500, 350")
 
         # frames
         framesLabel = QLabel('Number of Frames:')

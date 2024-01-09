@@ -14,13 +14,13 @@ class MultipictureController(MultipictureWidget):
 
     def checkIfSweep(self):
         if self.startButton.isChecked():
-            print("\nStart multi-picture")
-            thread = threading.Thread(target=self.multiPicture2)
+            print("\nStart mosaic")
+            thread = threading.Thread(target=self.doMosaic)
             thread.start()
         else:
-            print("\nStop multi-picture")
+            print("\nStop mosaic")
 
-    def multiPicture2(self):
+    def doMosaic(self):
 
         # Get number
         matrix_size = self.matrixSizeLineEdit.text()
@@ -30,7 +30,10 @@ class MultipictureController(MultipictureWidget):
         steps_str = self.stepMovementLineEdit.text()
         steps = [str(int(x)) for x in steps_str.split(',')]
 
-        # Move the mount to the first frame
+        # Get number of frames until next region
+        n_frames = int(self.framesLineEdit.text())
+
+        # Move the mount to the first tile
         n_ar = str(int(int(steps[0]) * (n[0] / 2 - 0.5)))
         n_de = str(int(int(steps[1]) * (n[1] / 2 - 0.5)))
         if int(n_ar) > 0:
@@ -40,33 +43,30 @@ class MultipictureController(MultipictureWidget):
         self.main.waiting_commands.append(command)
         print(command)
 
-        # Get number of frames until next region
-        n_frames = int(self.framesLineEdit.text())
+        # Wait until the mount reach the target position
+        ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
+        while ser_input != "Ready!":
+            ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
+            time.sleep(0.01)
 
         # Get initial directory
         items = os.listdir("sharpcap")
-        initial_folders = [item for item in items if os.path.isdir(os.path.join("sharpcap",item))]
+        initial_folders = [item for item in items if os.path.isdir(os.path.join("sharpcap", item))]
 
         for ii in range(n[1]):
             for jj in range(n[0]):
                 new_folder = False
                 while not new_folder and self.startButton.isChecked():
                     items = os.listdir("sharpcap")
-                    current_folders = [item for item in items if os.path.isdir(os.path.join("sharpcap",item))]
+                    current_folders = [item for item in items if os.path.isdir(os.path.join("sharpcap", item))]
                     if len(current_folders) > len(initial_folders):
                         # Print info of new sequence
-                        print("Start sequence %i, %i" % (jj + 1, ii + 1))
+                        print("Start tile %i, %i" % (jj + 1, ii + 1))
 
                         # Get the new folder and create the path to the new folder
                         new_folders = [folder for folder in current_folders if
                                        folder not in initial_folders and os.path.isdir(os.path.join("sharpcap", folder))]
-                        try:
-                            new_folder = new_folders[0]
-                        except:
-                            print("Fatal error, no new folder found")
-                            print(initial_folders)
-                            print(current_folders)
-                            return
+                        new_folder = new_folders[0]
                         folder_path = os.path.join("sharpcap", new_folder)
 
                         # Update initial_files

@@ -60,7 +60,7 @@ class CalibrationController(CalibrationWidget):
         print(ser_input)
 
         # Get final coordinates
-        x1, y1 = self.main.guide_figure_controller.get_coordinates()
+        x1, y1 = self.main.guide_camera_controller.get_coordinates()
 
         # Get characteristics
         self.vx_de = (x1 - x0) / n_steps
