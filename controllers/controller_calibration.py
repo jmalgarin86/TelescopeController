@@ -1,3 +1,4 @@
+import csv
 import threading
 import time
 
@@ -17,6 +18,40 @@ class CalibrationController(CalibrationWidget):
         self.button_dec.clicked.connect(self.calibrateDec)
         self.button_ar_p.clicked.connect(self.calibrateArP)
         self.button_ar_n.clicked.connect(self.calibrateArN)
+        self.button_load.clicked.connect(self.load_calibration)
+        self.button_save.clicked.connect(self.save_calibration)
+
+    def load_calibration(self):
+        # Open the file in read mode
+        with open("calibration/calibration.csv", mode='r') as file:
+            # Create a CSV reader object
+            csv_reader = csv.reader(file)
+
+            # Read the data
+            for row in csv_reader:
+                # Process each row of data
+                self.vx_ar_n, self.vy_ar_n, self.vx_ar_p, self.vy_ar_p, self.vx_de, self.vy_de = row
+
+        self.checkbox_dec.setChecked(True)
+        self.checkbox_ar_n.setChecked(True)
+        self.checkbox_ar_p.setChecked(True)
+        print("Calibration loaded!")
+
+    def save_calibration(self):
+        # Check if calibration is done
+        check_de = self.main.calibration_controller.checkbox_dec.isChecked()
+        check_ar_p = self.main.calibration_controller.checkbox_ar_p.isChecked()
+        check_ar_n = self.main.calibration_controller.checkbox_ar_n.isChecked()
+        if check_de and check_ar_p and check_ar_n:
+            with open("calibration/calibration.csv", mode='w', newline='') as file:
+                # Create a CSV writer object
+                csv_writer = csv.writer(file)
+
+                # Write the data
+                csv_writer.writerow([self.vx_ar_n, self.vy_ar_n, self.vx_ar_p, self.vy_ar_p, self.vx_de, self.vy_de])
+            print("Calibration saved!")
+        else:
+            print("Calibrate first!")
 
     def calibrateDec(self):
         # Create a thread to do the calibration in parallel to the camera

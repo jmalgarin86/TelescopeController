@@ -21,6 +21,8 @@ class CalibrationWidget(QGroupBox):
         self.button_ar_p.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         self.button_ar_n = QPushButton("3) AR  -")
         self.button_ar_n.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+        self.button_load = QPushButton("Load")
+        self.button_save = QPushButton("Save")
 
         # Create the checkboxes
         self.checkbox_dec = QCheckBox('', self)
@@ -38,5 +40,11 @@ class CalibrationWidget(QGroupBox):
         layout.addWidget(self.checkbox_dec, 0, 1)
         layout.addWidget(self.checkbox_ar_p, 1, 1)
         layout.addWidget(self.checkbox_ar_n, 2, 1)
+
+        # Layout for save/load buttons
+        layout_2 = QHBoxLayout()
+        layout_2.addWidget(self.button_load)
+        layout_2.addWidget(self.button_save)
+        layout.addLayout(layout_2, 3, 0, 1, 2)
 
         self.setLayout(layout)
