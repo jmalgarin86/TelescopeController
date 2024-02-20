@@ -18,10 +18,10 @@ SoftwareSerial BT1(7,13); // RX, TX
 #define SLP_PIN_DEC 12
 
 //Variables globales
-int ar_steps = 0;
+long ar_steps = 0;
 int ar_dir = 0;
 int ar_per = 52;
-int dec_steps = 0;
+long dec_steps = 0;
 int dec_dir = 0;
 int dec_per = 0;
 int stop = 0;
@@ -43,8 +43,8 @@ int ar_ready = 0;
 
 void setup() {
   //Inicio módulo Bluetooth
-  BT1.begin(115200);
-  Serial.begin(115200);
+  BT1.begin(19200);
+  Serial.begin(19200);
   
   //Modos de pines Stepper A
   pinMode(DIR_PIN_AR,OUTPUT);
@@ -109,7 +109,6 @@ void loop() {
     else {
       de_ready = 1;
     }
-    
   }
 
   // Get the current time

@@ -1,5 +1,5 @@
 .idea/
 controllers/__pycache__/
 widgets/__pycache__/
-/results/
 /sharpcap/
+/calibration/calibration.csv
