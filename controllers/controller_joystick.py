@@ -54,7 +54,7 @@ class JoyStickController:
                         self.main.manual_controller.button_ar_p.toggle()
                         self.main.manual_controller.move_ar_p()
 
-                if event.type == pygame.JOYBUTTONUP:
+                elif event.type == pygame.JOYBUTTONUP:
                     if event.button == 0:
                         self.main.manual_controller.button_ar_n.toggle()
                         self.main.manual_controller.move_ar_n()

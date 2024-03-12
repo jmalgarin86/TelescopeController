@@ -9,14 +9,12 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QHB
 from controllers.controller_arduino import ArduinoController
 from controllers.controller_calibration import CalibrationController
 from controllers.controller_console import ConsoleController
-from controllers.controller_figure_guide import GuideFigureController, GuideCameraController
+from controllers.controller_figure_guide import GuideCameraController
 from controllers.controller_joystick import JoyStickController
-from controllers.controller_multipicture import MultipictureController
 from controllers.controller_plot import PlotController
 from controllers.controller_toolbar_guide import GuideController
 from controllers.controller_manual_control import ManualController
 from controllers.controller_auto_control import AutoController
-from widgets.widget_multipicture import MultipictureWidget
 
 
 class TelescopeController(QMainWindow):
@@ -61,10 +59,6 @@ class TelescopeController(QMainWindow):
         self.calibration_controller = CalibrationController(self)
         left_layout.addWidget(self.calibration_controller)
 
-        # Create the multipicture controller
-        self.multipicture_controller = MultipictureController(self)
-        left_layout.addWidget(self.multipicture_controller)
-
         # Create the ConsoleController widget
         self.console_controller = ConsoleController()
         left_layout.addWidget(self.console_controller)  # Add it to the left_layout
@@ -100,6 +94,11 @@ class TelescopeController(QMainWindow):
 
         self.showMaximized()
 
+
+    def on_key_pressed(self, key_name):
+        message = f"Key pressed: {key_name}"
+        print(message)
+
     def sniffer(self):
         while self.gui_open:
             if self.waiting_commands:
@@ -115,58 +114,6 @@ class TelescopeController(QMainWindow):
         self.arduino.disconnect()
         print('\nGUI closed successfully!')
         super().closeEvent(event)
-
-# class Processing(QMainWindow):
-#     def __init__(self):
-#         super().__init__()
-#
-#         # Set the stylesheet
-#         style_sheet = qdarkstyle.load_stylesheet_pyqt5()
-#         self.setStyleSheet(style_sheet)
-#
-#         # Set the window title
-#         self.setWindowTitle("TelescopeController")
-#
-#         # Create a central widget to hold the content
-#         central_widget = QWidget(self)
-#         self.setCentralWidget(central_widget)
-#
-#         # Create archive toolbar
-#         self.archive_toolbar = PrArchiveToolBarController(self, "Archive toolbar")
-#
-#         # Define the main layout
-#         self.main_layout = QHBoxLayout()
-#         central_widget.setLayout(self.main_layout)
-#
-#         # Show menu bar
-#         self.menu = self.menuBar()
-#         MenuController(main=self)
-#
-#         # Define the actions layout
-#         self.left_layout = QVBoxLayout()
-#         self.main_layout.addLayout(self.left_layout)
-#
-#         # Define the output layout
-#         self.right_layout = QVBoxLayout()
-#         self.main_layout.addLayout(self.right_layout)
-#
-#         # Widget for alignment
-#         self.tasks_controller = TasksController(self)
-#         self.left_layout.addWidget(self.tasks_controller)
-#
-#         # Widget with history list
-#         self.history_controller = HistoryController(self)
-#         self.left_layout.addWidget(self.history_controller)
-#
-#         # Define the figures layout
-#         self.figure_layout = FiguresLayoutController()
-#         self.right_layout.addWidget(self.figure_layout)
-#
-#         # Add spacer
-#         self.left_layout.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
-#
-#         # Status bar
-#         self.setStatusBar(QStatusBar(self))
 
 def main():
     app = QApplication(sys.argv)

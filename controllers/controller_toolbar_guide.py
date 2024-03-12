@@ -64,7 +64,6 @@ class GuideController(GuideToolBar):
 
     def start_camera(self):
         if self.action_camera.isChecked():
-            # Open the camera 0 if it does not exist
             self.main.guide_camera_controller.start_camera()
         else:
             self.main.guide_camera_controller.stop_camera()

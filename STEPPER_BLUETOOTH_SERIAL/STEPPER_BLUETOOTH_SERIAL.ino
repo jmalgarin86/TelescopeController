@@ -34,8 +34,8 @@ unsigned long t0_dec = 0;
 // Define counters
 int n_ar = 0;
 int n_de = 0;
-int step_ar = 0;
-int step_de = 0;
+long step_ar = 0;
+long step_de = 0;
 
 // Define checkers
 int de_ready = 0;
@@ -85,6 +85,8 @@ void loop() {
     dec_steps = Serial.parseInt();
     dec_dir = Serial.parseInt();
     dec_per = Serial.parseInt();
+    Serial.println(ar_steps);
+    Serial.println(dec_steps);
 
     // Set the pins on
     digitalWrite(DIR_PIN_AR, ar_dir);

@@ -211,7 +211,7 @@ class AutoController(AutoWidget):
         # Send instruction to arduino
         print("Go to the target")
         print("Time: %im %is" % (minutes, seconds))
-        command = "0 %s %s 4 %s %s 4\n" % (nar, ar_dir, nde, de_dir)
+        command = "0 %s %s 2 %s %s 2\n" % (nar, ar_dir, nde, de_dir)
         print(command)
         self.main.waiting_commands.append(command)
 

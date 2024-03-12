@@ -32,14 +32,14 @@ class GuideCameraController(FigureWidget):
 
     def start_camera(self):
         if not self.camera_guide:
-            self.camera_guide = cv2.VideoCapture(1)
+            self.camera_guide = cv2.VideoCapture(0)
             if self.camera_guide.isOpened():
                 print("Camera 0 is ready!")
             else:
                 print("Error: Could not open camera 0.")
 
             # Set exposure time (value is in milliseconds)
-            exposure_time = -1  # Set your desired exposure time in milliseconds
+            exposure_time = -2  # Set your desired exposure time in milliseconds
             self.camera_guide.set(cv2.CAP_PROP_EXPOSURE, exposure_time)
 
             # Set the camera gain (adjust the value as needed)
@@ -102,13 +102,22 @@ class GuideCameraController(FigureWidget):
 
         # Check if the frame was read successfully
         if ret:
+            # Get frame in gray scale
+            self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
+
+            # Resize the image to half its original size
+            height, width = self.frame.shape[:2]
+            self.frame = cv2.resize(self.frame, dsize=(width // 2, height // 2))
+
+            # Multiply the image by a factor of 8, then clip to 0, 255
+            if np.max(self.frame) > 0:
+                self.frame = np.clip(self.frame * float(8), a_min=0, a_max=255).astype(np.uint8)
+
             # Calculate the star centroid and size after each frame update
             if self.tracking:
                 star_centroid, star_size = self.calculate_star_properties()
                 if star_centroid:
                     self.square_position = star_centroid
-                    print("Star centroid: ", star_centroid)
-                    print("Reference: ", self.reference_position)
 
                     # Ensure the length of the vectors is at most 100 elements
                     if len(self.x_vec) == 100:
@@ -347,11 +356,11 @@ class GuideCameraController(FigureWidget):
             # Get the region of interest (ROI) within the square
             roi = self.frame[y:y + h, x:x + w]
 
-            # Convert the ROI to grayscale
-            gray_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-
             # Threshold the grayscale image to highlight the star pixels
-            _, thresholded_roi = cv2.threshold(gray_roi, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+            _, thresholded_roi = cv2.threshold(roi, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+
+            # Show the thresholded image into the frame
+            self.frame[y:y + h, x:x + w] = thresholded_roi
 
             # Find contours in the thresholded image
             contours, _ = cv2.findContours(thresholded_roi, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
