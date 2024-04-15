@@ -17,6 +17,7 @@ class GuideCameraController(FigureWidget):
 
     def __init__(self, data=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.dec_dir_old = None
         self.frame = None
         self.tracking = False
         self.guiding = False
@@ -39,7 +40,7 @@ class GuideCameraController(FigureWidget):
                 print("Error: Could not open camera 0.")
 
             # Set exposure time (value is in milliseconds)
-            exposure_time = -2  # Set your desired exposure time in milliseconds
+            exposure_time = 0  # Set your desired exposure time in milliseconds
             self.camera_guide.set(cv2.CAP_PROP_EXPOSURE, exposure_time)
 
             # Set the camera gain (adjust the value as needed)
@@ -126,8 +127,8 @@ class GuideCameraController(FigureWidget):
                         self.s_vec.pop(0)
 
                     # Append new data to the list
-                    self.x_vec.append(star_centroid[0])
-                    self.y_vec.append(star_centroid[1])
+                    self.x_vec.append(star_centroid[0]-self.reference_position[0])
+                    self.y_vec.append(star_centroid[1]-self.reference_position[1])
                     self.s_vec.append(star_size)
 
                     # Update plots
@@ -167,7 +168,7 @@ class GuideCameraController(FigureWidget):
         # Star guiding with updates in position after each frame
         while self.guiding:
             # Get reference position
-            r0 = self.reference_position_prov
+            r0 = self.get_reference_position()
             x_star = r0[0]
             y_star = r0[1]
 
@@ -200,7 +201,7 @@ class GuideCameraController(FigureWidget):
                     dy = int(vy_ra_n) * 2
                     x_star += dx
                     y_star += dy
-                    self.reference_position_prov = (x_star, y_star)
+                    self.set_reference_position((x_star, y_star))
                     print("Reference position: x, y: %0.1f, %0.1f" % (x_star, y_star))
 
             # Align with actual reference position
@@ -241,7 +242,7 @@ class GuideCameraController(FigureWidget):
 
     def move_camera(self, dx=0, dy=0):
         # Set speed
-        period = str(10)
+        period = str(2)
 
         # Get data from calibration
         vx_de = self.main.calibration_controller.vx_de
@@ -265,6 +266,7 @@ class GuideCameraController(FigureWidget):
             n_steps = np.linalg.inv(v_n) @ dr
 
         # Set directions
+        de_dir = str(1)
         if n_steps[0] >= 0 and self.main.manual_controller.dec_dir == 1:
             de_dir = str(1)
         elif n_steps[0] >= 0 and self.main.manual_controller.dec_dir == -1:
@@ -326,7 +328,7 @@ class GuideCameraController(FigureWidget):
             h, w, _ = self.camera_guide.read()[1].shape  # Get the actual image dimensions
             if 0 <= x < w and 0 <= y < h:
                 self.square_position = (x, y)
-                self.set_reference_position(self.square_position)
+                self.set_reference_position((x, y))
                 print("Reference position: x, y: %0.1f, %0.1f" % (x, y))
 
         elif event.button() == Qt.RightButton:

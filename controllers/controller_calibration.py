@@ -31,6 +31,12 @@ class CalibrationController(CalibrationWidget):
             for row in csv_reader:
                 # Process each row of data
                 self.vx_ar_n, self.vy_ar_n, self.vx_ar_p, self.vy_ar_p, self.vx_de, self.vy_de = row
+            self.vx_ar_n = float(self.vx_ar_n)
+            self.vy_ar_n = float(self.vy_ar_n)
+            self.vx_ar_p = float(self.vx_ar_p)
+            self.vy_ar_p = float(self.vy_ar_p)
+            self.vx_de = float(self.vx_de)
+            self.vy_de = float(self.vy_de)
 
         self.checkbox_dec.setChecked(True)
         self.checkbox_ar_n.setChecked(True)
@@ -94,6 +100,9 @@ class CalibrationController(CalibrationWidget):
             time.sleep(0.01)
         print(ser_input)
 
+        # Sleep 1 seconds to let the frame to refresh
+        time.sleep(1)
+
         # Get final coordinates
         x1, y1 = self.main.guide_camera_controller.get_coordinates()
 
@@ -129,6 +138,9 @@ class CalibrationController(CalibrationWidget):
             ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
             time.sleep(0.01)
         print(ser_input)
+
+        # Sleep 1 seconds to let the frame to refresh
+        time.sleep(1)
 
         # Get final coordinates
         x1, y1 = self.main.guide_camera_controller.get_coordinates()
@@ -166,6 +178,9 @@ class CalibrationController(CalibrationWidget):
             time.sleep(0.01)
         print(ser_input)
 
+        # Sleep 1 seconds to let the frame to refresh
+        time.sleep(1)
+
         # Get final coordinates
         x1, y1 = self.main.guide_camera_controller.get_coordinates()
 
@@ -178,3 +193,8 @@ class CalibrationController(CalibrationWidget):
 
         # Show the check in the checkbox
         self.checkbox_ar_n.setChecked(True)
+
+if __name__ == "__main__":
+    main = 1
+    controller = CalibrationController(main=main)
+    controller.load_calibration()
