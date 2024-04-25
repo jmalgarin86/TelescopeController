@@ -2,6 +2,7 @@ import copy
 import os
 import sys
 import time
+import datetime
 
 import cv2
 import numpy as np
@@ -17,6 +18,7 @@ class GuideCameraController(FigureWidget):
 
     def __init__(self, data=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.n_frame = 0
         self.dec_dir_old = None
         self.frame = None
         self.tracking = False
@@ -30,6 +32,11 @@ class GuideCameraController(FigureWidget):
         self.x_vec = []
         self.y_vec = []
         self.s_vec = []
+
+        # Create file to save data
+        current_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        file_name = f"log_{current_datetime}.txt"
+        self.file = open(file_name, "w")
 
     def start_camera(self):
         if not self.camera_guide:
@@ -103,6 +110,8 @@ class GuideCameraController(FigureWidget):
 
         # Check if the frame was read successfully
         if ret:
+            self.n_frame += 1
+
             # Get frame in gray scale
             self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
 
@@ -116,7 +125,13 @@ class GuideCameraController(FigureWidget):
 
             # Calculate the star centroid and size after each frame update
             if self.tracking:
+                # Get star centroid and size
                 star_centroid, star_size = self.calculate_star_properties()
+
+                # Save info in the file
+                self.file.write(f"{star_centroid[0]} {star_centroid[1]}\n")
+
+                # Update plot and square position
                 if star_centroid:
                     self.square_position = star_centroid
 
@@ -127,8 +142,8 @@ class GuideCameraController(FigureWidget):
                         self.s_vec.pop(0)
 
                     # Append new data to the list
-                    self.x_vec.append(star_centroid[0]-self.reference_position[0])
-                    self.y_vec.append(star_centroid[1]-self.reference_position[1])
+                    self.x_vec.append(star_centroid[0] - self.reference_position[0])
+                    self.y_vec.append(star_centroid[1] - self.reference_position[1])
                     self.s_vec.append(star_size)
 
                     # Update plots
@@ -166,7 +181,15 @@ class GuideCameraController(FigureWidget):
         self.reference_position_prov = self.get_reference_position()
 
         # Star guiding with updates in position after each frame
+        current_frame = copy.copy(self.n_frame)
         while self.guiding:
+            # Check if there is a new frame to avoid repetitions of movements
+            if self.n_frame == current_frame:
+                time.sleep(0.1)
+                continue
+            else:
+                current_frame = copy.copy(self.n_frame)
+
             # Get reference position
             r0 = self.get_reference_position()
             x_star = r0[0]
@@ -197,12 +220,12 @@ class GuideCameraController(FigureWidget):
                 folder_files = os.listdir(folder_path)
                 if len(folder_files) > n_files:
                     n_files = len(folder_files)
-                    dx = int(vx_ra_n) * 2
-                    dy = int(vy_ra_n) * 2
+                    dx = int(vx_ra_n * 2)
+                    dy = int(vy_ra_n * 2)
                     x_star += dx
                     y_star += dy
                     self.set_reference_position((x_star, y_star))
-                    print("Reference position: x, y: %0.1f, %0.1f" % (x_star, y_star))
+                    print("Reference position: x, y: %0.0f, %0.0f" % (x_star, y_star))
 
             # Align with actual reference position
             self.align_position(r0=(x_star, y_star))
@@ -358,36 +381,44 @@ class GuideCameraController(FigureWidget):
             # Get the region of interest (ROI) within the square
             roi = self.frame[y:y + h, x:x + w]
 
-            # Threshold the grayscale image to highlight the star pixels
-            _, thresholded_roi = cv2.threshold(roi, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+            # Substract the background
+            background = np.max(roi[0:5, 0:5])
+            roi[roi <= background] = 0
+            thresholded_roi = copy.copy(roi)
+            thresholded_roi[roi > background] = 255
 
             # Show the thresholded image into the frame
             self.frame[y:y + h, x:x + w] = thresholded_roi
 
-            # Find contours in the thresholded image
-            contours, _ = cv2.findContours(thresholded_roi, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            # Get mass-center
+            num_x = 0
+            num_y = 0
+            den = 0
+            for ii in range(h):
+                for jj in range(w):
+                    num_y += roi[ii, jj] * ii
+                    num_x += roi[ii, jj] * jj
+                    den += roi[ii, jj]
+            cx = num_x/den + x + 1
+            cy = num_y/den + y + 1
 
-            # Check if any contours were found
-            if contours:
-                # Find the contour with the maximum area (assuming it represents the star)
-                max_contour = max(contours, key=cv2.contourArea)
+            # Get standard deviation
+            num = 0
+            for ii in range(h):
+                for jj in range(w):
+                    num += roi[ii, jj] * np.sqrt((ii - cx + x + 1) ** 2 + (jj - cy + y + 1) ** 2)
+                    den += roi[ii, jj]
+            star_size = num/den
 
-                # Calculate the centroid of the star
-                M = cv2.moments(max_contour)
-                if M["m00"] != 0:
-                    cx = int(M["m10"] / M["m00"]) + x
-                    cy = int(M["m01"] / M["m00"]) + y
-
-                    # Calculate the size of the star (bounding box area)
-                    star_size = cv2.contourArea(max_contour)
-
-                    return (cx, cy), star_size
-
-        # Return None if square position or size is not valid
-        return None, None
+            return (int(cx), int(cy)), star_size
+        else:
+            return None, None
 
     def get_coordinates(self):
-        return self.square_position
+        return copy.copy(self.square_position)
+
+    def get_star_size(self):
+        return copy.copy(self.star_size)
 
     def set_reference_position(self, position: tuple):
         self.reference_position = copy.copy(position)
