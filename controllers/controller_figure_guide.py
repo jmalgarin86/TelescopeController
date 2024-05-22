@@ -19,6 +19,7 @@ class GuideCameraController(FigureWidget):
     def __init__(self, data=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.n_frame = 0
+        self.looseness_detected = "neutral"
         self.dec_dir_old = None
         self.frame = None
         self.tracking = False
@@ -129,7 +130,7 @@ class GuideCameraController(FigureWidget):
                 star_centroid, star_size = self.calculate_star_properties()
 
                 # Save info in the file
-                self.file.write(f"{star_centroid[0]} {star_centroid[1]}\n")
+                self.file.write(f"{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")} {star_centroid[0]} {star_centroid[1]} {star_size}\n")
 
                 # Update plot and square position
                 if star_centroid:
@@ -287,9 +288,13 @@ class GuideCameraController(FigureWidget):
         n_steps = np.linalg.inv(v_p) @ dr
         if n_steps[1] < 0:
             n_steps = np.linalg.inv(v_n) @ dr
+        n_steps[1] = n_steps[1]/2
+
+        # Ensure Dec movement happens only in the required direction
+        if (self.looseness_detected == "positive" and n_steps[0] < 0) or (self.looseness_detected == "negative" and n_steps[0] > 0):
+            n_steps[0] = 0
 
         # Set directions
-        de_dir = str(1)
         if n_steps[0] >= 0 and self.main.manual_controller.dec_dir == 1:
             de_dir = str(1)
         elif n_steps[0] >= 0 and self.main.manual_controller.dec_dir == -1:
@@ -315,6 +320,7 @@ class GuideCameraController(FigureWidget):
         else:
             ar_command = " %s %s %s" % (ar_steps, ar_dir, period)
 
+        # Send instructions
         if de_steps == "0" and ar_steps == "0":
             pass
         else:
@@ -382,10 +388,9 @@ class GuideCameraController(FigureWidget):
             roi = self.frame[y:y + h, x:x + w]
 
             # Substract the background
-            background = np.max(roi[0:5, 0:5])
-            roi[roi <= background] = 0
+            roi[roi <= np.max(roi)/2] = 0
             thresholded_roi = copy.copy(roi)
-            thresholded_roi[roi > background] = 255
+            thresholded_roi[roi > np.max(roi)/2] = 255
 
             # Show the thresholded image into the frame
             self.frame[y:y + h, x:x + w] = thresholded_roi
@@ -431,6 +436,9 @@ class GuideCameraController(FigureWidget):
 
     def set_guiding(self, guiding: bool):
         self.guiding = guiding
+
+    def set_looseness(self, looseness):
+        self.looseness_detected = looseness
 
 
 class GuideFigureController(FigureWidget):

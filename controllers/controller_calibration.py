@@ -2,6 +2,8 @@ import csv
 import threading
 import time
 
+import numpy as np
+
 from widgets.widget_calibration import CalibrationWidget
 
 class CalibrationController(CalibrationWidget):
@@ -9,17 +11,67 @@ class CalibrationController(CalibrationWidget):
         super().__init__(main)
 
         # Connect buttons to actions
+        self.looseness_direction = None
         self.vx_ar_n = None
         self.vy_ar_n = None
         self.vy_ar_p = None
         self.vx_ar_p = None
         self.vy_de = None
         self.vx_de = None
+        self.x0 = None
+        self.x1 = None
+        self.y0 = None
+        self.y1 = None
         self.button_dec.clicked.connect(self.calibrateDec)
         self.button_ar_p.clicked.connect(self.calibrateArP)
         self.button_ar_n.clicked.connect(self.calibrateArN)
+        self.button_dec_looseness.clicked.connect(self.calibrateDecLooseness)
         self.button_load.clicked.connect(self.load_calibration)
         self.button_save.clicked.connect(self.save_calibration)
+
+    def calibrateDecLooseness(self):
+        if self.button_dec_looseness.isChecked():
+            # Get initial coordinates and wait 10 seconds
+            self.x0, self.y0 = self.main.guide_camera_controller.get_coordinates()
+        else:
+            # Get final coordinates
+            self.x1, self.y1 = self.main.guide_camera_controller.get_coordinates()
+
+            # Get data from calibration
+            vx_de = self.main.calibration_controller.vx_de
+            vy_de = self.main.calibration_controller.vy_de
+            vx_ra_p = self.main.calibration_controller.vx_ar_p
+            vy_ra_p = self.main.calibration_controller.vy_ar_p
+            vx_ra_n = self.main.calibration_controller.vx_ar_n
+            vy_ra_n = self.main.calibration_controller.vy_ar_n
+
+            # Create matrix
+            v_p = np.array([[vx_de, vx_ra_p], [vy_de, vy_ra_p]])
+            v_n = np.array([[vx_de, vx_ra_n], [vy_de, vy_ra_n]])
+
+            # Get required displacement
+            dr = np.array([self.x1 - self.x0, self.y1 - self.y0])
+            dr = -np.reshape(dr, (2, 1))
+
+            # Get required steps
+            n_steps = np.linalg.inv(v_p) @ dr
+            if n_steps[1] < 0:
+                n_steps = np.linalg.inv(v_n) @ dr
+
+            # Get dec direction
+            if n_steps[0] > 0:
+                self.main.guide_camera_controller.set_looseness("positive")
+                self.looseness_direction = "positive"
+                print("Looseness positive")
+            elif n_steps[0] < 0:
+                self.main.guide_camera_controller.set_looseness("negative")
+                self.looseness_direction = "negative"
+                print("Looseness negative")
+            elif n_steps[0] == 0:
+                self.main.guide_camera_controller.set_looseness("neutral")
+                self.looseness_direction = "neutral"
+                print("Looseness neutral")
+
 
     def load_calibration(self):
         # Open the file in read mode
@@ -30,13 +82,14 @@ class CalibrationController(CalibrationWidget):
             # Read the data
             for row in csv_reader:
                 # Process each row of data
-                self.vx_ar_n, self.vy_ar_n, self.vx_ar_p, self.vy_ar_p, self.vx_de, self.vy_de = row
+                self.vx_ar_n, self.vy_ar_n, self.vx_ar_p, self.vy_ar_p, self.vx_de, self.vy_de,self.looseness_direction = row
             self.vx_ar_n = float(self.vx_ar_n)
             self.vy_ar_n = float(self.vy_ar_n)
             self.vx_ar_p = float(self.vx_ar_p)
             self.vy_ar_p = float(self.vy_ar_p)
             self.vx_de = float(self.vx_de)
             self.vy_de = float(self.vy_de)
+            self.main.guide_camera_controller.set_looseness(self.looseness_direction)
 
         self.checkbox_dec.setChecked(True)
         self.checkbox_ar_n.setChecked(True)
@@ -54,7 +107,8 @@ class CalibrationController(CalibrationWidget):
                 csv_writer = csv.writer(file)
 
                 # Write the data
-                csv_writer.writerow([self.vx_ar_n, self.vy_ar_n, self.vx_ar_p, self.vy_ar_p, self.vx_de, self.vy_de])
+                csv_writer.writerow([self.vx_ar_n, self.vy_ar_n, self.vx_ar_p, self.vy_ar_p, self.vx_de, self.vy_de,
+                                     self.looseness_direction])
             print("Calibration saved!")
         else:
             print("Calibrate first!")
