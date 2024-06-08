@@ -3,4 +3,5 @@ controllers/__pycache__/
 widgets/__pycache__/
 /sharpcap/
 /calibration/calibration.csv
+*.pyc
 *.txt
