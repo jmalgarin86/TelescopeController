@@ -18,8 +18,11 @@ class GuideCameraController(FigureWidget):
 
     def __init__(self, data=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.astrophoto_mode = False
         self.n_frame = 0
         self.looseness_detected = "neutral"
+        self.star_size_threshold = 8
+        self.star_size = None
         self.dec_dir_old = None
         self.frame = None
         self.tracking = False
@@ -130,11 +133,12 @@ class GuideCameraController(FigureWidget):
                 star_centroid, star_size = self.calculate_star_properties()
 
                 # Save info in the file
-                self.file.write(f"{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")} {star_centroid[0]} {star_centroid[1]} {star_size}\n")
+                self.file.write(f"{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')} {star_centroid[0]} {star_centroid[1]} {star_size}\n")
 
                 # Update plot and square position
                 if star_centroid:
                     self.square_position = star_centroid
+                    self.star_size = star_size
 
                     # Ensure the length of the vectors is at most 100 elements
                     if len(self.x_vec) == 100:
@@ -228,8 +232,11 @@ class GuideCameraController(FigureWidget):
                     self.set_reference_position((x_star, y_star))
                     print("Reference position: x, y: %0.0f, %0.0f" % (x_star, y_star))
 
-            # Align with actual reference position
-            self.align_position(r0=(x_star, y_star))
+            if self.get_star_size() > self.star_size_threshold:
+                print("Missed alignment, guiding star lost...")
+            else:
+                # Align with actual reference position
+                self.align_position(r0=(x_star, y_star))
 
             # Wait to next correction
             time.sleep(1)
@@ -289,6 +296,7 @@ class GuideCameraController(FigureWidget):
         if n_steps[1] < 0:
             n_steps = np.linalg.inv(v_n) @ dr
         n_steps[1] = n_steps[1]/2
+        n_steps[0] = n_steps[0]*0.75    # To reduce the overshoot
 
         # Ensure Dec movement happens only in the required direction
         if (self.looseness_detected == "positive" and n_steps[0] < 0) or (self.looseness_detected == "negative" and n_steps[0] > 0):
@@ -308,7 +316,21 @@ class GuideCameraController(FigureWidget):
         else:
             ar_dir = str(0)
 
-        # Send instructions
+        # Limit the steps
+        if n_steps[0] > 20:
+            self.guiding = False
+            print("\nStop guiding!")
+        elif n_steps[0] < -20:
+            self.guiding = False
+            print("\nStop guiding!")
+        if n_steps[1] > 20:
+            self.guiding = False
+            print("\nStop guiding!")
+        if n_steps[1] < -20:
+            self.guiding = False
+            print("\nStop guiding!")
+            
+        # Get instructions
         de_steps = str(int(np.abs(n_steps[0])))
         ar_steps = str(int(np.abs(n_steps[1])))
         if de_steps == "0":
@@ -332,6 +354,8 @@ class GuideCameraController(FigureWidget):
             while ser_input != "Ready!":
                 ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
                 time.sleep(0.01)
+
+            print(command)
 
     def draw_square(self):
         # Create a copy of the frame to draw on
@@ -439,6 +463,12 @@ class GuideCameraController(FigureWidget):
 
     def set_looseness(self, looseness):
         self.looseness_detected = looseness
+
+    def set_star_threshold(self, threshold):
+        self.star_size_threshold = threshold
+
+    def set_astrophoto_mode(self, mode):
+        self.astrophoto_mode = mode
 
 
 class GuideFigureController(FigureWidget):
