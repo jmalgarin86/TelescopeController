@@ -18,6 +18,7 @@ class GuideCameraController(FigureWidget):
 
     def __init__(self, data=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.frame_original = None
         self.astrophoto_mode = False
         self.n_frame = 0
         self.looseness_detected = "neutral"
@@ -78,6 +79,32 @@ class GuideCameraController(FigureWidget):
             return "Permission denied"
         except Exception as e:
             return str(e)
+
+    def delete_all_except_last(self, path):
+        last_file = self.get_last_file_in_directory(path)
+
+        if last_file is None:
+            # print("No files to delete.")
+            return
+        elif isinstance(last_file, str) and ("Path not found" in last_file or "Permission denied" in last_file):
+            print(last_file)
+            return
+
+        try:
+            # List all files in the given path
+            files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+
+            # Delete all files except the last one
+            for file in files:
+                if file != last_file:
+                    os.remove(os.path.join(path, file))
+            # print("All files except the last one have been deleted.")
+        except FileNotFoundError:
+            print("Path not found")
+        except PermissionError:
+            print("Permission denied")
+        except Exception as e:
+            print(str(e))
 
     @staticmethod
     def extract_image_matrix(file_path):
@@ -169,76 +196,83 @@ class GuideCameraController(FigureWidget):
     def update_frame_from_files(self):
         # Get file path
         path = self.get_last_folder_in_directory("/home/josalggui/AstroDMx_DATA")
-        path = self.get_last_folder_in_directory(path)
-        file = self.get_last_file_in_directory(path)
+        if path is None:
+            file = None
+        else:
+            file = self.get_last_file_in_directory(path)
+            self.delete_all_except_last(path)
 
         # Check if there is almost one file
-        if not file:
+        if file is None:
             file_path = self.file_path
         else:
             file_path = os.path.join(path, file)
 
-        # Go ahead if there is a new file
+        # Check for new frame
         if file_path != self.file_path:
             time.sleep(0.1)
-            print("\nNew frame found!")
             self.file_path = file_path
-            self.frame = self.extract_image_matrix(file_path)
+            self.frame_original = self.extract_image_matrix(file_path)
             self.n_frame += 1
+        else:
+            time.sleep(0.1)
 
-            # Get frame in gray scale
-            self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
+        # Get frame
+        self.frame = copy.copy(self.frame_original)
 
-            # Resize the image to half its original size
-            height, width = self.frame.shape[:2]
-            self.frame = cv2.resize(self.frame, dsize=(width // 2, height // 2))
+        # Get frame in gray scale
+        self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
 
-            # Multiply the image by a factor of 8, then clip to 0, 255
-            if np.max(self.frame) > 0:
-                self.frame = np.clip(self.frame * float(8), a_min=0, a_max=255).astype(np.uint8)
+        # Resize the image to half its original size
+        height, width = self.frame.shape[:2]
+        self.frame = cv2.resize(self.frame, dsize=(width // 2, height // 2))
 
-            # Calculate the star centroid and size after each frame update
-            if self.tracking:
-                # Get star centroid and size
-                star_centroid, star_size = self.calculate_star_properties()
+        # Multiply the image by a factor of 8, then clip to 0, 255
+        if np.max(self.frame) > 0:
+            self.frame = np.clip(self.frame * float(8), a_min=0, a_max=255).astype(np.uint8)
 
-                # # Save info in the file
-                # self.file.write(f"{datetime.datetime.now().strftime( "%Y-%m-%d_%H-%M-%S" )} {star_centroid[0]} {star_centroid[1]} {star_size}\n")
+        # Calculate the star centroid and size after each frame update
+        if self.tracking:
+            # Get star centroid and size
+            star_centroid, star_size = self.calculate_star_properties()
 
-                # Update plot and square position
-                if star_centroid:
-                    self.square_position = star_centroid
-                    self.star_size = star_size
+            # # Save info in the file
+            self.file.write(f"{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')} {star_centroid[0]} {star_centroid[1]} {star_size}\n")
 
-                    # Ensure the length of the vectors is at most 100 elements
-                    if len(self.x_vec) == 100:
-                        self.x_vec.pop(0)  # Remove the first element
-                        self.y_vec.pop(0)
-                        self.s_vec.pop(0)
+            # Update plot and square position
+            if star_centroid:
+                self.square_position = star_centroid
+                self.star_size = star_size
 
-                    # Append new data to the list
-                    self.x_vec.append(star_centroid[0] - self.reference_position[0])
-                    self.y_vec.append(star_centroid[1] - self.reference_position[1])
-                    self.s_vec.append(star_size)
+                # Ensure the length of the vectors is at most 100 elements
+                if len(self.x_vec) == 100:
+                    self.x_vec.pop(0)  # Remove the first element
+                    self.y_vec.pop(0)
+                    self.s_vec.pop(0)
 
-                    # Update plots
-                    self.main.plot_controller_pixel.updatePlot(x=self.x_vec, y=self.y_vec)
-                    self.main.plot_controller_surface.updatePlot(x=self.s_vec)
+                # Append new data to the list
+                self.x_vec.append(star_centroid[0] - self.reference_position[0])
+                self.y_vec.append(star_centroid[1] - self.reference_position[1])
+                self.s_vec.append(star_size)
 
-            # Draw a red square on the grayscale frame
-            frame_with_square = self.draw_square()
+                # Update plots
+                self.main.plot_controller_pixel.updatePlot(x=self.x_vec, y=self.y_vec)
+                self.main.plot_controller_surface.updatePlot(x=self.s_vec)
 
-            # Convert the frame to RGB format
-            rgb_image = cv2.cvtColor(frame_with_square, cv2.COLOR_BGR2RGB)
+        # Draw a red square on the grayscale frame
+        frame_with_square = self.draw_square()
 
-            # Convert the image to a format suitable for QLabel
-            h, w, ch = rgb_image.shape
-            bytes_per_line = ch * w
-            q_image = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
+        # Convert the frame to RGB format
+        rgb_image = cv2.cvtColor(frame_with_square, cv2.COLOR_BGR2RGB)
 
-            # Add the image to the QGraphicsScene
-            self.scene.clear()
-            self.scene.addPixmap(QPixmap.fromImage(q_image))
+        # Convert the image to a format suitable for QLabel
+        h, w, ch = rgb_image.shape
+        bytes_per_line = ch * w
+        q_image = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
+
+        # Add the image to the QGraphicsScene
+        self.scene.clear()
+        self.scene.addPixmap(QPixmap.fromImage(q_image))
 
     def update_frame_from_camera(self):
         # Read a frame from the webcam
@@ -510,7 +544,7 @@ class GuideCameraController(FigureWidget):
             x, y = int(img_coords.x()), int(img_coords.y())
 
             # Check if the click is within the image area
-            h, w, _ = self.camera_guide.read()[1].shape  # Get the actual image dimensions
+            h, w = self.frame.shape  # Get the actual image dimensions
             if 0 <= x < w and 0 <= y < h:
                 self.square_position = (x, y)
                 self.set_reference_position((x, y))
@@ -522,7 +556,7 @@ class GuideCameraController(FigureWidget):
             x, y = int(img_coords.x()), int(img_coords.y())
 
             # Check if the click is within the image area
-            h, w, _ = self.camera_guide.read()[1].shape  # Get the actual image dimensions
+            h, w = self.frame.shape  # Get the actual image dimensions
             if 0 <= x < w and 0 <= y < h:
                 self.square_size = (
                     int(np.abs(self.square_position[0] - x) * 2), int(np.abs(self.square_position[1] - y) * 2))
