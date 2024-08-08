@@ -1,7 +1,8 @@
 .idea/
 controllers/__pycache__/
 widgets/__pycache__/
-/sharpcap/
+/captures/
+/analysis/
 /calibration/calibration.csv
 *.pyc
 *.txt

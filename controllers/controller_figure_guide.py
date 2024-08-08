@@ -345,15 +345,19 @@ class GuideCameraController(FigureWidget):
         vy_ra_n = self.main.calibration_controller.vy_ar_n
 
         # Get the initial list of folders in the directory
-        items = os.listdir("sharpcap")
-        initial_folders = [item for item in items if os.path.isdir(os.path.join("sharpcap", item))]
+        items = os.listdir("captures")
+        initial_folders = [item for item in items if os.path.isdir(os.path.join("captures", item))]
         n_files = 0
         new_folder = None
         self.reference_position_prov = self.get_reference_position()
 
         # Star guiding with updates in position after each frame
         current_frame = copy.copy(self.n_frame)
+        start_time = time.time()
         while self.guiding:
+            current_time = time.time()
+            elapsed_time = current_time - start_time
+
             # Check if there is a new frame to avoid repetitions of movements
             if self.n_frame == current_frame:
                 time.sleep(0.1)
@@ -367,8 +371,8 @@ class GuideCameraController(FigureWidget):
             y_star = r0[1]
 
             # Get the updated list of folders in the directory
-            items = os.listdir("sharpcap")
-            current_folders = [item for item in items if os.path.isdir(os.path.join("sharpcap", item))]
+            items = os.listdir("captures")
+            current_folders = [item for item in items if os.path.isdir(os.path.join("captures", item))]
 
             # Check for new folder
             if len(current_folders) > len(initial_folders):
@@ -376,7 +380,7 @@ class GuideCameraController(FigureWidget):
 
                 # Check for new folders
                 new_folders = [folder for folder in current_folders if
-                               folder not in initial_folders and os.path.isdir(os.path.join("sharpcap", folder))]
+                               folder not in initial_folders and os.path.isdir(os.path.join("captures", folder))]
                 new_folder = new_folders[0]
 
                 # Reset initial_folders
@@ -387,9 +391,10 @@ class GuideCameraController(FigureWidget):
                 pass
             else:
                 time.sleep(0.1)
-                folder_path = os.path.join("sharpcap", new_folder)
+                folder_path = os.path.join("captures", new_folder)
                 folder_files = os.listdir(folder_path)
-                if len(folder_files) > n_files:
+                if len(folder_files) > n_files and elapsed_time >= 5:
+                    start_time = copy.copy(current_time)
                     n_files = len(folder_files)
                     dx = int(vx_ra_n * 2)
                     dy = int(vy_ra_n * 2)
@@ -482,20 +487,6 @@ class GuideCameraController(FigureWidget):
         else:
             ar_dir = str(0)
 
-        # Limit the steps
-        if n_steps[0] > 20:
-            self.guiding = False
-            print("\nStop guiding!")
-        elif n_steps[0] < -20:
-            self.guiding = False
-            print("\nStop guiding!")
-        if n_steps[1] > 20:
-            self.guiding = False
-            print("\nStop guiding!")
-        if n_steps[1] < -20:
-            self.guiding = False
-            print("\nStop guiding!")
-            
         # Get instructions
         de_steps = str(int(np.abs(n_steps[0])))
         ar_steps = str(int(np.abs(n_steps[1])))
@@ -520,8 +511,6 @@ class GuideCameraController(FigureWidget):
             while ser_input != "Ready!":
                 ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
                 time.sleep(0.01)
-
-            print(command)
 
     def draw_square(self):
         # Create a copy of the frame to draw on
