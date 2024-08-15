@@ -35,9 +35,10 @@ class GuideCameraController(FigureWidget):
         self.square_position = (25, 25)
         self.square_size = (50, 50)
         self.timer = QTimer(self)
-        self.x_vec = []
-        self.y_vec = []
-        self.s_vec = []
+        self.x_vec = [0]
+        self.y_vec = [0]
+        self.s_vec = [0]
+        self.new_fitting = False
 
         # Create file to save data
         current_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -214,22 +215,27 @@ class GuideCameraController(FigureWidget):
             self.file_path = file_path
             self.frame_original = self.extract_image_matrix(file_path)
             self.n_frame += 1
+            self.new_fitting = True
         else:
             time.sleep(0.1)
 
         # Get frame
         self.frame = copy.copy(self.frame_original)
 
-        # Get frame in gray scale
-        self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
+        try:
+            # Get frame in gray scale
+            self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
 
-        # Resize the image to half its original size
-        height, width = self.frame.shape[:2]
-        self.frame = cv2.resize(self.frame, dsize=(width // 2, height // 2))
+            # Resize the image to half its original size
+            height, width = self.frame.shape[:2]
+            self.frame = cv2.resize(self.frame, dsize=(width // 2, height // 2))
 
-        # Multiply the image by a factor of 8, then clip to 0, 255
-        if np.max(self.frame) > 0:
-            self.frame = np.clip(self.frame * float(8), a_min=0, a_max=255).astype(np.uint8)
+            # Multiply the image by a factor of 8, then clip to 0, 255
+            if np.max(self.frame) > 0:
+                self.frame = np.clip(self.frame * float(8), a_min=0, a_max=255).astype(np.uint8)
+
+        except:
+            pass
 
         # Calculate the star centroid and size after each frame update
         if self.tracking:
@@ -244,20 +250,27 @@ class GuideCameraController(FigureWidget):
                 self.square_position = star_centroid
                 self.star_size = star_size
 
-                # Ensure the length of the vectors is at most 100 elements
-                if len(self.x_vec) == 100:
-                    self.x_vec.pop(0)  # Remove the first element
-                    self.y_vec.pop(0)
-                    self.s_vec.pop(0)
+                # Get deviation and update plot in case new deviation is obtained
+                dx = star_centroid[0] - self.reference_position[0]
+                dy = star_centroid[1] - self.reference_position[1]
+                if self.new_fitting:
 
-                # Append new data to the list
-                self.x_vec.append(star_centroid[0] - self.reference_position[0])
-                self.y_vec.append(star_centroid[1] - self.reference_position[1])
-                self.s_vec.append(star_size)
+                    # Ensure the length of the vectors is at most 100 elements
+                    if len(self.x_vec) == 100:
+                        self.x_vec.pop(0)  # Remove the first element
+                        self.y_vec.pop(0)
+                        self.s_vec.pop(0)
 
-                # Update plots
-                self.main.plot_controller_pixel.updatePlot(x=self.x_vec, y=self.y_vec)
-                self.main.plot_controller_surface.updatePlot(x=self.s_vec)
+                    # Append new data to the list
+                    self.x_vec.append(star_centroid[0] - self.reference_position[0])
+                    self.y_vec.append(star_centroid[1] - self.reference_position[1])
+                    self.s_vec.append(star_size)
+
+                    # Update plots
+                    self.main.plot_controller_pixel.updatePlot(x=self.x_vec, y=self.y_vec)
+                    self.main.plot_controller_surface.updatePlot(x=self.s_vec)
+
+                    self.new_fitting = False
 
         # Draw a red square on the grayscale frame
         frame_with_square = self.draw_square()
@@ -396,8 +409,8 @@ class GuideCameraController(FigureWidget):
                 if len(folder_files) > n_files and elapsed_time >= 5:
                     start_time = copy.copy(current_time)
                     n_files = len(folder_files)
-                    dx = int(vx_ra_n * 2)
-                    dy = int(vy_ra_n * 2)
+                    dx = int(vx_ra_n * 4)
+                    dy = int(vy_ra_n * 4 )
                     x_star += dx
                     y_star += dy
                     self.set_reference_position((x_star, y_star))
@@ -410,7 +423,7 @@ class GuideCameraController(FigureWidget):
                 self.align_position(r0=(x_star, y_star))
 
             # Wait to next correction
-            time.sleep(1)
+            time.sleep(2)
 
     def go_to_reference(self):
         # Try to align with reference position and try again until it reach reference position
@@ -428,7 +441,7 @@ class GuideCameraController(FigureWidget):
         else:
             return False
 
-    def align_position(self, r0=None):
+    def align_position(self, r0=None, period=str(2)):
         # Get reference position
         if r0 is None:
             r0 = self.reference_position
@@ -440,12 +453,13 @@ class GuideCameraController(FigureWidget):
         dr = np.array([r1[0] - r0[0], r1[1] - r0[1]])
 
         # Move the camera
-        self.move_camera(dx=dr[0], dy=dr[1])
+        ser_input = self.move_camera(dx=dr[0], dy=dr[1], period=period)
+        if ser_input == "Ready!":
+            return ser_input
+        else:
+            return 0
 
-    def move_camera(self, dx=0, dy=0):
-        # Set speed
-        period = str(2)
-
+    def move_camera(self, dx=0, dy=0, period=str(2)):
         # Get data from calibration
         vx_de = self.main.calibration_controller.vx_de
         vy_de = self.main.calibration_controller.vy_de
@@ -462,12 +476,12 @@ class GuideCameraController(FigureWidget):
         dr = np.array([dx, dy])
         dr = -np.reshape(dr, (2, 1))
 
-        # Get required steps
+        # Get required steps (if n_steps[1]>0, then it is time, not steps)
         n_steps = np.linalg.inv(v_p) @ dr
         if n_steps[1] < 0:
             n_steps = np.linalg.inv(v_n) @ dr
-        n_steps[1] = n_steps[1]/2
-        n_steps[0] = n_steps[0]*0.75    # To reduce the overshoot
+        # n_steps[1] = n_steps[1]/2
+        n_steps[0] = n_steps[0]/2    # To reduce the overshoot
 
         # Ensure Dec movement happens only in the required direction
         if (self.looseness_detected == "positive" and n_steps[0] < 0) or (self.looseness_detected == "negative" and n_steps[0] > 0):
@@ -489,7 +503,12 @@ class GuideCameraController(FigureWidget):
 
         # Get instructions
         de_steps = str(int(np.abs(n_steps[0])))
-        ar_steps = str(int(np.abs(n_steps[1])))
+        time_delay = 0
+        if n_steps[1] > 0:
+            ar_steps = 0
+            time_delay = n_steps[1][0]
+        else:
+            ar_steps = str(int(np.abs(n_steps[1])))
         if de_steps == "0":
             de_command = " 0 0 0"
         else:
@@ -500,17 +519,39 @@ class GuideCameraController(FigureWidget):
             ar_command = " %s %s %s" % (ar_steps, ar_dir, period)
 
         # Send instructions
-        if de_steps == "0" and ar_steps == "0":
+        if time_delay > 0:
+            stop = "1"
+        else:
+            stop = "0"
+        if de_steps == "0" and ar_steps == "0" and stop == "0":
             pass
+            return "Ready!"
         else:
             command = "0" + ar_command + de_command + "\n"
-            self.main.waiting_commands.append(command)
-
             # Wait until it finish
-            ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
-            while ser_input != "Ready!":
+            if stop == "1":
+                # Move AR
+                self.main.waiting_commands.append("1 0 0 0 0 0 0\n")
+                time.sleep(time_delay)
+                # Move DEC
+                if de_command == " 0 0 0":
+                    command = "0 1 0 52" + " 0 0 0" + "\n"
+                    self.main.waiting_commands.append(command)
+                else:
+                    command = "0 0 0 52" + de_command + "\n"
+                    self.main.waiting_commands.append(command)
                 ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
-                time.sleep(0.01)
+                while ser_input != "Ready!":
+                    ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
+                    time.sleep(0.01)
+                return "Ready!"
+            else:
+                self.main.waiting_commands.append(command)
+                ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
+                while ser_input != "Ready!":
+                    ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
+                    time.sleep(0.01)
+                return ser_input
 
     def draw_square(self):
         # Create a copy of the frame to draw on

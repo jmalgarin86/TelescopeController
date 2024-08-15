@@ -1,6 +1,8 @@
 import sys
 import threading
 import time
+import os
+from datetime import datetime, timedelta
 
 import qdarkstyle
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QHBoxLayout
@@ -98,6 +100,26 @@ class TelescopeController(QMainWindow):
 
         self.showMaximized()
 
+    import os
+    import time
+    from datetime import datetime, timedelta
+
+    @staticmethod
+    def shutdown_at(hour=6, minute=0):
+        # Get the current time
+        now = datetime.now()
+
+        # Define the target time (6 a.m. today)
+        target_time_0 = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+        target_time_1 = now.replace(hour=hour, minute=minute+5, second=0, microsecond=0)
+
+        # If it's already past 6 a.m. today, set the target to 6 a.m. the next day
+        if target_time_0 <= now <= target_time_1:
+            # Shutdown the computer (choose the appropriate command for your OS)
+            if os.name == 'nt':  # Windows
+                os.system("shutdown /s /t 0")
+            elif os.name == 'posix':  # Linux or macOS
+                os.system("shutdown now")
 
     def on_key_pressed(self, key_name):
         message = f"Key pressed: {key_name}"
@@ -109,6 +131,7 @@ class TelescopeController(QMainWindow):
                 command = self.waiting_commands.pop(0)
                 self.arduino.send_command(command)
             time.sleep(0.1)
+            self.shutdown_at(hour=7, minute=0)
 
     def closeEvent(self, event):
         # Return stdout to defaults.

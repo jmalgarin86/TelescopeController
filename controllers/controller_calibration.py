@@ -26,13 +26,36 @@ class CalibrationController(CalibrationWidget):
         self.button_ar_p.clicked.connect(self.calibrateArP)
         self.button_ar_n.clicked.connect(self.calibrateArN)
         self.button_dec_looseness.clicked.connect(self.calibrateDecLooseness)
+        self.button_calibration_test.clicked.connect(self.testCalibration)
         self.button_load.clicked.connect(self.load_calibration)
         self.button_save.clicked.connect(self.save_calibration)
 
+    def testCalibration(self):
+        # Create a thread to do the calibration test in parallel to the camera
+        thread = threading.Thread(target=self.testCalibrationThread)
+        thread.start()
+
+    def testCalibrationThread(self):
+        if self.button_calibration_test.isChecked():
+            # Get initial coordinates
+            self.x0, self.y0 = self.main.guide_camera_controller.get_coordinates()
+            print("\nOrigin: %i, %i" % (self.x0, self.y0))
+
+            # Move to desired target
+            print("Target %i, %i" % (self.x0-50, self.y0-50))
+            self.main.guide_camera_controller.align_position(r0=(self.x0-50, self.y0-50), period=str(10))
+            time.sleep(5)
+            self.x0, self.y0 = self.main.guide_camera_controller.get_coordinates()
+            print("Got %i, %i" % (self.x0, self.y0))
+
+            # Uncheck button
+            self.button_calibration_test.setChecked(False)
+
     def calibrateDecLooseness(self):
         if self.button_dec_looseness.isChecked():
-            # Get initial coordinates and wait 10 seconds
+            # Get initial coordinates
             self.x0, self.y0 = self.main.guide_camera_controller.get_coordinates()
+            self.checkbox_dec_looseness.setChecked(False)
         else:
             # Get final coordinates
             self.x1, self.y1 = self.main.guide_camera_controller.get_coordinates()
@@ -71,7 +94,7 @@ class CalibrationController(CalibrationWidget):
                 self.main.guide_camera_controller.set_looseness("neutral")
                 self.looseness_direction = "neutral"
                 print("Looseness neutral")
-
+            self.checkbox_dec_looseness.setChecked(True)
 
     def load_calibration(self):
         # Open the file in read mode
@@ -91,10 +114,19 @@ class CalibrationController(CalibrationWidget):
             self.vy_de = float(self.vy_de)
             self.main.guide_camera_controller.set_looseness(self.looseness_direction)
 
+        print("\nvx_ar_p: %0.5f px/s" % self.vx_ar_p)
+        print("vy_ar_p: %0.5f px/s" % self.vy_ar_p)
+        print("vx_ar_n: %0.5f px/step" % self.vx_ar_n)
+        print("vx_ar_n: %0.5f px/step" % self.vy_ar_n)
+        print("vx_de: %0.5f px/step" % self.vx_de)
+        print("vy_de: %0.5f px/step" % self.vy_de)
+        print("looseness direction: %s" % self.looseness_direction)
+
         self.checkbox_dec.setChecked(True)
         self.checkbox_ar_n.setChecked(True)
         self.checkbox_ar_p.setChecked(True)
-        print("Calibration loaded!")
+        self.checkbox_dec_looseness.setChecked(True)
+        print("\nCalibration loaded!")
 
     def save_calibration(self):
         # Check if calibration is done
@@ -144,7 +176,7 @@ class CalibrationController(CalibrationWidget):
         if self.main.manual_controller.dec_dir == 1:
             command = "0 0 0 52 " + str(n_steps) + " 1 " + str(period) + "\n"
         else:
-            command = "1 0 0 52 " + str(n_steps) + " 0 " + str(period) + "\n"
+            command = "0 0 0 52 " + str(n_steps) + " 0 " + str(period) + "\n"
         self.main.waiting_commands.append(command)
 
         # Wait until it finish
@@ -173,38 +205,33 @@ class CalibrationController(CalibrationWidget):
     def doCalibrateArP(self):
         print('Start AR + calibration')
 
-        # Period is x0
-        period = 26
-
-        # Number of steps (to be changed by an input)
-        n_steps = 100
-
         # Get initial coordinates
         x0, y0 = self.main.guide_camera_controller.get_coordinates()
 
-        # Set command to arduino
-        command = "0 " + str(n_steps) + " 1 " + str(period) + " 0 0 0\n"
+        # Stop mount
+        command = "1 0 0 0 0 0 0\n"
         self.main.waiting_commands.append(command)
+        print(command)
 
-        # Wait until it finish
-        ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
-        while ser_input != "Ready!":
-            ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
-            time.sleep(0.01)
-        print(ser_input)
+        # Wit 5 seconds
+        command = "0 0 0 52 0 0 0\n"
+        time.sleep(5)
+        self.main.waiting_commands.append(command)
+        print(command)
+        print("Ready!")
 
-        # Sleep 1 seconds to let the frame to refresh
+        # Sleep 1 seconds to let the frame refresh
         time.sleep(1)
 
         # Get final coordinates
         x1, y1 = self.main.guide_camera_controller.get_coordinates()
 
         # Get characteristics
-        self.vx_ar_p = (x1 - x0) / n_steps
-        self.vy_ar_p = (y1 - y0) / n_steps
+        self.vx_ar_p = (x1 - x0) / 5  # pixels per second
+        self.vy_ar_p = (y1 - y0) / 5  # pixels per second
 
-        print("vx_ar_p: %0.5f" % self.vx_ar_p)
-        print("vy_ar_p: %0.5f" % self.vy_ar_p)
+        print("vx_ar_p: %0.5f px/s" % self.vx_ar_p)
+        print("vy_ar_p: %0.5f px/s" % self.vy_ar_p)
 
         # Show the check in the checkbox
         self.checkbox_ar_p.setChecked(True)
@@ -213,7 +240,7 @@ class CalibrationController(CalibrationWidget):
         print('Start AR - calibration')
 
         # Speed x2 in negative direction
-        period = 26
+        period = 15
 
         # Number of steps (to be changed by an input)
         n_steps = 100

@@ -113,6 +113,11 @@ void loop() {
     }
   }
 
+  // Check if stop
+  if (stop == 1) {
+    return;
+  }
+
   // Get the current time
   unsigned long t1 = millis();
   
@@ -178,4 +183,3 @@ void loop() {
     }
   }
 }
-

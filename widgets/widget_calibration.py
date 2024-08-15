@@ -24,6 +24,9 @@ class CalibrationWidget(QGroupBox):
         self.button_dec_looseness = QPushButton("4) DEC looseness")
         self.button_dec_looseness.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         self.button_dec_looseness.setCheckable(True)
+        self.button_calibration_test = QPushButton("Test calibration")
+        self.button_calibration_test.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+        self.button_calibration_test.setCheckable(True)
         self.button_load = QPushButton("Load")
         self.button_save = QPushButton("Save")
 
@@ -50,6 +53,7 @@ class CalibrationWidget(QGroupBox):
 
         # Layout for save/load buttons
         layout_2 = QHBoxLayout()
+        layout_2.addWidget(self.button_calibration_test)
         layout_2.addWidget(self.button_load)
         layout_2.addWidget(self.button_save)
         layout.addLayout(layout_2, 4, 0, 1, 2)
