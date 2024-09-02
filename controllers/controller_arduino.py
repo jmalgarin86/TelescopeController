@@ -12,8 +12,11 @@ class ArduinoController:
         ports = serial.tools.list_ports.comports()
 
         for port in ports:
-            if "Arduino" in port.manufacturer:
-                return port.device
+            try:
+                if "Arduino" in port.manufacturer:
+                    return port.device
+            except:
+                pass
 
         return None
 

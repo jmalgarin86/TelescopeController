@@ -8,6 +8,7 @@
 import sys
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from widgets.widget_console import ConsoleWidget
+import datetime
 
 
 class ConsoleController(ConsoleWidget):
@@ -28,8 +29,14 @@ class ConsoleController(ConsoleWidget):
     def __init__(self):
         super().__init__()
 
-        # Redirect the output of print to the console widget
-        sys.stdout = EmittingStream(textWritten=self.write_console)
+        # Redirect the output of print to the console widget and log it
+        current_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        log_file_path = f"log_files/log_{current_datetime}.txt"
+        self.emitting_stream = EmittingStream(log_file_path=log_file_path)
+        sys.stdout = self.emitting_stream
+
+        # Connect the signal to the write_console method
+        self.emitting_stream.textWritten.connect(self.write_console)
 
     def write_console(self, text):
         cursor = self.console.textCursor()
@@ -54,9 +61,23 @@ class EmittingStream(QObject):
 
     textWritten = pyqtSignal(str)
 
+    def __init__(self, log_file_path=None):
+        super().__init__()
+        self.log_file_path = log_file_path
+        if self.log_file_path:
+            self.log_file = open(self.log_file_path, 'a')  # Open the log file in append mode
+
     def write(self, text):
+        if self.log_file_path:
+            self.log_file.write("\n"+text)
+            self.log_file.flush()  # Ensure the text is written immediately
         self.textWritten.emit(str(text))
 
     @pyqtSlot()
     def flush(self):
-        pass
+        if self.log_file_path:
+            self.log_file.flush()
+
+    def close(self):
+        if self.log_file_path:
+            self.log_file.close()
