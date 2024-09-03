@@ -86,7 +86,7 @@ class TelescopeController(QMainWindow):
         plots_layout.addWidget(self.plot_controller_surface)
 
         # Connect to Arduino
-        self.arduino = ArduinoController()
+        self.arduino = ArduinoController(print_command=True)
 
         # Create joystick controller
         JoyStickController(self)
@@ -99,10 +99,6 @@ class TelescopeController(QMainWindow):
         thread.start()
 
         self.showMaximized()
-
-    import os
-    import time
-    from datetime import datetime, timedelta
 
     @staticmethod
     def shutdown_at(hour=6, minute=0):

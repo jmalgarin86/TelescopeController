@@ -3,7 +3,8 @@ import serial.tools.list_ports
 
 
 class ArduinoController:
-    def __init__(self, baud_rate=19200):
+    def __init__(self, baud_rate=19200, print_command=False):
+        self.print_command = print_command
         self.baud_rate = baud_rate
         self.serial_connection = None
 
@@ -40,6 +41,8 @@ class ArduinoController:
         return 0
 
     def send_command(self, command):
+        if self.print_command:
+            print(command)
         if self.serial_connection:
             if self.serial_connection.is_open:
                 self.serial_connection.write(command.encode())

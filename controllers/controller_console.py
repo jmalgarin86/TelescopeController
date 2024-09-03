@@ -68,10 +68,22 @@ class EmittingStream(QObject):
             self.log_file = open(self.log_file_path, 'a')  # Open the log file in append mode
 
     def write(self, text):
+        # Get the current date and time
+        current_time = datetime.datetime.now().strftime("%H:%M:%S")
+
+        # Prepend the time to the text
+        if text == "\n" or text == " ":
+            formatted_text = text
+        else:
+            formatted_text = f"{current_time} - {text}"
+
+        # Write to the log file if a path is provided
         if self.log_file_path:
-            self.log_file.write("\n"+text)
+            self.log_file.write(formatted_text)
             self.log_file.flush()  # Ensure the text is written immediately
-        self.textWritten.emit(str(text))
+
+        # Emit the signal with the timestamped text
+        self.textWritten.emit(str(formatted_text))
 
     @pyqtSlot()
     def flush(self):

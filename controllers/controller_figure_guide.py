@@ -143,7 +143,8 @@ class GuideCameraController(FigureWidget):
                 print("Start camera")
 
             else:   # Update frame from file
-                print("Could not open camera. Checking for external files.")
+                print("Could not open camera.")
+                print("Checking for external files.")
 
                 # Create timer to update the files
                 self.timer.timeout.connect(self.update_frame_from_files)
@@ -410,7 +411,7 @@ class GuideCameraController(FigureWidget):
                     start_time = copy.copy(current_time)
                     n_files = len(folder_files)
                     dx = int(vx_ra_n * 4)
-                    dy = int(vy_ra_n * 4 )
+                    dy = int(vy_ra_n * 4)
                     x_star += dx
                     y_star += dy
                     self.set_reference_position((x_star, y_star))
@@ -423,7 +424,7 @@ class GuideCameraController(FigureWidget):
                 self.align_position(r0=(x_star, y_star))
 
             # Wait to next correction
-            time.sleep(2)
+            time.sleep(3)
 
     def go_to_reference(self):
         # Try to align with reference position and try again until it reach reference position
@@ -448,6 +449,13 @@ class GuideCameraController(FigureWidget):
 
         # Get current position
         r1 = self.get_coordinates()
+
+        # Get distance
+        distance = np.sqrt((r1[0] - r0[0])**2 + (r1[1] - r0[1])**2)
+        if distance>20:
+            print("ERROR: Arduino is locked. Motors stopped.")
+            self.main.waiting_commands.append("0 0 0 0 0 0 0\n")
+            return 0
 
         # Calculate required displacement
         dr = np.array([r1[0] - r0[0], r1[1] - r0[1]])
@@ -480,8 +488,6 @@ class GuideCameraController(FigureWidget):
         n_steps = np.linalg.inv(v_p) @ dr
         if n_steps[1] < 0:
             n_steps = np.linalg.inv(v_n) @ dr
-        # n_steps[1] = n_steps[1]/2
-        n_steps[0] = n_steps[0]/2    # To reduce the overshoot
 
         # Ensure Dec movement happens only in the required direction
         if (self.looseness_detected == "positive" and n_steps[0] < 0) or (self.looseness_detected == "negative" and n_steps[0] > 0):

@@ -125,22 +125,11 @@ def display_image(image):
 
 
 # Load the FITS file
-fits_file = 'denoised_image.fit'  # Update with your FITS file path
+fits_file = 'starless_cropped_r_pp_opt_rgb_r.fit'  # Update with your FITS file path
 hdul = fits.open(fits_file)
 image_data = hdul[0].data
 image_data = image_data[:, :, :]
 hdul[0].data = image_data
-
-# sharpened_image = increase_sharpness(image_data)
-#
-# original_image = np.transpose(np.float64(image_data), (1, 2, 0))  # Change shape to (n, n, 3)
-# sharpened_image = np.transpose(sharpened_image, (1, 2, 0))  # Change shape to (n, n, 3)
-# comparison = np.concatenate((original_image[1250:1750, 1250:1750, :], sharpened_image[1250:1750, 1250:1750, :]), axis=0)
-#
-#
-# # display_image(sharpened_image)
-# display_image(comparison)
-
 
 # Apply BM3D filter to the image
 start_time = time.time()
