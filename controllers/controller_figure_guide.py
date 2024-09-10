@@ -39,6 +39,7 @@ class GuideCameraController(FigureWidget):
         self.y_vec = [0]
         self.s_vec = [0]
         self.new_fitting = False
+        self.n_dec_warnings = 0
 
         # Create file to save data
         current_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -412,13 +413,14 @@ class GuideCameraController(FigureWidget):
                     n_files = len(folder_files)
                     dx = int(vx_ra_n * 4)
                     dy = int(vy_ra_n * 4)
-                    x_star += dx
-                    y_star += dy
+                    x_star += dx/dx
+                    y_star += dy/dy
                     self.set_reference_position((x_star, y_star))
                     print("Reference position: x, y: %0.0f, %0.0f" % (x_star, y_star))
 
             if self.get_star_size() > self.star_size_threshold:
                 print("Missed alignment, guiding star lost...")
+                self.square_position = self.get_reference_position()
             else:
                 # Align with actual reference position
                 self.align_position(r0=(x_star, y_star))
@@ -492,6 +494,16 @@ class GuideCameraController(FigureWidget):
         # Ensure Dec movement happens only in the required direction
         if (self.looseness_detected == "positive" and n_steps[0] < 0) or (self.looseness_detected == "negative" and n_steps[0] > 0):
             n_steps[0] = 0
+            self.n_dec_warnings += 1
+            # Check if looseness_detection has to switch
+            if self.n_dec_warnings >= 5 and self.looseness_detected == "positive":
+                self.looseness_detected = "negative"
+                self.n_dec_warnings = 0
+            elif self.n_dec_warnings >= 5 and self.looseness_detected == "negative":
+                self.looseness_detected = "positive"
+                self.n_dec_warnings = 0
+        else:
+            self.n_dec_warnings = 0
 
         # Set directions
         if n_steps[0] >= 0 and self.main.manual_controller.dec_dir == 1:

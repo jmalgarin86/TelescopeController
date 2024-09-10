@@ -22,7 +22,8 @@ class CalibrationController(CalibrationWidget):
         self.x1 = None
         self.y0 = None
         self.y1 = None
-        self.button_dec.clicked.connect(self.calibrateDec)
+        self.button_dec_p.clicked.connect(self.calibrateDecP)
+        self.button_dec_n.clicked.connect(self.calibrateDecN)
         self.button_ar_p.clicked.connect(self.calibrateArP)
         self.button_ar_n.clicked.connect(self.calibrateArN)
         self.button_dec_looseness.clicked.connect(self.calibrateDecLooseness)
@@ -122,7 +123,8 @@ class CalibrationController(CalibrationWidget):
         print("vy_de: %0.5f px/step" % self.vy_de)
         print("looseness direction: %s" % self.looseness_direction)
 
-        self.checkbox_dec.setChecked(True)
+        self.checkbox_dec_p.setChecked(True)
+        self.checkbox_dec_n.setChecked(True)
         self.checkbox_ar_n.setChecked(True)
         self.checkbox_ar_p.setChecked(True)
         self.checkbox_dec_looseness.setChecked(True)
@@ -145,9 +147,14 @@ class CalibrationController(CalibrationWidget):
         else:
             print("Calibrate first!")
 
-    def calibrateDec(self):
+    def calibrateDecP(self):
         # Create a thread to do the calibration in parallel to the camera
-        thread = threading.Thread(target=self.doCalibrateDec)
+        thread = threading.Thread(target=self.doCalibrateDec(direction=+1))
+        thread.start()
+
+    def calibrateDecN(self):
+        # Create a thread to do the calibration in parallel to the camera
+        thread = threading.Thread(target=self.doCalibrateDec(direction=-1))
         thread.start()
 
     def calibrateArP(self):
@@ -160,7 +167,7 @@ class CalibrationController(CalibrationWidget):
         thread = threading.Thread(target=self.doCalibrateArN)
         thread.start()
 
-    def doCalibrateDec(self):
+    def doCalibrateDec(self, direction=+1):
         print('Start DEC calibration')
 
         # Check for speed x2
@@ -173,10 +180,16 @@ class CalibrationController(CalibrationWidget):
         x0, y0 = self.main.guide_camera_controller.get_coordinates()
 
         # Set command to arduino
-        if self.main.manual_controller.dec_dir == 1:
-            command = "0 0 0 52 " + str(n_steps) + " 1 " + str(period) + "\n"
-        else:
-            command = "0 0 0 52 " + str(n_steps) + " 0 " + str(period) + "\n"
+        if direction == +1:
+            if self.main.manual_controller.dec_dir == 1:
+                command = "0 0 0 52 " + str(n_steps) + " 1 " + str(period) + "\n"
+            else:
+                command = "0 0 0 52 " + str(n_steps) + " 0 " + str(period) + "\n"
+        elif direction == -1:
+            if self.main.manual_controller.dec_dir == 1:
+                command = "0 0 0 52 " + str(n_steps) + " 0 " + str(period) + "\n"
+            else:
+                command = "0 0 0 52 " + str(n_steps) + " 1 " + str(period) + "\n"
         self.main.waiting_commands.append(command)
 
         # Wait until it finish
@@ -193,14 +206,15 @@ class CalibrationController(CalibrationWidget):
         x1, y1 = self.main.guide_camera_controller.get_coordinates()
 
         # Get characteristics
-        self.vx_de = (x1 - x0) / n_steps
-        self.vy_de = (y1 - y0) / n_steps
+        self.vx_de = direction * (x1 - x0) / n_steps
+        self.vy_de = direction * (y1 - y0) / n_steps
 
         print("vx_de: %0.5f" % self.vx_de)
         print("vy_de: %0.5f" % self.vy_de)
 
         # Show the check in the checkbox
-        self.checkbox_dec.setChecked(True)
+        self.checkbox_dec_p.setChecked(True)
+        self.dheckbox_dec_n.setChecked(True)
 
     def doCalibrateArP(self):
         print('Start AR + calibration')
@@ -211,13 +225,11 @@ class CalibrationController(CalibrationWidget):
         # Stop mount
         command = "1 0 0 0 0 0 0\n"
         self.main.waiting_commands.append(command)
-        print(command)
 
         # Wit 5 seconds
         command = "0 0 0 52 0 0 0\n"
         time.sleep(5)
         self.main.waiting_commands.append(command)
-        print(command)
         print("Ready!")
 
         # Sleep 1 seconds to let the frame refresh
