@@ -454,7 +454,7 @@ class GuideCameraController(FigureWidget):
 
         # Get distance
         distance = np.sqrt((r1[0] - r0[0])**2 + (r1[1] - r0[1])**2)
-        if distance>20:
+        if distance>100:
             print("ERROR: Arduino is locked. Motors stopped.")
             self.main.waiting_commands.append("0 0 0 0 0 0 0\n")
             return 0
