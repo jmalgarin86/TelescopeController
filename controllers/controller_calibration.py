@@ -12,6 +12,7 @@ class CalibrationController(CalibrationWidget):
 
         # Connect buttons to actions
         self.looseness_direction = None
+        self.direction = +1
         self.vx_ar_n = None
         self.vy_ar_n = None
         self.vy_ar_p = None
@@ -149,12 +150,14 @@ class CalibrationController(CalibrationWidget):
 
     def calibrateDecP(self):
         # Create a thread to do the calibration in parallel to the camera
-        thread = threading.Thread(target=self.doCalibrateDec(direction=+1))
+        self.direction = +1
+        thread = threading.Thread(target=self.doCalibrateDec)
         thread.start()
 
     def calibrateDecN(self):
         # Create a thread to do the calibration in parallel to the camera
-        thread = threading.Thread(target=self.doCalibrateDec(direction=-1))
+        self.direction = -1
+        thread = threading.Thread(target=self.doCalibrateDec)
         thread.start()
 
     def calibrateArP(self):
@@ -167,7 +170,7 @@ class CalibrationController(CalibrationWidget):
         thread = threading.Thread(target=self.doCalibrateArN)
         thread.start()
 
-    def doCalibrateDec(self, direction=+1):
+    def doCalibrateDec(self):
         print('Start DEC calibration')
 
         # Check for speed x2
@@ -180,12 +183,12 @@ class CalibrationController(CalibrationWidget):
         x0, y0 = self.main.guide_camera_controller.get_coordinates()
 
         # Set command to arduino
-        if direction == +1:
+        if self.direction == +1:
             if self.main.manual_controller.dec_dir == 1:
                 command = "0 0 0 52 " + str(n_steps) + " 1 " + str(period) + "\n"
             else:
                 command = "0 0 0 52 " + str(n_steps) + " 0 " + str(period) + "\n"
-        elif direction == -1:
+        elif self.direction == -1:
             if self.main.manual_controller.dec_dir == 1:
                 command = "0 0 0 52 " + str(n_steps) + " 0 " + str(period) + "\n"
             else:
@@ -206,15 +209,15 @@ class CalibrationController(CalibrationWidget):
         x1, y1 = self.main.guide_camera_controller.get_coordinates()
 
         # Get characteristics
-        self.vx_de = direction * (x1 - x0) / n_steps
-        self.vy_de = direction * (y1 - y0) / n_steps
+        self.vx_de = self.direction * (x1 - x0) / n_steps
+        self.vy_de = self.direction * (y1 - y0) / n_steps
 
         print("vx_de: %0.5f" % self.vx_de)
         print("vy_de: %0.5f" % self.vy_de)
 
         # Show the check in the checkbox
         self.checkbox_dec_p.setChecked(True)
-        self.dheckbox_dec_n.setChecked(True)
+        self.checkbox_dec_n.setChecked(True)
 
     def doCalibrateArP(self):
         print('Start AR + calibration')
