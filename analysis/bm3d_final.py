@@ -7,30 +7,7 @@ import pyqtgraph as pg
 import sys
 from skimage.util import view_as_blocks
 from skimage.measure import shannon_entropy
-import cv2
-
-
-# def increase_sharpness(image):
-#     # Try to increase the image sharpenss
-#
-#     # Normalize image to 16 bits
-#     image_max = image.max()
-#     image_norm = np.uint16(image / image_max * (2 ** 16 - 1))
-#
-#     # Apply Gaussian blur to the image
-#     low_pass = np.zeros_like(image_norm)
-#     high_pass = np.zeros_like(image_norm)
-#     for ii in range(image_norm.shape[0]):
-#         low_pass[ii, :, :] = cv2.GaussianBlur(image_norm[ii, :, :], (9, 9), 10.0)
-#         high_pass[ii, :, :] = cv2.subtract(image_norm[ii, :, :], low_pass[ii, :, :])
-#     high_pass = np.float64(high_pass+1) ** 0.003
-#
-#     # Subtract the blurred image from the original image to create the mask
-#     # resulting_image = cv2.addWeighted(image_norm, 1.0, high_pass, 1.0, 0)
-#     resulting_image = image_norm / high_pass
-#     resulting_image = resulting_image / (2 ** 16 - 1) * image_max
-#
-#     return resulting_image
+from collections import Counter
 
 def get_std(image, print_output=True):
     # Method to estimate the standard deviation of the image
@@ -50,18 +27,24 @@ def get_std(image, print_output=True):
     block_std_devs = np.std(blocks_r, axis=(2, 3))
 
     # Calculate entropy for each block
-    block_entropies = np.zeros_like(blocks_q[:, :, 0, 0], dtype=np.float32)
-    for ii in range(blocks_q.shape[0]):
-        for jj in range(blocks_q.shape[1]):
-            block = blocks_q[ii, jj, :, :]
-            entropy = shannon_entropy(block)
-            block_entropies[ii, jj] = entropy
+    # block_entropies = np.zeros_like(blocks_q[:, :, 0, 0], dtype=np.float32)
+    # for ii in range(blocks_q.shape[0]):
+    #     for jj in range(blocks_q.shape[1]):
+    #         block = blocks_q[ii, jj, :, :]
+    #         entropy = shannon_entropy(block)
+    #         block_entropies[ii, jj] = entropy
+    #
+    # # Find the indices of the block with the highest entropy
+    # max_entropy_index = np.unravel_index(np.argmax(block_entropies), block_entropies.shape)
+    #
+    # # Extract the block with the highest entropy from the block_std_devs array
+    # std = block_std_devs[max_entropy_index]
 
     # Find the indices of the block with the highest entropy
-    max_entropy_index = np.unravel_index(np.argmax(block_entropies), block_entropies.shape)
+    min_std_index = np.unravel_index(np.argmin(block_std_devs), block_std_devs.shape)
 
     # Extract the block with the highest entropy from the block_std_devs array
-    std = block_std_devs[max_entropy_index]
+    std = block_std_devs[min_std_index]
 
     if print_output:
         print("Standard deviation for bm3d: %0.2f" % std)
@@ -125,15 +108,16 @@ def display_image(image):
 
 
 # Load the FITS file
-fits_file = 'starless_cropped_r_pp_opt_rgb_r.fit'  # Update with your FITS file path
+fits_file = 'starless.fit'  # Update with your FITS file path
 hdul = fits.open(fits_file)
 image_data = hdul[0].data
-image_data = image_data[:, :, :]
+# c, h, w = image_data.shape
+# image_data = image_data[:, int(h/4):int(3*h/4), int(w/4):int(3*w/4)]
 hdul[0].data = image_data
 
 # Apply BM3D filter to the image
 start_time = time.time()
-denoised_image = apply_bm3d_to_image(image_data, sigma_factor=0.4)
+denoised_image = apply_bm3d_to_image(image_data, sigma_factor=1)
 total_time = time.time() - start_time
 print(f"\nActual time to process the entire image: {total_time:.2f} seconds")
 
@@ -148,4 +132,4 @@ hdul.close()
 original_image = np.transpose(np.float64(image_data), (1, 2, 0))  # Change shape to (n, n, 3)
 denoised_image = np.transpose(denoised_image, (1, 2, 0))  # Change shape to (n, n, 3)
 comparison = np.concatenate((original_image, denoised_image), axis=0)
-display_image(comparison)
+display_image(np.log10(comparison))
