@@ -499,9 +499,11 @@ class GuideCameraController(FigureWidget):
             if self.n_dec_warnings >= 5 and self.looseness_detected == "positive":
                 self.looseness_detected = "negative"
                 self.n_dec_warnings = 0
+                print("Looseness direction switched to negative")
             elif self.n_dec_warnings >= 5 and self.looseness_detected == "negative":
                 self.looseness_detected = "positive"
                 self.n_dec_warnings = 0
+                print("Looseness direction switched to positive")
         else:
             self.n_dec_warnings = 0
 
