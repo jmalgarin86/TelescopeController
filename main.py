@@ -86,7 +86,7 @@ class TelescopeController(QMainWindow):
         plots_layout.addWidget(self.plot_controller_surface)
 
         # Connect to Arduino
-        self.arduino = ArduinoController(print_command=True)
+        self.arduino = ArduinoController(print_command=False)
 
         # Create joystick controller
         JoyStickController(self)
