@@ -21,9 +21,13 @@ SoftwareSerial BT1(7,13); // RX, TX
 long ar_steps = 0;
 int ar_dir = 0;
 int ar_per = 52;
+int ar_dir_ref = 0;
+int ar_per_ref = 52;
 long dec_steps = 0;
 int dec_dir = 0;
 int dec_per = 0;
+int dec_dir_ref = 0;
+int dec_per_ref = 0;
 int stop = 0;
 int period = 0;
 
@@ -79,38 +83,58 @@ void setup() {
 void loop() {
   if (BT1.available()>7 || Serial.available()>7) {
     stop = Serial.parseInt();
-    ar_steps = Serial.parseInt();
-    ar_dir = Serial.parseInt();
-    ar_per = Serial.parseInt();
-    dec_steps = Serial.parseInt();
-    dec_dir = Serial.parseInt();
-    dec_per = Serial.parseInt();
-    Serial.println(ar_steps);
-    Serial.println(dec_steps);
+    if (stop==2) {
+      ar_dir_ref = Serial.parseInt();
+      ar_per_ref = Serial.parseInt();
+      dec_dir_ref = Serial.parseInt();
+      dec_per_ref = Serial.parseInt();
+      ar_dir = ar_dir_ref;
+      ar_per = ar_per_ref;
+      dec_dir = dec_dir_ref;
+      dec_per = dec_per_ref;
+      Serial.println("Ready!");
+    }
+    else {
+      ar_steps = Serial.parseInt();
+      ar_dir = Serial.parseInt();
+      ar_per = Serial.parseInt();
+      dec_steps = Serial.parseInt();
+      dec_dir = Serial.parseInt();
+      dec_per = Serial.parseInt();
 
+      // Set periods to reference in case period is -1
+      if (ar_per==-1) {
+        ar_dir = ar_dir_ref;
+        ar_per = ar_per_ref;
+      }
+      if (dec_per==-1) {
+        dec_dir = dec_dir_ref;
+        dec_per = dec_per_ref;
+      }
+
+      // Set counter to zero
+      n_ar = 0;
+      n_de = 0;
+      step_ar = 0;
+      step_de = 0;
+
+      // Set checkers to 0
+      if (ar_steps>0) {
+        ar_ready = 0;
+      }
+      else {
+        ar_ready = 1;
+      }
+      if (dec_steps > 0) {
+        de_ready = 0;
+      }
+      else {
+        de_ready = 1;
+      }
+    }
     // Set the pins on
     digitalWrite(DIR_PIN_AR, ar_dir);
-    digitalWrite(DIR_PIN_DEC, dec_dir);
-    
-    // Set counter to zero
-    n_ar = 0;
-    n_de = 0;
-    step_ar = 0;
-    step_de = 0;
-
-    // Set checkers to 0
-    if (ar_steps>0) {
-      ar_ready = 0;
-    }
-    else {
-      ar_ready = 1;
-    }
-    if (dec_steps > 0) {
-      de_ready = 0;
-    }
-    else {
-      de_ready = 1;
-    }
+    digitalWrite(DIR_PIN_DEC, dec_dir);    
   }
 
   // Check if stop
@@ -142,11 +166,14 @@ void loop() {
     if (step_ar>=ar_steps && ar_steps>0) {
       step_ar = 0;
       ar_steps = 0;
-      ar_per = 52;
-      ar_dir = 0;
+      ar_per = ar_per_ref;
+      ar_dir = ar_dir_ref;
       digitalWrite(DIR_PIN_AR, ar_dir);
       ar_ready = 1;
       if (ar_ready + de_ready == 2) {
+        dec_per = dec_per_ref;
+        dec_dir = dec_dir_ref;
+        digitalWrite(DIR_PIN_DEC, dec_dir);
         Serial.println("Ready!");
       }
     }
@@ -173,11 +200,14 @@ void loop() {
     if (step_de>=dec_steps && dec_steps > 0) {
       step_de = 0;
       dec_steps = 0;
-      dec_per = 0;
-      dec_dir = 0;
+      dec_per = dec_per_ref;
+      dec_dir = dec_dir_ref;
       digitalWrite(DIR_PIN_DEC, dec_dir);
       de_ready = 1;
       if (ar_ready + de_ready == 2) {
+        ar_per = ar_per_ref;
+        ar_dir = ar_dir_ref;
+        digitalWrite(DIR_PIN_AR, ar_dir);
         Serial.println("Ready!");
       }
     }

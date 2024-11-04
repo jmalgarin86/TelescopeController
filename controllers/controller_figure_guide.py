@@ -413,8 +413,8 @@ class GuideCameraController(FigureWidget):
                     n_files = len(folder_files)
                     dx = int(vx_ra_n * 4)
                     dy = int(vy_ra_n * 4)
-                    x_star += dx/dx
-                    y_star += dy/dy
+                    x_star += 1
+                    y_star += 1
                     self.set_reference_position((x_star, y_star))
                     print("Reference position: x, y: %0.0f, %0.0f" % (x_star, y_star))
 
@@ -495,16 +495,19 @@ class GuideCameraController(FigureWidget):
         if (self.looseness_detected == "positive" and n_steps[0] < 0) or (self.looseness_detected == "negative" and n_steps[0] > 0):
             n_steps[0] = 0
             self.n_dec_warnings += 1
+            print("Dec warning: %i" % self.n_dec_warnings)
             # Check if looseness_detection has to switch
-            if self.n_dec_warnings >= 5 and self.looseness_detected == "positive":
+            if self.n_dec_warnings >= 10 and self.looseness_detected == "positive":
                 self.looseness_detected = "negative"
                 self.n_dec_warnings = 0
                 print("Looseness direction switched to negative")
-            elif self.n_dec_warnings >= 5 and self.looseness_detected == "negative":
+            elif self.n_dec_warnings >= 10 and self.looseness_detected == "negative":
                 self.looseness_detected = "positive"
                 self.n_dec_warnings = 0
                 print("Looseness direction switched to positive")
         else:
+            if self.n_dec_warnings > 0:
+                print("Dec warning: 0")
             self.n_dec_warnings = 0
 
         # Set directions
