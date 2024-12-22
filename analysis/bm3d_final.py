@@ -6,39 +6,18 @@ from PyQt5 import QtWidgets
 import pyqtgraph as pg
 import sys
 from skimage.util import view_as_blocks
-from skimage.measure import shannon_entropy
-from collections import Counter
 
 def get_std(image, print_output=True):
-    # Method to estimate the standard deviation of the image
-    num_bins = 1000
-
     # Digitize image
     reference = np.max(image)
     image_rescaled = image / reference * 100
-    image_quantized = np.digitize(image_rescaled, bins=np.linspace(0, 100, num_bins + 1)) - 1
 
     # Divide the image into blocks
-    n_multi = (np.array(image_quantized.shape) / 50).astype(int) * 50
-    blocks_q = view_as_blocks(image_quantized[0:n_multi[0], 0:n_multi[1]], block_shape=(50, 50))
-    blocks_r = view_as_blocks(image_rescaled[0:n_multi[0], 0:n_multi[1]], block_shape=(50, 50))
+    n_multi = (np.array(image.shape) / 50).astype(int) * 50
+    blocks = view_as_blocks(image_rescaled[0:n_multi[0], 0:n_multi[1]], block_shape=(50, 50))
 
     # Calculate the standard deviation for each block
-    block_std_devs = np.std(blocks_r, axis=(2, 3))
-
-    # Calculate entropy for each block
-    # block_entropies = np.zeros_like(blocks_q[:, :, 0, 0], dtype=np.float32)
-    # for ii in range(blocks_q.shape[0]):
-    #     for jj in range(blocks_q.shape[1]):
-    #         block = blocks_q[ii, jj, :, :]
-    #         entropy = shannon_entropy(block)
-    #         block_entropies[ii, jj] = entropy
-    #
-    # # Find the indices of the block with the highest entropy
-    # max_entropy_index = np.unravel_index(np.argmax(block_entropies), block_entropies.shape)
-    #
-    # # Extract the block with the highest entropy from the block_std_devs array
-    # std = block_std_devs[max_entropy_index]
+    block_std_devs = np.std(blocks, axis=(2, 3))
 
     # Find the indices of the block with the highest entropy
     min_std_index = np.unravel_index(np.argmin(block_std_devs), block_std_devs.shape)
@@ -108,28 +87,38 @@ def display_image(image):
 
 
 # Load the FITS file
-fits_file = 'starless.fit'  # Update with your FITS file path
+fits_file = 'starless_stacked.fit'  # Update with your FITS file path
+name = fits_file[:-4]
 hdul = fits.open(fits_file)
 image_data = hdul[0].data
 # c, h, w = image_data.shape
-# image_data = image_data[:, int(h/4):int(3*h/4), int(w/4):int(3*w/4)]
+# image_data = image_data[:, 1000:1300, 1000:1300]
 hdul[0].data = image_data
 
-# Apply BM3D filter to the image
-start_time = time.time()
-denoised_image = apply_bm3d_to_image(image_data, sigma_factor=1)
-total_time = time.time() - start_time
-print(f"\nActual time to process the entire image: {total_time:.2f} seconds")
+comparison = np.transpose(np.float64(image_data), (1, 2, 0))
 
-# Update the FITS file with the denoised image
-hdul[0].data = denoised_image
-hdul.writeto('denoised_image.fit', overwrite=True)  # Update with your output path
+# Apply BM3D filter to the image
+sigma_factor = [2.0]
+for factor in sigma_factor:
+    start_time = time.time()
+    denoised_image = apply_bm3d_to_image(image_data, sigma_factor=factor)
+    total_time = time.time() - start_time
+    print(f"\nActual time to process the entire image: {total_time:.2f} seconds")
+
+    # Update the FITS file with the denoised image
+    hdul[0].data = (2**16*denoised_image).astype(np.uint32)
+    hdul.writeto(name+'_d_'+str(factor)+'.fit', overwrite=True)  # Update with your output path
+
+    # Add image to comparison
+    denoised_image = np.transpose(denoised_image, (1, 2, 0))
+    comparison = np.concatenate((comparison, denoised_image), axis=0)
+
 
 # Close the FITS file
 hdul.close()
 
-# Display the original and denoised images for comparison
-original_image = np.transpose(np.float64(image_data), (1, 2, 0))  # Change shape to (n, n, 3)
-denoised_image = np.transpose(denoised_image, (1, 2, 0))  # Change shape to (n, n, 3)
-comparison = np.concatenate((original_image, denoised_image), axis=0)
+# # Display the original and denoised images for comparison
+# original_image = np.transpose(np.float64(image_data), (1, 2, 0))  # Change shape to (n, n, 3)
+# denoised_image = np.transpose(denoised_image, (1, 2, 0))  # Change shape to (n, n, 3)
+# comparison = np.concatenate((original_image, denoised_image), axis=0)
 display_image(np.log10(comparison))

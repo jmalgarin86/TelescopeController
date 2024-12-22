@@ -413,8 +413,6 @@ class GuideCameraController(FigureWidget):
                     n_files = len(folder_files)
                     dx = int(vx_ra_n * 4)
                     dy = int(vy_ra_n * 4)
-                    x_star += 1
-                    y_star += 1
                     self.set_reference_position((x_star, y_star))
                     print("Reference position: x, y: %0.0f, %0.0f" % (x_star, y_star))
 
@@ -509,6 +507,8 @@ class GuideCameraController(FigureWidget):
             if self.n_dec_warnings > 0:
                 print("Dec warning: 0")
             self.n_dec_warnings = 0
+            if np.abs(n_steps[0])>5:
+                n_steps[0] = int(n_steps[0]/2)
 
         # Set directions
         if n_steps[0] >= 0 and self.main.manual_controller.dec_dir == 1:
