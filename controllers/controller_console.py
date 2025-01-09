@@ -6,6 +6,7 @@
 """
 
 import sys
+import os
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from widgets.widget_console import ConsoleWidget
 import datetime
@@ -64,8 +65,20 @@ class EmittingStream(QObject):
     def __init__(self, log_file_path=None):
         super().__init__()
         self.log_file_path = log_file_path
+        self.log_file = None
+
         if self.log_file_path:
-            self.log_file = open(self.log_file_path, 'a')  # Open the log file in append mode
+            # Ensure the directory exists
+            log_dir = os.path.dirname(self.log_file_path)
+            if log_dir and not os.path.exists(log_dir):
+                os.makedirs(log_dir, exist_ok=True)
+
+            try:
+                # Open the log file in append mode
+                self.log_file = open(self.log_file_path, 'a')
+            except IOError as e:
+                print(f"Error opening log file {self.log_file_path}: {e}")
+                self.log_file = None
 
     def write(self, text):
         # Get the current date and time
