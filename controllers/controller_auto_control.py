@@ -1,8 +1,14 @@
 import csv
+import os
+from csv import excel
 
 import numpy as np
+import subprocess
+import re
+from astropy.io import fits
 
 from widgets.widget_auto_control import AutoWidget
+from PyQt5.QtWidgets import QFileDialog, QApplication
 import threading
 
 from catalogs.catalog import catalog
@@ -67,10 +73,84 @@ class AutoController(AutoWidget):
         self.update_target()
 
         # Connect goto button to goto function0
+        self.origin_button.clicked.connect(self.get_origin)
         self.update_button.clicked.connect(self.update_csv)
         self.goto_button.clicked.connect(self.goto)
         self.origen_combo.currentTextChanged.connect(self.update_origen)
         self.target_combo.currentTextChanged.connect(self.update_target)
+
+    def get_origin(self):
+        """
+        Open a fits file and get the celestial coordinates.
+
+        Returns:
+            str: The path of the selected .fits file.
+        """
+
+        # Open the file dialog and prompt the user to select a .fits file
+        options = QFileDialog.Options()
+        options |= QFileDialog.ReadOnly
+        options |= QFileDialog.DontUseNativeDialog
+        current_directory = os.getcwd()  # Get the current working directory
+        file_name, _ = QFileDialog.getOpenFileName(self,
+                                                   caption="Select a .mat file",
+                                                   directory=current_directory,
+                                                   filter="FITS Files (*.fits)",
+
+                                                   options=options)
+        # Do plate-solving
+        if file_name:  # Check if a file was selected
+            base_name = file_name[:-5]
+
+            # Do plate-solving
+            command_a = [
+                "solve-field",
+                "--no-remove-lines",
+                "--uniformize", "0",
+                "--overwrite",
+                "--downsample", "4",
+                file_name
+            ]
+            command_b = [
+                "wcsinfo",
+                f"{base_name}.wcs"
+            ]
+            subprocess.run(command_a)
+            result = subprocess.run(command_b, capture_output=True, text=True)
+
+            # Get the information from result
+            patterns = {
+                "ra_center_h": r"ra_center_h (\d+)",
+                "ra_center_m": r"ra_center_m (\d+)",
+                "ra_center_s": r"ra_center_s ([\d\.]+)",
+                "dec_center_sign": r"dec_center_sign (-?\d+)",
+                "dec_center_d": r"dec_center_d (\d+)",
+                "dec_center_m": r"dec_center_m (\d+)",
+                "dec_center_s": r"dec_center_s ([\d\.]+)"
+            }
+
+            # Extract values using regex
+            extracted_values = {key: re.search(pattern, result.stdout).group(1) for key, pattern in patterns.items()}
+            extracted_values['ra_center_s'] = str(round(float(extracted_values['ra_center_s'])))
+            extracted_values['dec_center_s'] = str(round(float(extracted_values['dec_center_s'])))
+            x = [extracted_values['ra_center_h'], extracted_values['ra_center_m'], extracted_values['ra_center_s']]
+            if extracted_values['dec_center_sign'] == '1':
+                x.append(extracted_values['dec_center_d'])
+            else:
+                x.append(f"-{extracted_values['dec_center_d']}")
+            x.append(extracted_values['dec_center_m'])
+            x.append(extracted_values['dec_center_s'])
+
+            ar = "%sh %sm %ss" % (x[0], x[1], x[2])
+            de = "%sº %s' %s''" % (x[3], x[4], x[5])
+
+            self.ar_origin_edit.setText(ar)
+            self.dec_origin_edit.setText(de)
+
+            print("Plate-solving ready!")
+
+        else:
+            print("No file for plate solving")
 
     def update_csv(self):
         csv_file = 'catalog.csv'

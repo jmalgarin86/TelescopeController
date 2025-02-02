@@ -3,6 +3,7 @@ import os
 import sys
 import time
 import datetime
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -45,6 +46,12 @@ class GuideCameraController(FigureWidget):
         current_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         file_name = f"log_{current_datetime}.txt"
         self.file = open(file_name, "w")
+
+        # Get guiding and main capture folders
+        self.path_guid_captures = Path(f"{self.main.project_path}/captures_guiding")
+        self.path_main_captures = Path(f"{self.main.project_path}/captures_main")
+        self.path_guid_captures.mkdir(parents=True, exist_ok=True)
+        self.path_main_captures.mkdir(parents=True, exist_ok=True)
 
     @staticmethod
     def get_last_folder_in_directory(path):
@@ -198,7 +205,7 @@ class GuideCameraController(FigureWidget):
 
     def update_frame_from_files(self):
         # Get file path
-        path = self.get_last_folder_in_directory("/home/josalggui/AstroDMx_DATA")
+        path = self.get_last_folder_in_directory(self.path_guid_captures)
         if path is None:
             file = None
         else:

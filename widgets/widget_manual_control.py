@@ -43,7 +43,7 @@ class ManualWidget(QGroupBox):
         # Radio buttons
         self.radio_west = QRadioButton("West")
         self.radio_east = QRadioButton("East")
-        self.radio_east.setChecked(True)
+        self.radio_west.setChecked(True)
         radio_layout = QHBoxLayout()
         radio_layout.addWidget(self.radio_west)
         radio_layout.addWidget(self.radio_east)

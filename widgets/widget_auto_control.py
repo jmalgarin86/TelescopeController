@@ -12,9 +12,9 @@ class AutoWidget(QGroupBox):
         # Initially disabled
         # self.setEnabled(False)
 
-        # QLabels
-        origin_label1 = QLabel("Origin")
-        target_label1 = QLabel("Target")
+        # Origin/Target button/label
+        self.origin_button = QPushButton("Origin")
+        target_label = QLabel("Target")
         ar_label = QLabel("AR")
         dec_label = QLabel("DEC")
 
@@ -46,8 +46,8 @@ class AutoWidget(QGroupBox):
         layout = QGridLayout()
         layout.addWidget(ar_label, 2, 0)
         layout.addWidget(dec_label, 3, 0)
-        layout.addWidget(origin_label1, 0, 1)
-        layout.addWidget(target_label1, 0, 2)
+        layout.addWidget(self.origin_button, 0, 1)
+        layout.addWidget(target_label, 0, 2)
         layout.addWidget(self.origen_combo, 1, 1)
         layout.addWidget(self.target_combo, 1, 2)
         layout.addWidget(self.ar_origin_edit, 2, 1)
