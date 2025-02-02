@@ -81,76 +81,72 @@ class AutoController(AutoWidget):
 
     def get_origin(self):
         """
-        Open a fits file and get the celestial coordinates.
-
-        Returns:
-            str: The path of the selected .fits file.
+        Open a FITS file and retrieve celestial coordinates via plate-solving.
         """
+        file_name = self._select_fits_file()
+        if not file_name:
+            print("No file selected for plate solving")
+            return
 
-        # Open the file dialog and prompt the user to select a .fits file
-        options = QFileDialog.Options()
-        options |= QFileDialog.ReadOnly
-        options |= QFileDialog.DontUseNativeDialog
-        current_directory = os.getcwd()  # Get the current working directory
-        file_name, _ = QFileDialog.getOpenFileName(self,
-                                                   caption="Select a .mat file",
-                                                   directory=current_directory,
-                                                   filter="FITS Files (*.fits)",
-
-                                                   options=options)
-        # Do plate-solving
-        if file_name:  # Check if a file was selected
-            base_name = file_name[:-5]
-
-            # Do plate-solving
-            command_a = [
-                "solve-field",
-                "--no-remove-lines",
-                "--uniformize", "0",
-                "--overwrite",
-                "--downsample", "4",
-                file_name
-            ]
-            command_b = [
-                "wcsinfo",
-                f"{base_name}.wcs"
-            ]
-            subprocess.run(command_a)
-            result = subprocess.run(command_b, capture_output=True, text=True)
-
-            # Get the information from result
-            patterns = {
-                "ra_center_h": r"ra_center_h (\d+)",
-                "ra_center_m": r"ra_center_m (\d+)",
-                "ra_center_s": r"ra_center_s ([\d\.]+)",
-                "dec_center_sign": r"dec_center_sign (-?\d+)",
-                "dec_center_d": r"dec_center_d (\d+)",
-                "dec_center_m": r"dec_center_m (\d+)",
-                "dec_center_s": r"dec_center_s ([\d\.]+)"
-            }
-
-            # Extract values using regex
-            extracted_values = {key: re.search(pattern, result.stdout).group(1) for key, pattern in patterns.items()}
-            extracted_values['ra_center_s'] = str(round(float(extracted_values['ra_center_s'])))
-            extracted_values['dec_center_s'] = str(round(float(extracted_values['dec_center_s'])))
-            x = [extracted_values['ra_center_h'], extracted_values['ra_center_m'], extracted_values['ra_center_s']]
-            if extracted_values['dec_center_sign'] == '1':
-                x.append(extracted_values['dec_center_d'])
-            else:
-                x.append(f"-{extracted_values['dec_center_d']}")
-            x.append(extracted_values['dec_center_m'])
-            x.append(extracted_values['dec_center_s'])
-
-            ar = "%sh %sm %ss" % (x[0], x[1], x[2])
-            de = "%sº %s' %s''" % (x[3], x[4], x[5])
-
-            self.ar_origin_edit.setText(ar)
-            self.dec_origin_edit.setText(de)
-
-            print("Plate-solving ready!")
-
+        base_name = file_name[:-5]
+        self._run_plate_solving(file_name)
+        coordinates = self._extract_coordinates(base_name)
+        if coordinates:
+            self._update_coordinates_display(*coordinates)
+            print("Plate-solving completed successfully!")
         else:
-            print("No file for plate solving")
+            print("Failed to extract coordinates.")
+
+    def _select_fits_file(self):
+        """Prompt the user to select a FITS file."""
+        options = QFileDialog.Options()
+        options |= QFileDialog.ReadOnly | QFileDialog.DontUseNativeDialog
+        return QFileDialog.getOpenFileName(
+            self, caption="Select a FITS file", directory=os.getcwd(),
+            filter="FITS Files (*.fits)", options=options
+        )[0]
+
+    def _run_plate_solving(self, file_name):
+        """Execute plate-solving commands using subprocess."""
+        subprocess.run([
+            "solve-field", "--no-remove-lines", "--uniformize", "0",
+            "--overwrite", "--downsample", "4", file_name
+        ])
+
+    def _extract_coordinates(self, base_name):
+        """Extract celestial coordinates from plate-solving output."""
+        result = subprocess.run(["wcsinfo", f"{base_name}.wcs"], capture_output=True, text=True)
+        if not result.stdout:
+            return None
+
+        patterns = {
+            "ra_center_h": r"ra_center_h (\d+)",
+            "ra_center_m": r"ra_center_m (\d+)",
+            "ra_center_s": r"ra_center_s ([\d\.]+)",
+            "dec_center_sign": r"dec_center_sign (-?\d+)",
+            "dec_center_d": r"dec_center_d (\d+)",
+            "dec_center_m": r"dec_center_m (\d+)",
+            "dec_center_s": r"dec_center_s ([\d\.]+)"
+        }
+
+        extracted = {k: re.search(p, result.stdout) for k, p in patterns.items()}
+        if None in extracted.values():
+            return None
+
+        values = {k: v.group(1) for k, v in extracted.items()}
+        values['ra_center_s'] = str(round(float(values['ra_center_s'])))
+        values['dec_center_s'] = str(round(float(values['dec_center_s'])))
+
+        ra = f"{values['ra_center_h']}h {values['ra_center_m']}m {values['ra_center_s']}s"
+        dec_sign = "-" if values['dec_center_sign'] == "-1" else ""
+        dec = f"{dec_sign}{values['dec_center_d']}º {values['dec_center_m']}' {values['dec_center_s']}''"
+
+        return ra, dec
+
+    def _update_coordinates_display(self, ra, dec):
+        """Update the UI with the extracted celestial coordinates."""
+        self.ar_origin_edit.setText(ra)
+        self.dec_origin_edit.setText(dec)
 
     def update_csv(self):
         csv_file = 'catalog.csv'
