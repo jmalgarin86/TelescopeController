@@ -27,7 +27,7 @@ class TelescopeController(QMainWindow):
         self.setGeometry(100, 100, 1600, 900)
 
         # Get project path
-        self.project_path = Path(__file__).parent.parent
+        self.project_path = Path(__file__).parent
 
         # Set the stylesheet
         style_sheet = qdarkstyle.load_stylesheet_pyqt5()

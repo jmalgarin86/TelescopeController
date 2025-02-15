@@ -6,6 +6,7 @@ import datetime
 from pathlib import Path
 
 import cv2
+from astropy.io import fits
 import numpy as np
 import pyqtgraph as pg
 from PyQt5.QtCore import Qt, QTimer
@@ -118,14 +119,18 @@ class GuideCameraController(FigureWidget):
     @staticmethod
     def extract_image_matrix(file_path):
         try:
-            # Read the image using OpenCV
-            img = cv2.imread(file_path, cv2.IMREAD_COLOR)
-            if img is None:
-                return "File not found or the image format is not supported"
+            # Open the FITS file
+            with fits.open(file_path) as hdul:
+                img_data = hdul[0].data  # Extract the image data from the primary HDU
+            
+            if img_data is None:
+                return "No image data found in the FITS file"
 
-            # Convert the image to a numpy array (matrix)
-            image_matrix = np.array(img)
+            # Convert to a numpy array (ensuring it's in a proper format)
+            image_matrix = np.array(img_data, dtype=np.float32)
             return image_matrix
+        except FileNotFoundError:
+            return "File not found"
         except PermissionError:
             return "Permission denied"
         except Exception as e:
@@ -205,18 +210,22 @@ class GuideCameraController(FigureWidget):
 
     def update_frame_from_files(self):
         # Get file path
-        path = self.get_last_folder_in_directory(self.path_guid_captures)
-        if path is None:
-            file = None
-        else:
-            file = self.get_last_file_in_directory(path)
-            self.delete_all_except_last(path)
+        # path = self.get_last_folder_in_directory(self.path_guid_captures)
+        # if path is None:
+        #     file = None
+        # else:
+        #     file = self.get_last_file_in_directory(path)
+        #     self.delete_all_except_last(path)
+        
+        # Get file path
+        file = self.get_last_file_in_directory(self.path_guid_captures)
+        self.delete_all_except_last(self.path_guid_captures)
 
         # Check if there is almost one file
         if file is None:
-            file_path = self.file_path
+            return
         else:
-            file_path = os.path.join(path, file)
+            file_path = os.path.join(self.path_guid_captures, file)
 
         # Check for new frame
         if file_path != self.file_path:
@@ -231,20 +240,13 @@ class GuideCameraController(FigureWidget):
         # Get frame
         self.frame = copy.copy(self.frame_original)
 
-        try:
-            # Get frame in gray scale
-            self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
+        # Resize the image to half its original size
+        height, width = self.frame.shape[:2]
+        self.frame = cv2.resize(self.frame, dsize=(width // 2, height // 2))
 
-            # Resize the image to half its original size
-            height, width = self.frame.shape[:2]
-            self.frame = cv2.resize(self.frame, dsize=(width // 2, height // 2))
-
-            # Multiply the image by a factor of 8, then clip to 0, 255
-            if np.max(self.frame) > 0:
-                self.frame = np.clip(self.frame * float(8), a_min=0, a_max=255).astype(np.uint8)
-
-        except:
-            pass
+        # Multiply the image by a factor of 8, then clip to 0, 255
+        if np.max(self.frame) > 0:
+            self.frame = np.clip(self.frame * float(8), a_min=0, a_max=255).astype(np.uint8)
 
         # Calculate the star centroid and size after each frame update
         if self.tracking:
