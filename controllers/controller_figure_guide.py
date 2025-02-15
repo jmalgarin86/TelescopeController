@@ -637,7 +637,7 @@ class GuideCameraController(FigureWidget):
             h = min(center_y + half_height, self.frame.shape[0]) - y
 
             # Get the region of interest (ROI) within the square
-            roi = self.frame[y:y + h, x:x + w]
+            roi = self.frame[y:y + h, x:x + w].astype(int)
 
             # Substract the background
             roi[roi <= np.max(roi)/2] = 0
@@ -656,6 +656,8 @@ class GuideCameraController(FigureWidget):
                     num_y += roi[ii, jj] * ii
                     num_x += roi[ii, jj] * jj
                     den += roi[ii, jj]
+                    if roi[ii, jj] != 0:
+                        pass
             cx = num_x/den + x + 1
             cy = num_y/den + y + 1
 
