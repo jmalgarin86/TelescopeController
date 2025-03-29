@@ -133,7 +133,7 @@ class CalibrationController(CalibrationWidget):
 
     def save_calibration(self):
         # Check if calibration is done
-        check_de = self.main.calibration_controller.checkbox_dec.isChecked()
+        check_de = self.main.calibration_controller.checkbox_dec_p.isChecked()
         check_ar_p = self.main.calibration_controller.checkbox_ar_p.isChecked()
         check_ar_n = self.main.calibration_controller.checkbox_ar_n.isChecked()
         if check_de and check_ar_p and check_ar_n:
