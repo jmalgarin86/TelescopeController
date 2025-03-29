@@ -32,7 +32,6 @@ class GuideCameraController(FigureWidget):
         self.tracking = False
         self.guiding = False
         self.reference_position = (0, 0)
-        self.reference_position_prov = (0, 0)
         self.camera_guide = None
         self.square_position = (25, 25)
         self.square_size = (50, 50)
@@ -210,14 +209,6 @@ class GuideCameraController(FigureWidget):
 
     def update_frame_from_files(self):
         # Get file path
-        # path = self.get_last_folder_in_directory(self.path_guid_captures)
-        # if path is None:
-        #     file = None
-        # else:
-        #     file = self.get_last_file_in_directory(path)
-        #     self.delete_all_except_last(path)
-        
-        # Get file path
         file = self.get_last_file_in_directory(self.path_guid_captures)
         self.delete_all_except_last(self.path_guid_captures)
 
@@ -253,7 +244,7 @@ class GuideCameraController(FigureWidget):
             # Get star centroid and size
             star_centroid, star_size = self.calculate_star_properties()
 
-            # # Save info in the file
+            # Save info in the file
             self.file.write(f"{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')} {star_centroid[0]} {star_centroid[1]} {star_size}\n")
 
             # Update plot and square position
@@ -262,8 +253,6 @@ class GuideCameraController(FigureWidget):
                 self.star_size = star_size
 
                 # Get deviation and update plot in case new deviation is obtained
-                dx = star_centroid[0] - self.reference_position[0]
-                dy = star_centroid[1] - self.reference_position[1]
                 if self.new_fitting:
 
                     # Ensure the length of the vectors is at most 100 elements
@@ -361,26 +350,9 @@ class GuideCameraController(FigureWidget):
             self.scene.addPixmap(QPixmap.fromImage(q_image))
 
     def do_guiding(self):
-
-        # Get data from calibration
-        vx_ra_p = self.main.calibration_controller.vx_ar_p
-        vy_ra_p = self.main.calibration_controller.vy_ar_p
-        vx_ra_n = self.main.calibration_controller.vx_ar_n
-        vy_ra_n = self.main.calibration_controller.vy_ar_n
-
-        # Get the initial list of folders in the directory
-        items = os.listdir("captures")
-        initial_folders = [item for item in items if os.path.isdir(os.path.join("captures", item))]
-        n_files = 0
-        new_folder = None
-        self.reference_position_prov = self.get_reference_position()
-
         # Star guiding with updates in position after each frame
         current_frame = copy.copy(self.n_frame)
-        start_time = time.time()
         while self.guiding:
-            current_time = time.time()
-            elapsed_time = current_time - start_time
 
             # Check if there is a new frame to avoid repetitions of movements
             if self.n_frame == current_frame:
@@ -393,37 +365,6 @@ class GuideCameraController(FigureWidget):
             r0 = self.get_reference_position()
             x_star = r0[0]
             y_star = r0[1]
-
-            # Get the updated list of folders in the directory
-            items = os.listdir("captures")
-            current_folders = [item for item in items if os.path.isdir(os.path.join("captures", item))]
-
-            # Check for new folder
-            if len(current_folders) > len(initial_folders):
-                n_files = 0
-
-                # Check for new folders
-                new_folders = [folder for folder in current_folders if
-                               folder not in initial_folders and os.path.isdir(os.path.join("captures", folder))]
-                new_folder = new_folders[0]
-
-                # Reset initial_folders
-                initial_folders = current_folders
-
-            # Modify reference position in case new file is found
-            if new_folder is None:
-                pass
-            else:
-                time.sleep(0.1)
-                folder_path = os.path.join("captures", new_folder)
-                folder_files = os.listdir(folder_path)
-                if len(folder_files) > n_files and elapsed_time >= 5:
-                    start_time = copy.copy(current_time)
-                    n_files = len(folder_files)
-                    dx = int(vx_ra_n * 4)
-                    dy = int(vy_ra_n * 4)
-                    self.set_reference_position((x_star, y_star))
-                    print("Reference position: x, y: %0.0f, %0.0f" % (x_star, y_star))
 
             if self.get_star_size() > self.star_size_threshold:
                 print("Missed alignment, guiding star lost...")
