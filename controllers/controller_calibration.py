@@ -164,7 +164,7 @@ class CalibrationController(CalibrationWidget):
         print('Start DEC calibration')
 
         # Check for speed x2
-        period = 26
+        period = 52
 
         # Number of steps (to be changed by an input)
         n_steps = 100
@@ -193,7 +193,7 @@ class CalibrationController(CalibrationWidget):
         print(ser_input)
 
         # Sleep 1 seconds to let the frame to refresh
-        time.sleep(1)
+        time.sleep(2)
 
         # Get final coordinates
         x1, y1 = self.main.guide_camera_controller.get_coordinates()
@@ -226,7 +226,7 @@ class CalibrationController(CalibrationWidget):
         print("Ready!")
 
         # Sleep 1 seconds to let the frame refresh
-        time.sleep(1)
+        time.sleep(2)
 
         # Get final coordinates
         x1, y1 = self.main.guide_camera_controller.get_coordinates()
@@ -245,7 +245,7 @@ class CalibrationController(CalibrationWidget):
         print('Start AR - calibration')
 
         # Speed x2 in negative direction
-        period = 15
+        period = 26
 
         # Number of steps (to be changed by an input)
         n_steps = 100
@@ -265,7 +265,7 @@ class CalibrationController(CalibrationWidget):
         print(ser_input)
 
         # Sleep 1 seconds to let the frame to refresh
-        time.sleep(1)
+        time.sleep(2)
 
         # Get final coordinates
         x1, y1 = self.main.guide_camera_controller.get_coordinates()
