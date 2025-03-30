@@ -28,30 +28,20 @@ class CalibrationController(CalibrationWidget):
         self.button_ar_p.clicked.connect(self.calibrateArP)
         self.button_ar_n.clicked.connect(self.calibrateArN)
         self.button_dec_looseness.clicked.connect(self.calibrateDecLooseness)
-        self.button_calibration_test.clicked.connect(self.testCalibration)
         self.button_load.clicked.connect(self.load_calibration)
         self.button_save.clicked.connect(self.save_calibration)
+        self.slider_de.valueChanged.connect(self.de_strength_changed)
+        self.slider_ar.valueChanged.connect(self.ar_strength_changed)
 
-    def testCalibration(self):
-        # Create a thread to do the calibration test in parallel to the camera
-        thread = threading.Thread(target=self.testCalibrationThread)
-        thread.start()
+    def de_strength_changed(self):
+        strength = self.slider_de.value()
+        self.label_de.setText(f"DE strength: {strength/10}")
+        self.main.guide_camera_controller.set_strength(strength=strength/10, axis='dec')
 
-    def testCalibrationThread(self):
-        if self.button_calibration_test.isChecked():
-            # Get initial coordinates
-            self.x0, self.y0 = self.main.guide_camera_controller.get_coordinates()
-            print("\nOrigin: %i, %i" % (self.x0, self.y0))
-
-            # Move to desired target
-            print("Target %i, %i" % (self.x0-50, self.y0-50))
-            self.main.guide_camera_controller.align_position(r0=(self.x0-50, self.y0-50), period=str(10))
-            time.sleep(5)
-            self.x0, self.y0 = self.main.guide_camera_controller.get_coordinates()
-            print("Got %i, %i" % (self.x0, self.y0))
-
-            # Uncheck button
-            self.button_calibration_test.setChecked(False)
+    def ar_strength_changed(self):
+        strength = self.slider_ar.value()
+        self.label_ar.setText(f"AR strength: {strength/10}")
+        self.main.guide_camera_controller.set_strength(strength=strength/10, axis='ar')
 
     def calibrateDecLooseness(self):
         if self.button_dec_looseness.isChecked():

@@ -1,5 +1,8 @@
-from PyQt5.QtWidgets import QGroupBox, QPushButton, QGridLayout, QHBoxLayout, QLabel, QComboBox, QVBoxLayout, \
-    QSizePolicy, QRadioButton, QCheckBox
+import copy
+
+from PyQt5.QtWidgets import QGroupBox, QPushButton, QGridLayout, QHBoxLayout, QLabel, \
+    QSizePolicy, QRadioButton, QCheckBox, QSlider
+from PyQt5.QtCore import Qt
 
 
 class CalibrationWidget(QGroupBox):
@@ -26,9 +29,6 @@ class CalibrationWidget(QGroupBox):
         self.button_dec_looseness = QPushButton("4) DEC looseness")
         self.button_dec_looseness.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         self.button_dec_looseness.setCheckable(True)
-        self.button_calibration_test = QPushButton("Test calibration")
-        self.button_calibration_test.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        self.button_calibration_test.setCheckable(True)
         self.button_load = QPushButton("Load")
         self.button_save = QPushButton("Save")
 
@@ -43,6 +43,22 @@ class CalibrationWidget(QGroupBox):
         self.checkbox_ar_n.setEnabled(False)
         self.checkbox_dec_looseness = QCheckBox('', self)
         self.checkbox_dec_looseness.setEnabled(False)
+
+        # Create strength sliders
+        self.label_de = QLabel("DE strength: 1.0", self)
+        self.slider_de = QSlider(Qt.Horizontal)
+        self.slider_de.setMinimum(0)
+        self.slider_de.setMaximum(10)
+        self.slider_de.setValue(10)
+        self.slider_de.setTickInterval(1)
+        self.slider_de.setTickPosition(QSlider.TicksBelow)
+        self.label_ar = QLabel("AR strength: 1.0", self)
+        self.slider_ar = QSlider(Qt.Horizontal)
+        self.slider_ar.setMinimum(0)
+        self.slider_ar.setMaximum(10)
+        self.slider_ar.setValue(10)
+        self.slider_ar.setTickInterval(1)
+        self.slider_ar.setTickPosition(QSlider.TicksBelow)
 
         # Create buttons layout
         layout = QGridLayout()
@@ -59,9 +75,20 @@ class CalibrationWidget(QGroupBox):
 
         # Layout for save/load buttons
         layout_2 = QHBoxLayout()
-        layout_2.addWidget(self.button_calibration_test)
         layout_2.addWidget(self.button_load)
         layout_2.addWidget(self.button_save)
-        layout.addLayout(layout_2, 5, 0, 1, 2)
+        layout.addLayout(layout_2, 7, 0, 1, 2)
+
+        # Layout for de strength
+        layout_3 = QHBoxLayout()
+        layout_3.addWidget(self.label_de)
+        layout_3.addWidget(self.slider_de)
+        layout.addLayout(layout_3, 5, 0, 1, 2)
+
+        # Layout for ar strength
+        layout_4 = QHBoxLayout()
+        layout_4.addWidget(self.label_ar)
+        layout_4.addWidget(self.slider_ar)
+        layout.addLayout(layout_4, 6, 0, 1, 2)
 
         self.setLayout(layout)

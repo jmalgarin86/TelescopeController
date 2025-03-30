@@ -20,8 +20,9 @@ class GuideCameraController(FigureWidget):
 
     def __init__(self, data=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.strength_ar = 1.0
+        self.strength_de = 1.0
         self.frame_original = None
-        self.astrophoto_mode = False
         self.n_frame = 0
         self.looseness_detected = "neutral"
         self.star_size_threshold = 8
@@ -439,6 +440,10 @@ class GuideCameraController(FigureWidget):
         if n_steps[1] < 0:
             n_steps = np.linalg.inv(v_n) @ dr
 
+        # Apply strength
+        n_steps[0] *= self.strength_de
+        n_steps[1] *= self.strength_ar
+
         # Ensure Dec movement happens only in the required direction
         if (self.looseness_detected == "positive" and n_steps[0] < 0) or (self.looseness_detected == "negative" and n_steps[0] > 0):
             n_steps[0] = 0
@@ -638,9 +643,11 @@ class GuideCameraController(FigureWidget):
     def set_star_threshold(self, threshold):
         self.star_size_threshold = threshold
 
-    def set_astrophoto_mode(self, mode):
-        self.astrophoto_mode = mode
-
+    def set_strength(self, strength=1.0, axis='DEC'):
+        if axis=='DEC':
+            self.strength_ar = strength
+        elif axis == 'AR':
+            self.strength_de = strength
 
 class GuideFigureController(FigureWidget):
 

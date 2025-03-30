@@ -12,7 +12,6 @@ from controllers.controller_arduino import ArduinoController
 from controllers.controller_calibration import CalibrationController
 from controllers.controller_console import ConsoleController
 from controllers.controller_figure_guide import GuideCameraController
-from controllers.controller_guiding import GuidingController
 from controllers.controller_joystick import JoyStickController
 from controllers.controller_plot import PlotController
 from controllers.controller_toolbar_guide import GuideController
@@ -64,10 +63,6 @@ class TelescopeController(QMainWindow):
         # Create calibration controller
         self.calibration_controller = CalibrationController(self)
         left_layout.addWidget(self.calibration_controller)
-
-        # Create guiding controller tab
-        self.guiding_controller = GuidingController(self)
-        left_layout.addWidget(self.guiding_controller)
 
         # Create the ConsoleController widget
         self.console_controller = ConsoleController()
