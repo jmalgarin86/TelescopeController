@@ -184,16 +184,17 @@ class CalibrationController(CalibrationWidget):
             else:
                 command = "0 0 0 52 " + str(n_steps) + " 1 " + str(period) + "\n"
         self.main.waiting_commands.append(command)
+        print(command)
 
         # Wait until it finish
         ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
         while ser_input != "Ready!":
             ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
             time.sleep(0.01)
-        print(ser_input)
 
         # Sleep 1 seconds to let the frame to refresh
-        time.sleep(2)
+        time.sleep(5)
+        print(ser_input)
 
         # Get final coordinates
         x1, y1 = self.main.guide_camera_controller.get_coordinates()
@@ -219,14 +220,14 @@ class CalibrationController(CalibrationWidget):
         command = "1 0 0 0 0 0 0\n"
         self.main.waiting_commands.append(command)
 
-        # Wit 5 seconds
+        # Wait 5 seconds
         command = "0 0 0 52 0 0 0\n"
         time.sleep(5)
         self.main.waiting_commands.append(command)
-        print("Ready!")
-
+        
         # Sleep 1 seconds to let the frame refresh
-        time.sleep(2)
+        time.sleep(5)
+        print("Ready!")
 
         # Get final coordinates
         x1, y1 = self.main.guide_camera_controller.get_coordinates()
@@ -262,10 +263,10 @@ class CalibrationController(CalibrationWidget):
         while ser_input != "Ready!":
             ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
             time.sleep(0.01)
-        print(ser_input)
-
+        
         # Sleep 1 seconds to let the frame to refresh
-        time.sleep(2)
+        time.sleep(5)
+        print(ser_input)
 
         # Get final coordinates
         x1, y1 = self.main.guide_camera_controller.get_coordinates()
