@@ -1,3 +1,4 @@
+import platform
 import subprocess
 import sys
 import threading
@@ -95,8 +96,9 @@ class TelescopeController(QMainWindow):
         self.arduino = ArduinoController(print_command=False)
 
         # Connect to indiserver
-        subprocess.run(["gnome-terminal", "--", "./indiserver.sh"])
-        print("Connected to INDI server")
+        thread = threading.Thread(target=self.connect_to_indi_server)
+        thread.start()
+        time.sleep(1)
 
         # Connect to guiding camera
         self.camera = CameraController()
@@ -112,6 +114,31 @@ class TelescopeController(QMainWindow):
         thread.start()
 
         self.showMaximized()
+
+    @staticmethod
+    def connect_to_indi_server():
+        # Get the OS information
+        system = platform.system()
+        distro = ""
+        if system == "Linux":
+            try:
+                # This will work on most modern Linux distros
+                with open("/etc/os-release") as f:
+                    for line in f:
+                        if line.startswith("ID="):
+                            distro = line.strip().split("=")[1].strip('"').lower()
+                            break
+            except FileNotFoundError:
+                pass
+
+        # Build the command based on the detected OS/distro
+        if distro == "ubuntu":
+            subprocess.run(["gnome-terminal", "--", "./indiserver.sh"])
+        elif distro in ("raspbian", "debian"):
+            subprocess.run([ "lxterminal", "--command=bash -c './indiserver.sh; exec bash'"])
+        else:
+            print("Unsupported OS or unknown Linux distribution.")
+
 
     @staticmethod
     def shutdown_at(hour=6, minute=0):
