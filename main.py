@@ -17,6 +17,7 @@ from controllers.controller_plot import PlotController
 from controllers.controller_toolbar_guide import GuideController
 from controllers.controller_manual_control import ManualController
 from controllers.controller_auto_control import AutoController
+from controllers.controller_camera import CameraController
 
 
 class TelescopeController(QMainWindow):
@@ -86,6 +87,9 @@ class TelescopeController(QMainWindow):
 
         # Connect to Arduino
         self.arduino = ArduinoController(print_command=False)
+
+        # Connect to guiding camera
+        self.camera = CameraController()
 
         # Create joystick controller
         JoyStickController(self)

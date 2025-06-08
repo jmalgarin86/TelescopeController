@@ -1,6 +1,7 @@
 import copy
 import os
 import sys
+import threading
 import time
 import datetime
 from pathlib import Path
@@ -9,7 +10,7 @@ import cv2
 from astropy.io import fits
 import numpy as np
 import pyqtgraph as pg
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtWidgets import QApplication
 
@@ -17,9 +18,11 @@ from widgets.widget_figure import FigureWidget
 
 
 class GuideCameraController(FigureWidget):
+    frame_ready = pyqtSignal(object)
 
     def __init__(self, data=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.original_frame = None
         self.strength_ar = 1.0
         self.strength_de = 1.0
         self.frame_original = None
@@ -33,13 +36,13 @@ class GuideCameraController(FigureWidget):
         self.tracking = False
         self.guiding = False
         self.reference_position = (0, 0)
-        self.camera_guide = None
         self.square_position = (25, 25)
         self.square_size = (50, 50)
         self.timer = QTimer(self)
         self.x_vec = [0]
         self.y_vec = [0]
         self.s_vec = [0]
+        self.camera_running = False
         self.new_fitting = False
         self.n_dec_warnings = 0
 
@@ -48,129 +51,20 @@ class GuideCameraController(FigureWidget):
         file_name = f"log_{current_datetime}.txt"
         self.file = open(file_name, "w")
 
-        # Get guiding and main capture folders
-        self.path_guid_captures = Path(f"{self.main.project_path}/captures_guiding")
-        self.path_main_captures = Path(f"{self.main.project_path}/captures_main")
-        self.path_guid_captures.mkdir(parents=True, exist_ok=True)
-        self.path_main_captures.mkdir(parents=True, exist_ok=True)
+        # Connect signal with update_frame_from_camera
+        self.frame_ready.connect(self.update_frame_from_camera)
 
-    @staticmethod
-    def get_last_folder_in_directory(path):
-        try:
-            # List all directories in the given path
-            directories = [d for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
-            if not directories:
-                return None
-            # Sort directories lexicographically and return the last one
-            directories.sort()
-            last_folder = directories[-1]
-            return os.path.join(path, last_folder)
-        except FileNotFoundError:
-            return "Path not found"
-        except PermissionError:
-            return "Permission denied"
-        except Exception as e:
-            return str(e)
-
-    @staticmethod
-    def get_last_file_in_directory(path):
-        try:
-            # List all files in the given path
-            files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
-            if not files:
-                return None
-            # Sort files lexicographically and return the last one
-            files.sort()
-            last_file = files[-1]
-            return last_file
-        except FileNotFoundError:
-            return "Path not found"
-        except PermissionError:
-            return "Permission denied"
-        except Exception as e:
-            return str(e)
-
-    def delete_all_except_last(self, path):
-        last_file = self.get_last_file_in_directory(path)
-
-        if last_file is None:
-            # print("No files to delete.")
-            return
-        elif isinstance(last_file, str) and ("Path not found" in last_file or "Permission denied" in last_file):
-            print(last_file)
-            return
-
-        try:
-            # List all files in the given path
-            files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
-
-            # Delete all files except the last one
-            for file in files:
-                if file != last_file:
-                    os.remove(os.path.join(path, file))
-            # print("All files except the last one have been deleted.")
-        except FileNotFoundError:
-            print("Path not found")
-        except PermissionError:
-            print("Permission denied")
-        except Exception as e:
-            print(str(e))
-
-    @staticmethod
-    def extract_image_matrix(file_path):
-        try:
-            # Open the FITS file
-            with fits.open(file_path) as hdul:
-                img_data = hdul[0].data  # Extract the image data from the primary HDU
-            
-            if img_data is None:
-                return "No image data found in the FITS file"
-
-            # Convert to a numpy array (ensuring it's in a proper format)
-            image_matrix = np.array(img_data, dtype=np.float32)
-            return image_matrix
-        except FileNotFoundError:
-            return "File not found"
-        except PermissionError:
-            return "Permission denied"
-        except Exception as e:
-            return str(e)
+        # Call the frame_sniffer in a parallel thread
+        thread = threading.Thread(target=self.frame_sniffer)
+        thread.start()
 
     def start_camera(self):
-        if not self.camera_guide:
-            self.camera_guide = cv2.VideoCapture(1)
-            if self.camera_guide.isOpened():
-                print("Camera ready!")
-
-                # Set exposure time (value is in milliseconds)
-                exposure_time = -1  # Set your desired exposure time in milliseconds
-                self.camera_guide.set(cv2.CAP_PROP_EXPOSURE, exposure_time)
-
-                # Set the camera gain (adjust the value as needed)
-                gain_value = 5000  # Set your desired gain value
-                self.camera_guide.set(cv2.CAP_PROP_GAIN, gain_value)
-
-                # Create a timer to update the webcam feed
-                self.timer.timeout.connect(self.update_frame_from_camera)
-
-                print("Start camera")
-
-            else:   # Update frame from file
-                print("Could not open camera.")
-                print("Checking for external files.")
-
-                # Create timer to update the files
-                self.timer.timeout.connect(self.update_frame_from_files)
-
-            # Start the timer
-            self.timer.start(100)  # Update every 100 milliseconds (10 fps)
-
-        else:
-            pass
+        print("Start camera")
+        self.camera_running = True
 
     def stop_camera(self):
         print("Stop camera")
-        self.timer.stop()
+        self.camera_running = False
 
     def detect_and_select_star(self):
         # Check if the frame is available
@@ -208,29 +102,18 @@ class GuideCameraController(FigureWidget):
             if max_star_centroid is not None:
                 self.square_position = max_star_centroid
 
-    def update_frame_from_files(self):
-        # Get file path
-        file = self.get_last_file_in_directory(self.path_guid_captures)
-        self.delete_all_except_last(self.path_guid_captures)
+    def frame_sniffer(self):
+        while self.main.gui_open:
+            if self.camera_running:
+                self.original_frame = self.main.camera.capture(exposure=2, gain=10)
+                self.n_frame += 1
+                self.frame_ready.emit(self.original_frame)
+                time.sleep(0.1)
+            else:
+                time.sleep(1)
 
-        # Check if there is almost one file
-        if file is None:
-            return
-        else:
-            file_path = os.path.join(self.path_guid_captures, file)
-
-        # Check for new frame
-        if file_path != self.file_path:
-            time.sleep(0.1)
-            self.file_path = file_path
-            self.frame_original = self.extract_image_matrix(file_path)
-            self.n_frame += 1
-            self.new_fitting = True
-        else:
-            time.sleep(0.1)
-
-        # Get frame
-        self.frame = copy.copy(self.frame_original)
+    def update_frame_from_camera(self):
+        self.frame = copy.copy(self.original_frame)
 
         # Resize the image to half its original size
         height, width = self.frame.shape[:2]
@@ -238,7 +121,7 @@ class GuideCameraController(FigureWidget):
 
         # Multiply the image by a factor of 8, then clip to 0, 255
         if np.max(self.frame) > 0:
-            self.frame = np.clip(self.frame * float(8), a_min=0, a_max=255).astype(np.uint8)
+            self.frame = np.clip(self.frame * float(8) / 2**16 * 2**8, a_min=0, a_max=255).astype(np.uint8)
 
         # Calculate the star centroid and size after each frame update
         if self.tracking:
@@ -287,68 +170,6 @@ class GuideCameraController(FigureWidget):
         # Add the image to the QGraphicsScene
         self.scene.clear()
         self.scene.addPixmap(QPixmap.fromImage(q_image))
-
-    def update_frame_from_camera(self):
-        # Read a frame from the webcam
-        ret, self.frame = self.camera_guide.read()
-
-        # Check if the frame was read successfully
-        if ret:
-            self.n_frame += 1
-
-            # Get frame in gray scale
-            self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
-
-            # Resize the image to half its original size
-            height, width = self.frame.shape[:2]
-            self.frame = cv2.resize(self.frame, dsize=(width // 2, height // 2))
-
-            # Multiply the image by a factor of 8, then clip to 0, 255
-            if np.max(self.frame) > 0:
-                self.frame = np.clip(self.frame * float(8), a_min=0, a_max=255).astype(np.uint8)
-
-            # Calculate the star centroid and size after each frame update
-            if self.tracking:
-                # Get star centroid and size
-                star_centroid, star_size = self.calculate_star_properties()
-
-                # Save info in the file
-                self.file.write(f"{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')} {star_centroid[0]} {star_centroid[1]} {star_size}\n")
-
-                # Update plot and square position
-                if star_centroid:
-                    self.square_position = star_centroid
-                    self.star_size = star_size
-
-                    # Ensure the length of the vectors is at most 100 elements
-                    if len(self.x_vec) == 100:
-                        self.x_vec.pop(0)  # Remove the first element
-                        self.y_vec.pop(0)
-                        self.s_vec.pop(0)
-
-                    # Append new data to the list
-                    self.x_vec.append(star_centroid[0] - self.reference_position[0])
-                    self.y_vec.append(star_centroid[1] - self.reference_position[1])
-                    self.s_vec.append(star_size)
-
-                    # Update plots
-                    self.main.plot_controller_pixel.updatePlot(x=self.x_vec, y=self.y_vec)
-                    self.main.plot_controller_surface.updatePlot(x=self.s_vec)
-
-            # Draw a red square on the grayscale frame
-            frame_with_square = self.draw_square()
-
-            # Convert the frame to RGB format
-            rgb_image = cv2.cvtColor(frame_with_square, cv2.COLOR_BGR2RGB)
-
-            # Convert the image to a format suitable for QLabel
-            h, w, ch = rgb_image.shape
-            bytes_per_line = ch * w
-            q_image = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
-
-            # Add the image to the QGraphicsScene
-            self.scene.clear()
-            self.scene.addPixmap(QPixmap.fromImage(q_image))
 
     def do_guiding(self):
         # Star guiding with updates in position after each frame
@@ -568,6 +389,9 @@ class GuideCameraController(FigureWidget):
             if 0 <= x < w and 0 <= y < h:
                 self.square_size = (
                     int(np.abs(self.square_position[0] - x) * 2), int(np.abs(self.square_position[1] - y) * 2))
+
+        self.frame_ready.emit(True)
+
 
     def calculate_star_properties(self):
         # Check if square position and size are valid
