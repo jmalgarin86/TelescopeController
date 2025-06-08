@@ -19,6 +19,7 @@ from controllers.controller_toolbar_guide import GuideController
 from controllers.controller_manual_control import ManualController
 from controllers.controller_auto_control import AutoController
 from controllers.controller_camera import CameraController
+from widgets.widget_camera import CameraWidget
 
 
 class TelescopeController(QMainWindow):
@@ -65,6 +66,10 @@ class TelescopeController(QMainWindow):
         # Create calibration controller
         self.calibration_controller = CalibrationController(self)
         left_layout.addWidget(self.calibration_controller)
+
+        # Create camera widget
+        self.camera_controller = CameraWidget(self)
+        left_layout.addWidget(self.camera_controller)
 
         # Create the ConsoleController widget
         self.console_controller = ConsoleController()

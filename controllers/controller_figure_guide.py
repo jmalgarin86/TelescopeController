@@ -45,6 +45,8 @@ class GuideCameraController(FigureWidget):
         self.camera_running = False
         self.new_fitting = False
         self.n_dec_warnings = 0
+        self.exposure = 1
+        self.gain = 2500
 
         # Create file to save data
         current_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -105,7 +107,7 @@ class GuideCameraController(FigureWidget):
     def frame_sniffer(self):
         while self.main.gui_open:
             if self.camera_running:
-                self.original_frame = self.main.camera.capture(exposure=1, gain=10)
+                self.original_frame = self.main.camera.capture(exposure=self.exposure, gain=self.gain)
                 self.n_frame += 1
                 self.frame_ready.emit(self.original_frame)
                 time.sleep(0.1)
