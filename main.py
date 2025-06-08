@@ -1,3 +1,4 @@
+import subprocess
 import sys
 import threading
 import time
@@ -87,6 +88,10 @@ class TelescopeController(QMainWindow):
 
         # Connect to Arduino
         self.arduino = ArduinoController(print_command=False)
+
+        # Connect to indiserver
+        subprocess.run(["gnome-terminal", "--", "./indiserver.sh"])
+        print("Connected to INDI server")
 
         # Connect to guiding camera
         self.camera = CameraController()

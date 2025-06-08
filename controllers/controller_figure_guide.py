@@ -105,7 +105,7 @@ class GuideCameraController(FigureWidget):
     def frame_sniffer(self):
         while self.main.gui_open:
             if self.camera_running:
-                self.original_frame = self.main.camera.capture(exposure=2, gain=10)
+                self.original_frame = self.main.camera.capture(exposure=1, gain=10)
                 self.n_frame += 1
                 self.frame_ready.emit(self.original_frame)
                 time.sleep(0.1)

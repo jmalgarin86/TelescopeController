@@ -29,6 +29,14 @@ class CameraController(PyIndi.BaseClient):
         # Connect to the device
         self.connect_device()
 
+        # Reconnect everything
+        self.disconnectDevice(self.device)
+        self.disconnectServer()
+        self.connect_server()
+        self.get_device()
+        self.connect_device()
+        time.sleep(1)
+
         # Get exposure and controls properties
         self.ccd_exposure = self.device_ccd.getNumber("CCD_EXPOSURE")
         self.ccd_gain = self.device_ccd.getNumber("CCD_CONTROLS")
@@ -38,9 +46,12 @@ class CameraController(PyIndi.BaseClient):
 
         # Get blob
         self.ccd_ccd1 = self.device_ccd.getBLOB("CCD1")
+        time.sleep(1)
 
         # Fix frame bug
         self.set_ccd_capture_format("INDI_RAW(RAW 16)")
+
+        print(f"Connected to {self.device} ")
 
     def updateProperty(self, prop):
         if prop.getType() == PyIndi.INDI_BLOB:
@@ -58,20 +69,23 @@ class CameraController(PyIndi.BaseClient):
 
     def get_device(self):
         self.device_ccd = self.getDevice(self.device)
-        while not self.device_ccd:
+        ii = 10
+        while ii > 0 and not self.device_ccd:
             time.sleep(0.5)
             self.device_ccd = self.getDevice(self.device)
+            ii -= 1
 
     def connect_device(self):
         ccd_connect = self.device_ccd.getSwitch("CONNECTION")
-        while not ccd_connect:
+        ii = 10
+        while ii > 0 and not ccd_connect:
             time.sleep(0.5)
             ccd_connect = self.device_ccd.getSwitch("CONNECTION")
+            ii -= 1
         if not (self.device_ccd.isConnected()):
             ccd_connect.reset()
             ccd_connect[0].setState(PyIndi.ISS_ON)  # the "CONNECT" switch
             self.sendNewSwitch(ccd_connect)
-        print(f"{self.device} connected")
 
     def get_properties(self):
         generic_properties = self.device_ccd.getProperties()
@@ -109,7 +123,6 @@ class CameraController(PyIndi.BaseClient):
     def set_gain(self, gain):
         self.ccd_gain[0].setValue(gain)
         self.sendNewNumber(self.ccd_gain)
-        # self.blob_event.wait()
         self.blob_event.clear()
 
     def set_ccd_capture_format(self, capture_format="INDI_RGB(RGB)"):
