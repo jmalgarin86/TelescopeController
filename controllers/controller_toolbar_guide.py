@@ -65,9 +65,9 @@ class GuideController(GuideToolBar):
 
     def start_camera(self):
         if self.action_camera.isChecked():
-            self.main.guide_camera_controller.start_camera()
+            self.main.figure_guide.camera_running = True
         else:
-            self.main.guide_camera_controller.stop_camera()
+            self.main.figure_guide.camera_running = False
 
         return 0
 

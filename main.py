@@ -7,13 +7,15 @@ import os
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import numpy as np
+from PIL import Image
+
 import qdarkstyle
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QHBoxLayout
 
 from controllers.controller_arduino import ArduinoController
 from controllers.controller_calibration import CalibrationController
 from controllers.controller_console import ConsoleController
-from controllers.controller_figure_guide import GuideCameraController
 from controllers.controller_joystick import JoyStickController
 from controllers.controller_plot import PlotController
 from controllers.controller_toolbar_guide import GuideController
@@ -21,6 +23,7 @@ from controllers.controller_manual_control import ManualController
 from controllers.controller_auto_control import AutoController
 from controllers.controller_camera import CameraController
 from widgets.widget_camera import CameraWidget
+from widgets.widget_figure import ImageWidget
 
 
 class TelescopeController(QMainWindow):
@@ -77,8 +80,11 @@ class TelescopeController(QMainWindow):
         left_layout.addWidget(self.console_controller)  # Add it to the left_layout
 
         # Create space for main image
-        self.guide_camera_controller = GuideCameraController(main=self)
-        right_layout.addWidget(self.guide_camera_controller)
+        image_path = "your_image.jpeg"
+        image = Image.open(image_path)
+        image_array = np.array(image)
+        self.figure_guide = ImageWidget(image_array=image_array, main=self)
+        right_layout.addWidget(self.figure_guide)
 
         # Layout for plots
         plots_layout = QHBoxLayout()

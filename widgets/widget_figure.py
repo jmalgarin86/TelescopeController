@@ -1,15 +1,224 @@
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QMainWindow
+import threading
+import time
 
+from PyQt5.QtCore import pyqtSignal
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+from matplotlib.patches import Rectangle, Circle
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout
+import numpy as np
+import sys
+from PIL import Image
 
-class FigureWidget(QMainWindow):
+class MplCanvas(FigureCanvas):
+    def __init__(self, parent=None, width=5, height=4, dpi=100):
+        self.fig = Figure(figsize=(width, height), dpi=dpi, facecolor='black')
+        self.axes = self.fig.add_subplot(111, facecolor='black')  # Also sets axes area background
+        self.axes.axis("off")
+        super().__init__(self.fig)
 
-    def __init__(self, main):
-        self.main = main
+class ImageWidget(QWidget):
+    frame_ready = pyqtSignal(object)
+
+    def __init__(self, image_array=None, title='Default Title', main=None):
         super().__init__()
+        self.original_frame = None
+        self.frame = None
+        self.camera_running = False
+        self.n_frame = 0
+        self.exposure = 1
+        self.gain = 2500
 
-        # Create a QLabel to display the webcam feed
-        self.scene = QGraphicsScene(self)
-        self.view = QGraphicsView(self.scene)
-        self.view.setAlignment(Qt.AlignCenter)
-        self.setCentralWidget(self.view)
+        self.setWindowTitle(title)
+        self.main = main
+
+        # Set parameters
+        self._zoom_xlim = None
+        self._zoom_ylim = None
+
+        # Canvas and layout
+        self._canvas = MplCanvas(self, width=5, height=4, dpi=100)
+        layout = QVBoxLayout()
+        layout.addWidget(self._canvas)
+        self.setLayout(layout)
+
+        # Image and ROI data
+        self._image_array = None
+        self._roi_center = None
+        self._roi_size = 200
+        self._roi_patch = None
+
+        # Set image if provided
+        if image_array is not None:
+            self.set_image(image_array)
+
+        # Connect mouse events
+        self._canvas.mpl_connect("button_press_event", self._on_click)
+        self._canvas.mpl_connect("scroll_event", self._on_scroll)
+
+        # Connect signal with update_frame_from_camera
+        self.frame_ready.connect(self.update_frame_from_camera)
+
+        # Call the frame_sniffer in a parallel thread
+        thread = threading.Thread(target=self.frame_sniffer)
+        thread.start()
+
+    def _on_click(self, event):
+        if event.inaxes != self._canvas.axes:
+            return
+
+        if event.button == 1:  # Left click: set center
+            self._roi_center = (event.xdata, event.ydata)
+            self._draw_roi()
+
+        elif event.button == 3:  # Right click: set size (distance from center)
+            if self._roi_center is not None:
+                dx = event.xdata - self._roi_center[0]
+                dy = event.ydata - self._roi_center[1]
+                new_half_side = max(abs(dx), abs(dy))
+                self._roi_size = 2 * new_half_side
+                self._draw_roi()
+
+    def _on_scroll(self, event):
+        base_scale = 1.2  # Zoom factor
+        ax = self._canvas.axes
+
+        # Get current x and y limits
+        xlim = ax.get_xlim()
+        ylim = ax.get_ylim()
+
+        # Get mouse position in data coordinates
+        xdata = event.xdata
+        ydata = event.ydata
+        if xdata is None or ydata is None:
+            return  # Ignore scrolls outside the image
+
+        # Calculate zoom scale
+        scale_factor = base_scale if event.button == 'up' else 1 / base_scale
+
+        # New limits
+        new_xlim = [
+            xdata - (xdata - xlim[0]) * scale_factor,
+            xdata + (xlim[1] - xdata) * scale_factor
+        ]
+        new_ylim = [
+            ydata - (ydata - ylim[0]) * scale_factor,
+            ydata + (ylim[1] - ydata) * scale_factor
+        ]
+        ax.set_xlim(new_xlim)
+        ax.set_ylim(new_ylim)
+
+        # Save current axis limits to retain zoom
+        self._zoom_xlim = self._canvas.axes.get_xlim()
+        self._zoom_ylim = self._canvas.axes.get_ylim()
+
+        self._canvas.draw()
+
+    def get_image(self):
+        return self._image_array
+
+    def set_image(self, image_array):
+        self._image_array = image_array
+        self._canvas.axes.clear()
+        self._canvas.axes.axis("off")
+        self._roi_patch = None
+        self._canvas.axes.imshow(image_array, cmap='gray' if image_array.ndim == 2 else None)
+
+        # Restore zoom if available
+        if self._zoom_xlim and self._zoom_ylim:
+            self._canvas.axes.set_xlim(self._zoom_xlim)
+            self._canvas.axes.set_ylim(self._zoom_ylim)
+
+        # Redraw crosshairs and circle at image center
+        height, width = image_array.shape[:2]
+        cx, cy = width / 2, height / 2
+
+        # Draw vertical and horizontal lines
+        self._canvas.axes.axvline(cx, color='red', linestyle='--', linewidth=2)
+        self._canvas.axes.axhline(cy, color='red', linestyle='--', linewidth=2)
+
+        # Draw circle at center
+        center_circle = Circle((cx, cy), radius=100, color='red', linestyle='--', fill=False, linewidth=2)
+        self._canvas.axes.add_patch(center_circle)
+
+        # Draw roi
+        self._draw_roi()
+
+        # Show canvas
+        self._canvas.draw()
+
+        # Now extract pixels in ROI if ROI is set
+        if self._roi_center is not None and self._roi_size is not None:
+            cx_roi, cy_roi = self._roi_center
+            half = self._roi_size // 2
+
+            # Clamp coordinates to image boundaries
+            x_start = max(0, int(cx_roi - half))
+            x_end = min(width, int(cx_roi + half))
+            y_start = max(0, int(cy_roi - half))
+            y_end = min(height, int(cy_roi + half))
+
+            roi_pixels = image_array[y_start:y_end, x_start:x_end]
+            return roi_pixels
+        else:
+            return None
+
+    def _draw_roi(self):
+        if self._roi_center is None or self._roi_size is None:
+            return
+
+        x0 = self._roi_center[0] - self._roi_size / 2
+        y0 = self._roi_center[1] - self._roi_size / 2
+
+        # Remove old patch
+        if self._roi_patch is not None:
+            self._roi_patch.remove()
+
+        self._roi_patch = Rectangle(
+            (x0, y0), self._roi_size, self._roi_size,
+            linewidth=2, edgecolor='red', facecolor='none'
+        )
+        self._canvas.axes.add_patch(self._roi_patch)
+        self._canvas.draw()
+
+    def get_roi_position(self):
+        position = (int(self._roi_center[0]), int(self._roi_center[1]))
+        return position
+
+    def set_roi_position(self, position):
+        self._roi_center = position
+        self._draw_roi()
+        
+    def frame_sniffer(self):
+        while self.main.gui_open:
+            if self.camera_running:
+                self.original_frame = self.main.camera.capture(exposure=self.exposure, gain=self.gain)
+                self.n_frame += 1
+                self.frame_ready.emit(self.original_frame)
+                print(f"Frame {self.n_frame}")
+                time.sleep(0.1)
+            else:
+                time.sleep(1)
+                
+    def update_frame_from_camera(self):
+        self.frame = self.original_frame
+
+        # Multiply the image by a factor of 8, then clip to 0, 255
+        if np.max(self.frame) > 0:
+            self.frame = np.clip(self.frame * float(8) / 2**16 * 2**8, a_min=0, a_max=255).astype(np.uint8)
+
+        self.set_image(self.frame)
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+
+    # Load initial image
+    image_path = "../your_image.jpeg"
+    image = Image.open(image_path)
+    image_array = np.array(image)
+
+    # Create and show widget
+    window = ImageWidget()
+    window.set_image(image_array)
+    window.show()
+    sys.exit(app.exec_())
