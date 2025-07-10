@@ -56,12 +56,6 @@ class ImageWidget(QWidget):
         self._canvas.mpl_connect("button_press_event", self._on_click)
         self._canvas.mpl_connect("scroll_event", self._on_scroll)
 
-        # Connect signal with update_frame_from_camera
-        self.frame_ready.connect(self.update_frame_from_camera)
-
-        # Call the frame_sniffer in a parallel thread
-        thread = threading.Thread(target=self.frame_sniffer)
-        thread.start()
 
     def _on_click(self, event):
         if event.inaxes != self._canvas.axes:
@@ -188,26 +182,6 @@ class ImageWidget(QWidget):
     def set_roi_position(self, position):
         self._roi_center = position
         self._draw_roi()
-        
-    def frame_sniffer(self):
-        while self.main.gui_open:
-            if self.camera_running:
-                self.original_frame = self.main.camera_guide.capture(exposure=self.exposure, gain=self.gain)
-                self.n_frame += 1
-                self.frame_ready.emit(self.original_frame)
-                print(f"Frame {self.n_frame}")
-                time.sleep(0.1)
-            else:
-                time.sleep(1)
-                
-    def update_frame_from_camera(self):
-        self.frame = self.original_frame
-
-        # Multiply the image by a factor of 8, then clip to 0, 255
-        if np.max(self.frame) > 0:
-            self.frame = np.clip(self.frame * float(8) / 2**16 * 2**8, a_min=0, a_max=255).astype(np.uint8)
-
-        self.set_image(self.frame)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

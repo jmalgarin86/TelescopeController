@@ -20,7 +20,7 @@ from controllers.controller_joystick import JoyStickController
 from controllers.controller_toolbar_guide import GuideController
 from controllers.controller_manual_control import ManualController
 from controllers.controller_auto_control import AutoController
-from controllers.controller_camera import CameraController
+from controllers.controller_camera import GuidingCameraController
 from widgets.widget_camera import CameraWidget
 from widgets.widget_figure import ImageWidget
 from widgets.widget_plot import PlotWidget
@@ -56,9 +56,9 @@ class TelescopeController(QMainWindow):
 
         # Create a left_layout and right_layout
         left_layout = QVBoxLayout()
-        main_layout.addLayout(left_layout)
+        main_layout.addLayout(left_layout, stretch=1)
         right_layout = QVBoxLayout()
-        main_layout.addLayout(right_layout)
+        main_layout.addLayout(right_layout, stretch=2)
 
         # Create the manual control widget
         self.manual_controller = ManualController(self)
@@ -118,7 +118,7 @@ class TelescopeController(QMainWindow):
         time.sleep(1)
 
         # Connect to guiding camera
-        self.camera_guide = CameraController()
+        self.camera_guide_controller = GuidingCameraController(self, device='Bresser GPCMOS02000KPA')
 
         # Create joystick controller
         JoyStickController(self)
