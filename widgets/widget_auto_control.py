@@ -5,12 +5,6 @@ class AutoWidget(QGroupBox):
     def __init__(self, main=None):
         super().__init__("Auto Control")
         self.main = main
-        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        self.setMaximumWidth(300)
-        self.setMinimumWidth(300)
-
-        # Initially disabled
-        # self.setEnabled(False)
 
         # Origin/Target button/label
         self.origin_button = QPushButton("Origin")

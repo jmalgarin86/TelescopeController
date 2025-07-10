@@ -58,7 +58,7 @@ class TelescopeController(QMainWindow):
         left_layout = QVBoxLayout()
         main_layout.addLayout(left_layout, stretch=1)
         right_layout = QVBoxLayout()
-        main_layout.addLayout(right_layout, stretch=2)
+        main_layout.addLayout(right_layout, stretch=3)
 
         # Create the manual control widget
         self.manual_controller = ManualController(self)

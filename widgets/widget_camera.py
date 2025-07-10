@@ -9,10 +9,6 @@ class CameraWidget(QGroupBox):
         super().__init__("Camera control")
         self.main = main
 
-        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        self.setMaximumWidth(300)
-        self.setMinimumWidth(300)
-
         # Create sliders
         self.label_exp = QLabel("Exposure: 1.0 s", self)
         self.slider_exp = QSlider(Qt.Horizontal)

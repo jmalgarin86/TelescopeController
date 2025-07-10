@@ -14,6 +14,3 @@ class ConsoleWidget(QMainWindow):
         self.console = QTextEdit()
         self.console.setReadOnly(True)
         self.setCentralWidget(self.console)
-        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
-        self.setMaximumWidth(300)
-        self.setMinimumWidth(300)

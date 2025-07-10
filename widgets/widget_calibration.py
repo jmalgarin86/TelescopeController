@@ -10,13 +10,6 @@ class CalibrationWidget(QGroupBox):
         super().__init__("Calibration")
         self.main = main
 
-        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        self.setMaximumWidth(300)
-        self.setMinimumWidth(300)
-
-        # Initially disabled
-        # self.setEnabled(False)
-
         # Create QPushButtons
         self.button_dec_p = QPushButton("1) DEC +")
         self.button_dec_p.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
