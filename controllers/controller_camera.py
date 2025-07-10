@@ -241,10 +241,9 @@ class GuidingCameraController(QObject, CameraController):
             self.main.image_guide_camera.set_roi_position(position)
 
             # Ensure the length of the vectors is at most 100 elements
-            if len(self._x_vec) == 100:
+            if len(self._x_vec) == 10:
                 self._x_vec.pop(0)  # Remove the first element
                 self._y_vec.pop(0)
-                self._s_vec.pop(0)
 
             # Update vectors and plot
             self._x_vec.append(position[0] - self._reference_position[0])
@@ -301,6 +300,24 @@ class GuidingCameraController(QObject, CameraController):
     def stop_camera(self):
         print("Stop guiding camera")
         self._camera_running = False
+
+    def set_tracking(self, tracking: bool):
+        self._tracking = tracking
+
+    def set_guiding(self, guiding: bool):
+        self._guiding = guiding
+
+    def set_reference_position(self, position: tuple):
+        self._reference_position = position
+
+    def set_looseness(self, looseness):
+        self._looseness_detected = looseness
+
+    def set_strength(self, strength=1.0, axis='DEC'):
+        if axis == 'DEC':
+            self._strength_de = strength
+        elif axis == 'AR':
+            self._strength_ar = strength
 
 if __name__ == "__main__":
     client = GuidingCameraController(main=None, device='Bresser GPCMOS02000KPA')
