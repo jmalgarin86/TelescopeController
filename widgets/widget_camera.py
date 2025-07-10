@@ -1,10 +1,12 @@
 import copy
+import sys
 
-from PyQt5.QtWidgets import QGroupBox, QHBoxLayout, QLabel, QSizePolicy, QSlider, QVBoxLayout
+from PyQt5.QtWidgets import QGroupBox, QHBoxLayout, QLabel, QSizePolicy, QSlider, QVBoxLayout, QPushButton, QLineEdit, \
+    QSpinBox, QGridLayout, QWidget, QApplication, QCheckBox
 from PyQt5.QtCore import Qt
 
 
-class CameraWidget(QGroupBox):
+class CameraGuideWidget(QGroupBox):
     def __init__(self, main):
         super().__init__("Camera control")
         self.main = main
@@ -54,3 +56,72 @@ class CameraWidget(QGroupBox):
         gain = self.slider_gain.value()
         self.main.guide_camera_controller.gain = gain / 100 * 5000
         self.label_gain.setText(f"Gain: {gain}")
+
+class CameraMainWidget(QGroupBox):
+    def __init__(self, main=None):
+        super().__init__()
+        self.main = main
+
+        # === Gain Input ===
+        self.gain_label = QLabel("Gain:")
+        self.gain_input = QLineEdit()
+        self.gain_input.setPlaceholderText("Enter gain value")
+
+        # === Exposure Input ===
+        self.exposure_label = QLabel("Exposure (ms):")
+        self.exposure_input = QLineEdit()
+        self.exposure_input.setPlaceholderText("Enter exposure in ms")
+
+        # === Temperature Input ===
+        self.temp_label = QLabel("Temperature (°C):")
+        self.temp_input = QLineEdit()
+        self.temp_input.setPlaceholderText("Enter target temperature")
+
+        # === Initialize Temperature Checkbox ===
+        self.init_temp_checkbox = QCheckBox("Initialize Temperature")
+
+        # === File Name Input ===
+        self.filename_label = QLabel("Save File Name:")
+        self.filename_input = QLineEdit()
+
+        # === Number of Acquisitions ===
+        self.num_acq_label = QLabel("Number of Acquisitions:")
+        self.num_acq_input = QSpinBox()
+        self.num_acq_input.setMinimum(1)
+        self.num_acq_input.setMaximum(1000)
+        self.num_acq_input.setValue(1)
+
+        # === Capture Button ===
+        self.capture_button = QPushButton("Capture Frames")
+
+        # === Layout ===
+        layout = QVBoxLayout()
+
+        grid = QGridLayout()
+        grid.addWidget(self.gain_label, 0, 0)
+        grid.addWidget(self.gain_input, 0, 1)
+
+        grid.addWidget(self.exposure_label, 1, 0)
+        grid.addWidget(self.exposure_input, 1, 1)
+
+        grid.addWidget(self.temp_label, 2, 0)
+        grid.addWidget(self.temp_input, 2, 1)
+
+        grid.addWidget(self.init_temp_checkbox, 3, 1)
+
+        grid.addWidget(self.filename_label, 4, 0)
+        grid.addWidget(self.filename_input, 4, 1)
+
+        grid.addWidget(self.num_acq_label, 5, 0)
+        grid.addWidget(self.num_acq_input, 5, 1)
+
+        layout.addLayout(grid)
+        layout.addWidget(self.capture_button)
+
+        self.setLayout(layout)
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    widget = CameraMainWidget(main=None)
+    widget.show()
+    sys.exit(app.exec_())

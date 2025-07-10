@@ -20,7 +20,7 @@ from controllers.controller_toolbar_guide import GuideController
 from controllers.controller_manual_control import ManualController
 from controllers.controller_auto_control import AutoController
 from controllers.controller_camera import GuidingCameraController
-from widgets.widget_camera import CameraWidget
+from widgets.widget_camera import CameraGuideWidget
 from widgets.widget_figure import ImageWidget
 from widgets.widget_plot import PlotWidget
 from widgets.widget_histogram import HistogramWidget
@@ -73,7 +73,7 @@ class TelescopeController(QMainWindow):
         left_layout.addWidget(self.calibration_widget)
 
         # Create camera widget
-        self.camera_controller = CameraWidget(self)
+        self.camera_controller = CameraGuideWidget(self)
         left_layout.addWidget(self.camera_controller)
 
         # Create the ConsoleController widget
