@@ -14,7 +14,6 @@ import qdarkstyle
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QHBoxLayout, QTabWidget
 
 from controllers.controller_arduino import ArduinoController
-from controllers.controller_calibration import CalibrationController
 from controllers.controller_console import ConsoleController
 from controllers.controller_joystick import JoyStickController
 from controllers.controller_toolbar_guide import GuideController
@@ -25,6 +24,7 @@ from widgets.widget_camera import CameraWidget
 from widgets.widget_figure import ImageWidget
 from widgets.widget_plot import PlotWidget
 from widgets.widget_histogram import HistogramWidget
+from widgets.widget_calibration import CalibrationWidget
 
 
 class TelescopeController(QMainWindow):
@@ -69,8 +69,8 @@ class TelescopeController(QMainWindow):
         left_layout.addWidget(self.auto_controller)
 
         # Create calibration controller
-        self.calibration_controller = CalibrationController(self)
-        left_layout.addWidget(self.calibration_controller)
+        self.calibration_widget = CalibrationWidget(self)
+        left_layout.addWidget(self.calibration_widget)
 
         # Create camera widget
         self.camera_controller = CameraWidget(self)
