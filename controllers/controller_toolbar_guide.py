@@ -40,7 +40,7 @@ class GuideController(GuideToolBar):
         check_ar_n = self.main.calibration_controller.checkbox_ar_n.isChecked()
         if self.action_guide.isChecked():
             if check_de and check_ar_p and check_ar_n:
-                position = self.main.guide_camera_controller.get_coordinates()
+                position = self.main.image_guide_camera.get_roi_position()
                 self.main.guide_camera_controller.set_reference_position(position)
                 self.main.guide_camera_controller.set_guiding(True)
                 self.main.guide_camera_controller.dec_dir_old = None

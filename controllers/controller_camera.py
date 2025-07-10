@@ -241,7 +241,7 @@ class GuidingCameraController(QObject, CameraController):
             self.main.image_guide_camera.set_roi_position(position)
 
             # Ensure the length of the vectors is at most 100 elements
-            if len(self._x_vec) == 10:
+            if len(self._x_vec) == 100:
                 self._x_vec.pop(0)  # Remove the first element
                 self._y_vec.pop(0)
 
