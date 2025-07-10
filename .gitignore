@@ -5,3 +5,4 @@ widgets/__pycache__/
 /calibration/calibration.csv
 *.pyc
 *.txt
+*.jpeg

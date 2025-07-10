@@ -192,7 +192,7 @@ class ImageWidget(QWidget):
     def frame_sniffer(self):
         while self.main.gui_open:
             if self.camera_running:
-                self.original_frame = self.main.camera.capture(exposure=self.exposure, gain=self.gain)
+                self.original_frame = self.main.camera_guide.capture(exposure=self.exposure, gain=self.gain)
                 self.n_frame += 1
                 self.frame_ready.emit(self.original_frame)
                 print(f"Frame {self.n_frame}")

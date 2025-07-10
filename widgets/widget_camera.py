@@ -51,10 +51,10 @@ class CameraWidget(QGroupBox):
 
     def set_exposure(self):
         exposure = self.slider_exp.value()
-        self.main.guide_camera_controller.exposure = exposure / 100 * 2
+        self.main.camera_guide.exposure = exposure / 100 * 2
         self.label_exp.setText(f"Exposure: {exposure / 100 * 2} s")
 
     def set_gain(self):
         gain = self.slider_gain.value()
-        self.main.guide_camera_controller.gain = gain / 100 * 5000
+        self.main.camera_guide.gain = gain / 100 * 5000
         self.label_gain.setText(f"Gain: {gain}")

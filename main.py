@@ -11,19 +11,20 @@ import numpy as np
 from PIL import Image
 
 import qdarkstyle
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QHBoxLayout
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QHBoxLayout, QTabWidget
 
 from controllers.controller_arduino import ArduinoController
 from controllers.controller_calibration import CalibrationController
 from controllers.controller_console import ConsoleController
 from controllers.controller_joystick import JoyStickController
-from controllers.controller_plot import PlotController
 from controllers.controller_toolbar_guide import GuideController
 from controllers.controller_manual_control import ManualController
 from controllers.controller_auto_control import AutoController
 from controllers.controller_camera import CameraController
 from widgets.widget_camera import CameraWidget
 from widgets.widget_figure import ImageWidget
+from widgets.widget_plot import PlotWidget
+from widgets.widget_histogram import HistogramWidget
 
 
 class TelescopeController(QMainWindow):
@@ -82,21 +83,31 @@ class TelescopeController(QMainWindow):
         # Create space for main image
         image_path = "your_image.jpeg"
         image = Image.open(image_path)
-        image_array = np.array(image)
-        self.figure_guide = ImageWidget(image_array=image_array, main=self)
-        right_layout.addWidget(self.figure_guide)
+        image_array_1 = np.array(image)
+        image_path = "your_image2.jpeg"
+        image = Image.open(image_path)
+        image_array_2 = np.array(image)
+
+        # Tab widget for figures
+        images_tab = QTabWidget()
+        self.image_guide_camera = ImageWidget(image_array=image_array_1, main=self)
+        self.image_main_camera = ImageWidget(image_array=image_array_2, main=self)
+        images_tab.addTab(self.image_guide_camera, "Image Guide")
+        images_tab.addTab(self.image_main_camera, "Image Main")
+        right_layout.addWidget(images_tab, stretch=2)
 
         # Layout for plots
         plots_layout = QHBoxLayout()
         right_layout.addLayout(plots_layout)
 
-        # Create space for 1d plot
-        self.plot_controller_pixel = PlotController(self, text='pixel')
-        plots_layout.addWidget(self.plot_controller_pixel)
-
-        # Create space for 1d plot
-        self.plot_controller_surface = PlotController(self, text='surface')
-        plots_layout.addWidget(self.plot_controller_surface)
+        calibration_tab = QTabWidget()
+        self.plot_controller_pixel = PlotWidget(self, text='pixel')
+        self.plot_controller_surface = PlotWidget(self, text='surface')
+        self.histogram = HistogramWidget(self)
+        calibration_tab.addTab(self.plot_controller_pixel, "Guiding plot")
+        calibration_tab.addTab(self.plot_controller_surface, "Focus plot")
+        calibration_tab.addTab(self.histogram, "Histogram")
+        right_layout.addWidget(calibration_tab, stretch=1)
 
         # Connect to Arduino
         self.arduino = ArduinoController(print_command=False)
@@ -107,7 +118,7 @@ class TelescopeController(QMainWindow):
         time.sleep(1)
 
         # Connect to guiding camera
-        self.camera = CameraController()
+        self.camera_guide = CameraController()
 
         # Create joystick controller
         JoyStickController(self)
