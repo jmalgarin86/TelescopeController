@@ -173,6 +173,26 @@ class CameraController(PyIndi.BaseClient):
         print("Cooling off")
         self.set_cooling(False)
 
+    def test_gain(self, e0, g0, g1, ng):
+        gain = np.linspace(g0, g1, ng)
+        avg = []
+        std = []
+        for ii in range(ng):
+            frame = self.capture(exposure=e0, gain=gain[ii])
+            avg.append(np.mean(frame))
+            std.append(np.std(frame))
+            progress = (ii / ng * 100)
+            print(f"{round(progress, 1)} %")
+
+        plt.figure(figsize=(8, 6))
+        plt.plot(gain, avg)
+        plt.plot(gain, std)
+        plt.xlabel("Gain")
+        plt.ylabel("Value")
+        plt.title("Signal and Standard Deviation")
+        plt.legend(["Avg", "Std"])
+        plt.show()
+
     def characterize_device(self, e0=0.1, e1=1.0, ne = 10, g0=10, g1=600, ng=60):
         gain = np.linspace(g0, g1, ng)
         exposure = np.linspace(e0, e1, ne)
@@ -371,11 +391,21 @@ class MainCameraController(QObject, CameraController):
 
         self._camera_running = None
         self._n_frames = None
-        thread = threading.Thread(target=self._main_frame_sniffer)
+
+        self.frame_ready.connect(self.test)
+
+        # Start frame sniffer
+        thread = threading.Thread(target=self._frame_sniffer)
         thread.start()
 
-    def _main_frame_sniffer(self):
-        while self.device_ccd is not None:
+    def test(self):
+        print("frame_ready")
+
+    def set_camera_status(self, status: bool):
+        self._camera_running = status
+
+    def _frame_sniffer(self):
+        while True:
             if self._camera_running:
                 try:
                     # Get frame
@@ -393,5 +423,6 @@ class MainCameraController(QObject, CameraController):
 if __name__ == "__main__":
     client = CameraController(device="ZWO CCD ASI533MC Pro")
     client.set_up_camera()
-    client.test_temperature(temperature=15)
+    # client.test_temperature(temperature=15)
+    client.test_gain(e0=0.1, g0=20, g1=600, ng=30)
     print("Ready!")

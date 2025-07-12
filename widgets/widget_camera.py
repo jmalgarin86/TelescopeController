@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QGroupBox, QHBoxLayout, QLabel, QSizePolicy, QSlider
     QSpinBox, QGridLayout, QWidget, QApplication, QCheckBox
 from PyQt5.QtCore import Qt
 
-from controllers.controller_camera import CameraController
+from controllers.controller_camera import MainCameraController
 
 
 class CameraGuideWidget(QGroupBox):
@@ -129,7 +129,7 @@ class CameraMainWidget(QGroupBox):
         self.setLayout(layout)
 
         # Create main camera controller
-        self.main_camera = CameraController(device="ZWO CCD ASI533MC Pro")
+        self.main_camera = MainCameraController(device="ZWO CCD ASI533MC Pro")
 
         # Connect update button to method
         self.update_button.clicked.connect(self.update_camera_settings)
@@ -139,13 +139,13 @@ class CameraMainWidget(QGroupBox):
 
     def connect_camera(self):
         if self.connect_button.isChecked():
-            self.main_camera.set_up_camera()
+            if self.main_camera.device_ccd is None:
+                self.main_camera.set_up_camera()
+            self.main_camera.set_camera_status(status=True)
             print(f"Connected to {self.main_camera.device}")
         else:
-            self.main_camera.disconnectDevice(deviceName="ZWO CCD ASI533MC Pro")
-            self.main_camera.disconnectServer()
+            self.main_camera.set_camera_status(status=False)
             print(f"Disconnected from {self.main_camera.device}")
-
 
     def update_camera_settings(self):
         # Get gain
