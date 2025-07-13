@@ -1,4 +1,5 @@
 import copy
+import os
 import sys
 
 from PyQt5.QtWidgets import QHBoxLayout, QLabel, QSlider, QVBoxLayout, QPushButton, QLineEdit, \
@@ -65,6 +66,7 @@ class MainCameraWidget(GroupBoxWithButtonTitle):
     def __init__(self, main):
         super().__init__("Main Camera")
         self.main = main
+        self.captures_path = "Captures"
 
         # === Gain Input ===
         self.gain_label = QLabel("Gain:")
@@ -77,13 +79,6 @@ class MainCameraWidget(GroupBoxWithButtonTitle):
         # === Temperature Input ===
         self.temp_label = QLabel("Temperature (°C):")
         self.temp_input = QLineEdit("0")
-
-        # === Initialize Temperature Checkbox ===
-        self.init_temp_checkbox = QCheckBox("Initialize Temperature")
-
-        # === File Name Input ===
-        self.filename_label = QLabel("Save File Name:")
-        self.filename_input = QLineEdit()
 
         # === Number of Acquisitions ===
         self.num_acq_label = QLabel("Number of Acquisitions:")
@@ -98,10 +93,12 @@ class MainCameraWidget(GroupBoxWithButtonTitle):
 
         # === Update Button ===
         self.update_button = QPushButton("Update")
+        self.update_button.setDisabled(True)
 
         # === Capture Button ===
         self.capture_button = QPushButton("Capture Frames")
         self.capture_button.setCheckable(True)
+        self.capture_button.setDisabled(True)
 
         # === Layout ===
         layout = QVBoxLayout()
@@ -118,14 +115,11 @@ class MainCameraWidget(GroupBoxWithButtonTitle):
         grid.addWidget(self.temp_label, 3, 0)
         grid.addWidget(self.temp_input, 3, 1)
 
-        grid.addWidget(self.filename_label, 4, 0)
-        grid.addWidget(self.filename_input, 4, 1)
+        grid.addWidget(self.num_acq_label, 4, 0)
+        grid.addWidget(self.num_acq_input, 4, 1)
 
-        grid.addWidget(self.num_acq_label, 5, 0)
-        grid.addWidget(self.num_acq_input, 5, 1)
-
-        grid.addWidget(self.update_button, 6, 0)
-        grid.addWidget(self.capture_button, 6, 1)
+        grid.addWidget(self.update_button, 5, 0)
+        grid.addWidget(self.capture_button, 5, 1)
 
         layout.addLayout(grid)
         layout.addStretch()
@@ -133,27 +127,39 @@ class MainCameraWidget(GroupBoxWithButtonTitle):
 
         # Create main camera controller
         self.main_camera = MainCameraController(main=self.main, device="ZWO CCD ASI533MC Pro")
+        self.main_camera.signal_frames_ready.connect(self.frames_ready)
+        self.main_camera.signal_send_temperature.connect(self.temperature_monitor)
 
         # Connect update button to method
         self.update_button.clicked.connect(self.update_camera_settings)
         self.connect_button.clicked.connect(self.connect_camera)
+        self.capture_button.clicked.connect(self.capture_frames)
 
-        self.show()
+    @staticmethod
+    def temperature_monitor(temperature):
+        print(f"Temperature: {temperature} ºC")
 
     def connect_camera(self):
         if self.connect_button.isChecked():
             if self.main_camera.device_ccd is None:
                 self.main_camera.set_up_camera()
             self.main_camera.set_camera_status(status=True)
+            self.update_button.setEnabled(True)
+            self.capture_button.setEnabled(True)
             print(f"Connected to {self.main_camera.device}")
         else:
             self.main_camera.set_camera_status(status=False)
+            self.main_camera.set_cooling(cooling=False)
+            self.update_button.setEnabled(False)
+            self.capture_button.setEnabled(False)
             print(f"Disconnected from {self.main_camera.device}")
 
     def update_camera_settings(self):
         # Get gain
         try:
             gain = float(self.gain_input.text())
+            self.main_camera.set_gain(gain)
+            print(f"Setting gain: {gain}")
         except ValueError:
             print("Invalid gain value")
             return
@@ -161,32 +167,38 @@ class MainCameraWidget(GroupBoxWithButtonTitle):
         # Get exposure
         try:
             exposure = float(self.exposure_input.text())
+            self.main_camera.set_exposure(exposure)
+            print(f"Setting exposure: {exposure}")
         except ValueError:
             print("Invalid exposure value")
             return
 
         # Get temperature
         temp_text = self.temp_input.text()
-        if temp_text.strip().lower() == "off":
-            temperature = None  # means disable cooling
-        else:
-            try:
-                temperature = float(temp_text)
-            except ValueError:
-                print("Invalid temperature value")
-                return
-
-        # === Call your camera methods ===
-        print(f"Setting gain: {gain}")
-        print(f"Setting exposure: {exposure}")
-        if temperature is None:
-            print("Disabling temperature control")
-        else:
+        try:
+            temperature = float(temp_text)
+            self.main_camera.set_temperature(temperature)
             print(f"Setting temperature: {temperature}")
+        except ValueError:
+            self.main_camera.set_cooling(False)
+            print("Disabling temperature control")
+
+        # Frames to capture
+        self.main_camera.set_frames_to_save(self.num_acq_input.value())
+
+    def frames_ready(self):
+        self.capture_button.setChecked(False)
+
+    def capture_frames(self):
+        if self.capture_button.isChecked():
+            self.main_camera.set_frames_to_save(self.num_acq_input.value())
+        else:
+            self.main_camera.set_frames_to_save(0)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     main = QWidget()
     main.gui_open = True
     widget = MainCameraWidget(main=main)
+    widget.show()
     sys.exit(app.exec_())

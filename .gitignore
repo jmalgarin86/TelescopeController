@@ -2,6 +2,7 @@
 controllers/__pycache__/
 widgets/__pycache__/
 /captures/
+/widgets/captures/
 /calibration/calibration.csv
 *.pyc
 *.txt

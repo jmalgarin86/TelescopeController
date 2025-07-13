@@ -1,3 +1,5 @@
+import copy
+import os
 import sys
 
 import PyIndi
@@ -15,8 +17,11 @@ from matplotlib import pyplot as plt
 from utils.utils import analyze_subframe
 
 class CameraController(PyIndi.BaseClient):
+    signal_frames_ready = pyqtSignal()
     def __init__(self, device="Bresser GPCMOS02000KPA", host="localhost", port=7624):
         super(CameraController, self).__init__()
+        self._n_frames_total = None
+        self._n_frames_to_save = 0
         self.ccd_cooler_switch = None
         self.ccd_temperature = None
         self.generic_properties = []
@@ -31,6 +36,11 @@ class CameraController(PyIndi.BaseClient):
         self.blob_event.clear()
         self.exposure = 1
         self.gain = 100
+        self.captures_path = "captures/"
+
+        # Create path to save files
+        if not os.path.exists(self.captures_path):
+            os.makedirs(self.captures_path, exist_ok=True)
 
     def updateProperty(self, prop):
         if prop.getType() == PyIndi.INDI_BLOB:
@@ -115,6 +125,9 @@ class CameraController(PyIndi.BaseClient):
     def get_temperature(self):
         return self.ccd_temperature[0].value
 
+    def get_temperature(self):
+        return self.ccd_temperature[0].value
+
     def set_cooling(self, cooling=False):
         if cooling:
             self.ccd_cooler_switch[0].s = PyIndi.ISS_ON
@@ -124,7 +137,7 @@ class CameraController(PyIndi.BaseClient):
             self.ccd_cooler_switch[1].s = PyIndi.ISS_ON
         self.sendNewSwitch(self.ccd_cooler_switch)
 
-    def set_exposure(self, exposure):
+    def _do_exposure(self, exposure):
         self.ccd_exposure[0].setValue(exposure)
         self.blob_event.clear()
         self.sendNewNumber(self.ccd_exposure)
@@ -132,10 +145,11 @@ class CameraController(PyIndi.BaseClient):
         self.blob_event.clear()
         return success
 
+    def set_exposure(self, exposure):
+        self.exposure = exposure
+
     def set_gain(self, gain):
-        self.ccd_gain[0].setValue(gain)
-        self.sendNewNumber(self.ccd_gain)
-        self.blob_event.clear()
+        self.gain = gain
 
     def set_ccd_capture_format(self, capture_format="INDI_RGB(RGB)"):
         # Capture format
@@ -163,6 +177,9 @@ class CameraController(PyIndi.BaseClient):
         self.sendNewSwitch(ccd_capture_format)
         self.sendNewSwitch(ccd_transfer_format)
         self.blob_event.clear()
+
+    def set_frames_to_save(self, frames_to_save):
+        self._n_frames_to_save = frames_to_save
 
     def test_temperature(self, temperature=0):
         self.set_temperature(temperature=temperature)
@@ -219,17 +236,46 @@ class CameraController(PyIndi.BaseClient):
         plt.show()
         print("Finished!")
 
-    def capture(self, exposure=1, gain=100):
+    def capture(self, file_name=None):
         try:
-            # Trigger image acquisition
-            self.set_gain(gain)
-            self.set_exposure(exposure)
+            # Set gain
+            self.ccd_gain[0].setValue(self.gain)
+            self.sendNewNumber(self.ccd_gain)
+            self.blob_event.clear()
+
+            # Trigger exposure
+            while not self._do_exposure(self.exposure):
+                print("Exposure failed. Repeating exposure...")
 
             # Get fits from blob and extract image
             blob = self.ccd_ccd1[0]
             fits_data = blob.getblobdata()
+
+            # Open FITS from bytes
             hdul = fits.open(io.BytesIO(fits_data))
             image_data = hdul[0].data
+
+            if self._n_frames_to_save > 0:
+                if self._n_frames_total is None:
+                    self._n_frames_total = self._n_frames_to_save
+
+                if file_name is None:
+                    import datetime
+                    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                    file_name = f"capture_{timestamp}.fits"
+
+                hdu = fits.PrimaryHDU(image_data)
+                hdu.writeto(f"{self.captures_path}{file_name}", overwrite=True)
+
+                # Compute how many frames done
+                frames_done = self._n_frames_total - self._n_frames_to_save + 1
+                print(f"{frames_done}/{self._n_frames_total} {file_name} ready!")
+                self._n_frames_to_save -= 1
+
+                if self._n_frames_to_save == 0:
+                    self.signal_frames_ready.emit()
+                    self._n_frames_total = None
+
             return image_data
         except:
             print(f"Capturing frame failed.")
@@ -267,14 +313,14 @@ class GuidingCameraController(QObject, CameraController):
             if self._camera_running:
                 try:
                     # Get frame
-                    self._frame = self.capture(exposure=self.exposure, gain=self.gain)
+                    self._n_frames += 1
+                    self._frame = self.capture()
 
                     # Multiply the image by a factor of 8, then clip to 0, 255
                     if np.max(self._frame) > 0:
                         self._frame = np.clip(self._frame * float(8) / 2 ** 16 * 2 ** 8, a_min=0, a_max=255).astype(
                             np.uint8)
 
-                    self._n_frames += 1
                     print(f"Frame {self._n_frames}")
                 except:
                     h, w = 1080, 1920
@@ -389,17 +435,21 @@ class GuidingCameraController(QObject, CameraController):
 
 class MainCameraController(QObject, CameraController):
     frame_ready = pyqtSignal()
+    signal_send_temperature = pyqtSignal(object)
     def __init__(self, main, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.main = main
-
         self._camera_running = None
         self._n_frames = 0
+        self.main = main
 
-        self.frame_ready.connect(self.test)
+        # self.frame_ready.connect(self.test)
 
         # Start frame sniffer
         thread = threading.Thread(target=self._frame_sniffer)
+        thread.start()
+
+        # Start temperature sniffer
+        thread = threading.Thread(target=self._temperature_sniffer)
         thread.start()
 
     def test(self):
@@ -415,7 +465,7 @@ class MainCameraController(QObject, CameraController):
             if self._camera_running:
                 try:
                     # Get frame
-                    self._frame = self.capture(exposure=self.exposure, gain=self.gain)
+                    self._frame = self.capture()
                     if self._frame is not None:
                         self._n_frames += 1
                         self.frame_ready.emit()
@@ -427,6 +477,14 @@ class MainCameraController(QObject, CameraController):
                 time.sleep(0.1)
             else:
                 time.sleep(1)
+
+    def _temperature_sniffer(self):
+        while self.main.gui_open:
+            if self._camera_running:
+                time.sleep(2)
+                temperature = self.get_temperature()
+                self.signal_send_temperature.emit(temperature)
+
 
 if __name__ == "__main__":
     client = CameraController(device="ZWO CCD ASI533MC Pro")
