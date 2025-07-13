@@ -1,8 +1,12 @@
-from PyQt5.QtWidgets import QGroupBox, QPushButton, QGridLayout, QHBoxLayout, QLabel, QComboBox, QVBoxLayout, \
-    QSizePolicy, QRadioButton
+import sys
+
+from PyQt5.QtWidgets import QPushButton, QGridLayout, QHBoxLayout, QLabel, QComboBox, \
+    QSizePolicy, QRadioButton, QWidget, QGroupBox, QApplication
+
+from widgets.GroupBox import GroupBoxWithButtonTitle
 
 
-class ManualWidget(QGroupBox):
+class ManualWidget(GroupBoxWithButtonTitle):
     def __init__(self, main):
         super().__init__("Manual Control")
         self.main = main
@@ -50,4 +54,12 @@ class ManualWidget(QGroupBox):
         layout.addLayout(speed_layout, 0, 0, 1, 3)
         layout.addLayout(radio_layout, 2, 1)
 
-        self.setLayout(layout)
+        layout.setRowStretch(layout.rowCount(), 1)
+
+        self.content.setLayout(layout)
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = ManualWidget(app)
+    window.show()
+    sys.exit(app.exec_())

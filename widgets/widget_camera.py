@@ -1,16 +1,17 @@
 import copy
 import sys
 
-from PyQt5.QtWidgets import QGroupBox, QHBoxLayout, QLabel, QSizePolicy, QSlider, QVBoxLayout, QPushButton, QLineEdit, \
+from PyQt5.QtWidgets import QHBoxLayout, QLabel, QSlider, QVBoxLayout, QPushButton, QLineEdit, \
     QSpinBox, QGridLayout, QWidget, QApplication, QCheckBox
 from PyQt5.QtCore import Qt
 
 from controllers.controller_camera import MainCameraController
+from widgets.GroupBox import GroupBoxWithButtonTitle
 
 
-class CameraGuideWidget(QGroupBox):
+class GuideCameraWidget(GroupBoxWithButtonTitle):
     def __init__(self, main):
-        super().__init__("Camera control")
+        super().__init__("Guide Camera")
         self.main = main
 
         # Create sliders
@@ -43,8 +44,9 @@ class CameraGuideWidget(QGroupBox):
         layout_2.addWidget(self.label_gain)
         layout_2.addWidget(self.slider_gain)
         layout.addLayout(layout_2)
+        layout.setStretch(1, 1)
 
-        self.setLayout(layout)
+        self.content.setLayout(layout)
 
         self.slider_exp.valueChanged.connect(self.set_exposure)
         self.slider_gain.valueChanged.connect(self.set_gain)
@@ -59,9 +61,9 @@ class CameraGuideWidget(QGroupBox):
         self.main.guide_camera_controller.gain = gain / 100 * 5000
         self.label_gain.setText(f"Gain: {gain}")
 
-class CameraMainWidget(QGroupBox):
-    def __init__(self, main=None):
-        super().__init__()
+class MainCameraWidget(GroupBoxWithButtonTitle):
+    def __init__(self, main):
+        super().__init__("Main Camera")
         self.main = main
 
         # === Gain Input ===
@@ -126,10 +128,11 @@ class CameraMainWidget(QGroupBox):
         grid.addWidget(self.capture_button, 6, 1)
 
         layout.addLayout(grid)
-        self.setLayout(layout)
+        layout.addStretch()
+        self.content.setLayout(layout)
 
         # Create main camera controller
-        self.main_camera = MainCameraController(device="ZWO CCD ASI533MC Pro")
+        self.main_camera = MainCameraController(main=self.main, device="ZWO CCD ASI533MC Pro")
 
         # Connect update button to method
         self.update_button.clicked.connect(self.update_camera_settings)
@@ -183,5 +186,7 @@ class CameraMainWidget(QGroupBox):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    widget = CameraMainWidget(main=None)
+    main = QWidget()
+    main.gui_open = True
+    widget = MainCameraWidget(main=main)
     sys.exit(app.exec_())

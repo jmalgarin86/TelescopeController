@@ -1,15 +1,16 @@
-import copy
 import csv
 import threading
 import time
 
 import numpy as np
-from PyQt5.QtWidgets import QGroupBox, QPushButton, QGridLayout, QHBoxLayout, QLabel, \
-    QSizePolicy, QRadioButton, QCheckBox, QSlider
+from PyQt5.QtWidgets import QPushButton, QGridLayout, QHBoxLayout, QLabel, \
+    QSizePolicy, QCheckBox, QSlider, QWidget
 from PyQt5.QtCore import Qt
 
+from widgets.GroupBox import GroupBoxWithButtonTitle
 
-class CalibrationWidget(QGroupBox):
+
+class CalibrationWidget(GroupBoxWithButtonTitle):
     def __init__(self, main):
         super().__init__("Calibration")
         self.main = main
@@ -88,7 +89,9 @@ class CalibrationWidget(QGroupBox):
         layout_4.addWidget(self.slider_ar)
         layout.addLayout(layout_4, 6, 0, 1, 2)
 
-        self.setLayout(layout)
+        layout.setRowStretch(layout.rowCount(), 1)
+
+        self.content.setLayout(layout)
 
         # Connect buttons to actions
         self.looseness_direction = None

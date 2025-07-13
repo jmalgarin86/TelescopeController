@@ -11,7 +11,8 @@ import numpy as np
 from PIL import Image
 
 import qdarkstyle
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QHBoxLayout, QTabWidget
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QHBoxLayout, QTabWidget, QSpacerItem, \
+    QSizePolicy
 
 from controllers.controller_arduino import ArduinoController
 from controllers.controller_console import ConsoleController
@@ -20,7 +21,7 @@ from controllers.controller_toolbar_guide import GuideController
 from controllers.controller_manual_control import ManualController
 from controllers.controller_auto_control import AutoController
 from controllers.controller_camera import GuidingCameraController
-from widgets.widget_camera import CameraGuideWidget
+from widgets.widget_camera import MainCameraWidget, GuideCameraWidget
 from widgets.widget_figure import ImageWidget
 from widgets.widget_plot import PlotWidget
 from widgets.widget_histogram import HistogramWidget
@@ -56,29 +57,40 @@ class TelescopeController(QMainWindow):
 
         # Create a left_layout and right_layout
         left_layout = QVBoxLayout()
-        main_layout.addLayout(left_layout, stretch=1)
         right_layout = QVBoxLayout()
-        main_layout.addLayout(right_layout, stretch=3)
 
         # Create the manual control widget
         self.manual_controller = ManualController(self)
-        left_layout.addWidget(self.manual_controller)
+        self.manual_controller.button_clicked.connect(self.hide_manual)
 
         # Create the auto control widget
         self.auto_controller = AutoController(self)
-        left_layout.addWidget(self.auto_controller)
+        self.auto_controller.button_clicked.connect(self.hide_auto)
 
         # Create calibration controller
         self.calibration_widget = CalibrationWidget(self)
-        left_layout.addWidget(self.calibration_widget)
+        self.calibration_widget.button_clicked.connect(self.hide_calibration)
 
         # Create camera widget
-        self.camera_controller = CameraGuideWidget(self)
-        left_layout.addWidget(self.camera_controller)
+        self.camera_controller = GuideCameraWidget(self)
+        self.camera_controller.button_clicked.connect(self.hide_guide)
+
+        # Create main camera widget
+        self.main_camera_widget = MainCameraWidget(self)
+        self.main_camera_widget.button_clicked.connect(self.hide_main)
 
         # Create the ConsoleController widget
         self.console_controller = ConsoleController()
-        left_layout.addWidget(self.console_controller)  # Add it to the left_layout
+
+        # Create the layout
+        left_layout.addWidget(self.manual_controller)
+        left_layout.addWidget(self.auto_controller)
+        left_layout.addWidget(self.calibration_widget)
+        left_layout.addWidget(self.camera_controller)
+        left_layout.addWidget(self.main_camera_widget)
+        left_layout.addWidget(self.console_controller, stretch=1)  # Add it to the left_layout
+        main_layout.addLayout(left_layout, stretch=1)
+        main_layout.addLayout(right_layout, stretch=3)
 
         # Create space for main image
         image_path = "your_image.jpeg"
@@ -132,6 +144,61 @@ class TelescopeController(QMainWindow):
 
         self.showMaximized()
 
+    def hide_manual(self, my_bool):
+        if my_bool:
+            self.auto_controller.title_button.setChecked(not my_bool)
+            self.auto_controller.on_button_clicked()
+            self.calibration_widget.title_button.setChecked(not my_bool)
+            self.calibration_widget.on_button_clicked()
+            self.camera_controller.title_button.setChecked(not my_bool)
+            self.camera_controller.on_button_clicked()
+            self.main_camera_widget.title_button.setChecked(not my_bool)
+            self.main_camera_widget.on_button_clicked()
+
+    def hide_auto(self, my_bool):
+        if my_bool:
+            self.manual_controller.title_button.setChecked(not my_bool)
+            self.manual_controller.on_button_clicked()
+            self.calibration_widget.title_button.setChecked(not my_bool)
+            self.calibration_widget.on_button_clicked()
+            self.camera_controller.title_button.setChecked(not my_bool)
+            self.camera_controller.on_button_clicked()
+            self.main_camera_widget.title_button.setChecked(not my_bool)
+            self.main_camera_widget.on_button_clicked()
+
+    def hide_calibration(self, my_bool):
+        if my_bool:
+            self.manual_controller.title_button.setChecked(not my_bool)
+            self.manual_controller.on_button_clicked()
+            self.auto_controller.title_button.setChecked(not my_bool)
+            self.auto_controller.on_button_clicked()
+            self.camera_controller.title_button.setChecked(not my_bool)
+            self.camera_controller.on_button_clicked()
+            self.main_camera_widget.title_button.setChecked(not my_bool)
+            self.main_camera_widget.on_button_clicked()
+
+    def hide_guide(self, my_bool):
+        if my_bool:
+            self.manual_controller.title_button.setChecked(not my_bool)
+            self.manual_controller.on_button_clicked()
+            self.auto_controller.title_button.setChecked(not my_bool)
+            self.auto_controller.on_button_clicked()
+            self.calibration_widget.title_button.setChecked(not my_bool)
+            self.calibration_widget.on_button_clicked()
+            self.main_camera_widget.title_button.setChecked(not my_bool)
+            self.main_camera_widget.on_button_clicked()
+
+    def hide_main(self, my_bool):
+        if my_bool:
+            self.manual_controller.title_button.setChecked(not my_bool)
+            self.manual_controller.on_button_clicked()
+            self.auto_controller.title_button.setChecked(not my_bool)
+            self.auto_controller.on_button_clicked()
+            self.calibration_widget.title_button.setChecked(not my_bool)
+            self.calibration_widget.on_button_clicked()
+            self.camera_controller.title_button.setChecked(not my_bool)
+            self.camera_controller.on_button_clicked()
+
     @staticmethod
     def connect_to_indi_server():
         # Get the OS information
@@ -155,7 +222,6 @@ class TelescopeController(QMainWindow):
             subprocess.run([ "lxterminal", "--command=bash -c './indiserver.sh; exec bash'"])
         else:
             print("Unsupported OS or unknown Linux distribution.")
-
 
     @staticmethod
     def shutdown_at(hour=6, minute=0):

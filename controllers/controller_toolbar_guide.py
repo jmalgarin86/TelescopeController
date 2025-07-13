@@ -69,7 +69,7 @@ class GuideController(GuideToolBar):
     def start_camera(self):
         if self.action_camera.isChecked():
             if self.main.guide_camera_controller.device_ccd is None:
-                self.main.guide_camera_controller.setup_camera()
+                self.main.guide_camera_controller.set_up_camera()
             self.main.guide_camera_controller.start_camera()
         else:
             self.main.guide_camera_controller.stop_camera()

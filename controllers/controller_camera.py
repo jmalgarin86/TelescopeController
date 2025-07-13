@@ -1,9 +1,12 @@
+import sys
+
 import PyIndi
 import time
 import threading
 
 import numpy as np
 from PyQt5.QtCore import pyqtSignal, QObject
+from PyQt5.QtWidgets import QWidget, QApplication
 from astropy.io import fits
 import io
 
@@ -235,8 +238,8 @@ class CameraController(PyIndi.BaseClient):
 class GuidingCameraController(QObject, CameraController):
     _frame_ready = pyqtSignal()
 
-    def __init__(self, main, device=None, host="localhost", port=7624):
-        super().__init__()
+    def __init__(self, main, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._n_dec_warnings = None
         self._strength_ar = None
         self._strength_de = None
@@ -386,11 +389,12 @@ class GuidingCameraController(QObject, CameraController):
 
 class MainCameraController(QObject, CameraController):
     frame_ready = pyqtSignal()
-    def __init__(self, *args, **kwargs):
+    def __init__(self, main, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.main = main
 
         self._camera_running = None
-        self._n_frames = None
+        self._n_frames = 0
 
         self.frame_ready.connect(self.test)
 
@@ -399,23 +403,27 @@ class MainCameraController(QObject, CameraController):
         thread.start()
 
     def test(self):
+        a = np.mean(self._frame)
+        print(a)
         print("frame_ready")
 
     def set_camera_status(self, status: bool):
         self._camera_running = status
 
     def _frame_sniffer(self):
-        while True:
+        while self.main.gui_open:
             if self._camera_running:
                 try:
                     # Get frame
                     self._frame = self.capture(exposure=self.exposure, gain=self.gain)
-                    self._n_frames += 1
-                    self.frame_ready.emit()
-                    print(f"Main frame {self._n_frames} acquired")
+                    if self._frame is not None:
+                        self._n_frames += 1
+                        self.frame_ready.emit()
+                        print(f"Main frame {self._n_frames} acquired")
+                    else:
+                        print(f"Main frame {self._n_frames} not acquired")
                 except:
-                    print("Main frame not acquired")
-                    pass
+                    print(f"Main frame {self._n_frames} not acquired")
                 time.sleep(0.1)
             else:
                 time.sleep(1)
@@ -426,3 +434,12 @@ if __name__ == "__main__":
     # client.test_temperature(temperature=15)
     client.test_gain(e0=0.1, g0=20, g1=600, ng=30)
     print("Ready!")
+
+    # # === Testing MainCamera Controller
+    # app = QApplication(sys.argv)
+    # main = QWidget()
+    # main.gui_open = True
+    # main.client = MainCameraController(main=main, device="ZWO CCD ASI533MC Pro")
+    # main.client.set_up_camera()
+    # main.client.set_camera_status(True)
+    # app.exit(app.exec_())

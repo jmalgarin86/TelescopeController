@@ -18,8 +18,6 @@ class MplCanvas(FigureCanvas):
         super().__init__(self.fig)
 
 class ImageWidget(QWidget):
-    frame_ready = pyqtSignal(object)
-
     def __init__(self, image_array=None, title='Default Title', main=None):
         super().__init__()
         self.original_frame = None

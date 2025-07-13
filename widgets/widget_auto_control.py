@@ -1,7 +1,11 @@
-from PyQt5.QtWidgets import QGroupBox, QLabel, QLineEdit, QGridLayout, QPushButton, QComboBox, QSizePolicy
-from catalogs.catalog import catalog
+import sys
 
-class AutoWidget(QGroupBox):
+from PyQt5.QtWidgets import QLabel, QLineEdit, QGridLayout, QPushButton, QComboBox, QSizePolicy, QWidget, QApplication
+from catalogs.catalog import catalog
+from widgets.GroupBox import GroupBoxWithButtonTitle
+
+
+class AutoWidget(GroupBoxWithButtonTitle):
     def __init__(self, main=None):
         super().__init__("Auto Control")
         self.main = main
@@ -51,4 +55,12 @@ class AutoWidget(QGroupBox):
         layout.addWidget(self.update_button, 4, 0, 1, 3)
         layout.addWidget(self.goto_button, 5, 0, 1, 3)
 
-        self.setLayout(layout)
+        layout.setRowStretch(layout.rowCount(), 1)
+
+        self.content.setLayout(layout)
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = AutoWidget()
+    window.show()
+    sys.exit(app.exec_())
