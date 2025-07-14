@@ -181,6 +181,17 @@ class ImageWidget(QWidget):
         self._roi_center = position
         self._draw_roi()
 
+class MainImageWidget(ImageWidget):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Connect signal
+        self.main.main_camera_widget.main_camera.signal_main_frame_ready.connect(self._on_main_frame_ready)
+
+    def _on_main_frame_ready(self, frame):
+        subframe = self.set_image(frame)
+
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 

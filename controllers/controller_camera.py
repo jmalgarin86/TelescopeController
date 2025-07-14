@@ -81,10 +81,10 @@ class CameraController(PyIndi.BaseClient):
         self.ccd_ccd1 = self.device_ccd.getBLOB("CCD1")
         time.sleep(1)
 
-        # if self.device == "Bresser GPCMOS02000KPA":
-        #     self.set_ccd_capture_format(capture_format="INDI_RGB(RGB)")
-        # elif self.device == "ZWO CCD ASI533MC Pro":
-        #     self.set_ccd_capture_format(capture_format="ASI_IMG_RAW16(Raw 16 bit)")
+        if self.device == "Bresser GPCMOS02000KPA":
+            self.set_ccd_capture_format(capture_format="INDI_RGB(RGB)")
+        elif self.device == "ZWO CCD ASI533MC Pro":
+            self.set_ccd_capture_format(capture_format="ASI_IMG_RAW16(Raw 16 bit)")
 
         print(f"{self.device} ready!")
 
@@ -146,7 +146,7 @@ class CameraController(PyIndi.BaseClient):
         self.ccd_exposure[0].setValue(exposure)
         self.blob_event.clear()
         self.sendNewNumber(self.ccd_exposure)
-        success = self.blob_event.wait(timeout=exposure + 1)
+        success = self.blob_event.wait(timeout=exposure + 5)
         self.blob_event.clear()
         return success
 
@@ -286,7 +286,7 @@ class CameraController(PyIndi.BaseClient):
             print(f"Capturing frame failed.")
             return None
 
-class GuidingCameraController(QObject, CameraController):
+class GuideCameraController(QObject, CameraController):
     _frame_ready = pyqtSignal()
 
     def __init__(self, main, *args, **kwargs):
@@ -439,15 +439,13 @@ class GuidingCameraController(QObject, CameraController):
             self._strength_ar = strength
 
 class MainCameraController(QObject, CameraController):
-    frame_ready = pyqtSignal()
+    signal_main_frame_ready = pyqtSignal(object)
     signal_send_status = pyqtSignal(object)
     def __init__(self, main, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._camera_running = None
         self._n_frames = 0
         self.main = main
-
-        # self.frame_ready.connect(self.test)
 
         # Start frame sniffer
         thread = threading.Thread(target=self._frame_sniffer)
@@ -456,11 +454,6 @@ class MainCameraController(QObject, CameraController):
         # Start temperature sniffer
         thread = threading.Thread(target=self._temperature_sniffer)
         thread.start()
-
-    def test(self):
-        a = np.mean(self._frame)
-        print(a)
-        print("frame_ready")
 
     def set_camera_status(self, status: bool):
         self._camera_running = status
@@ -473,7 +466,7 @@ class MainCameraController(QObject, CameraController):
                     self._frame = self.capture()
                     if self._frame is not None:
                         self._n_frames += 1
-                        self.frame_ready.emit()
+                        self.signal_main_frame_ready.emit(self._frame)
                         print(f"Main frame {self._n_frames} acquired")
                     else:
                         print(f"Main frame {self._n_frames} not acquired")

@@ -11,8 +11,7 @@ import numpy as np
 from PIL import Image
 
 import qdarkstyle
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QHBoxLayout, QTabWidget, QSpacerItem, \
-    QSizePolicy
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QHBoxLayout, QTabWidget
 
 from controllers.controller_arduino import ArduinoController
 from controllers.controller_console import ConsoleController
@@ -22,7 +21,7 @@ from controllers.controller_manual_control import ManualController
 from controllers.controller_auto_control import AutoController
 from controllers.controller_camera import GuidingCameraController
 from widgets.widget_camera import MainCameraWidget, GuideCameraWidget
-from widgets.widget_figure import ImageWidget
+from widgets.widget_figure import ImageWidget, MainImageWidget
 from widgets.widget_plot import PlotWidget
 from widgets.widget_histogram import HistogramWidget
 from widgets.widget_calibration import CalibrationWidget
@@ -103,7 +102,7 @@ class TelescopeController(QMainWindow):
         # Tab widget for figures
         images_tab = QTabWidget()
         self.image_guide_camera = ImageWidget(image_array=image_array_1, main=self)
-        self.image_main_camera = ImageWidget(image_array=image_array_2, main=self)
+        self.image_main_camera = MainImageWidget(image_array=image_array_2, main=self)
         images_tab.addTab(self.image_guide_camera, "Image Guide")
         images_tab.addTab(self.image_main_camera, "Image Main")
         right_layout.addWidget(images_tab, stretch=2)
