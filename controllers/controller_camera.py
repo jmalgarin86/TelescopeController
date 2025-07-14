@@ -20,6 +20,7 @@ class CameraController(PyIndi.BaseClient):
     signal_frames_ready = pyqtSignal()
     def __init__(self, device="Bresser GPCMOS02000KPA", host="localhost", port=7624):
         super(CameraController, self).__init__()
+        self.ccd_power = None
         self._n_frames_total = None
         self._n_frames_to_save = 0
         self.ccd_cooler_switch = None
@@ -70,6 +71,7 @@ class CameraController(PyIndi.BaseClient):
         self.ccd_exposure = self.device_ccd.getNumber("CCD_EXPOSURE")
         self.ccd_gain = self.device_ccd.getNumber("CCD_CONTROLS")
         self.ccd_temperature = self.device_ccd.getNumber("CCD_TEMPERATURE")
+        self.ccd_power = self.device_ccd.getNumber("CCD_COOLER_POWER")
         self.ccd_cooler_switch = self.device_ccd.getSwitch("CCD_COOLER")
 
         # Inform to indi server we want to receive blob from CCD1
@@ -127,6 +129,9 @@ class CameraController(PyIndi.BaseClient):
 
     def get_temperature(self):
         return self.ccd_temperature[0].value
+
+    def get_power(self):
+        return self.ccd_power[0].value
 
     def set_cooling(self, cooling=False):
         if cooling:
@@ -435,7 +440,7 @@ class GuidingCameraController(QObject, CameraController):
 
 class MainCameraController(QObject, CameraController):
     frame_ready = pyqtSignal()
-    signal_send_temperature = pyqtSignal(object)
+    signal_send_status = pyqtSignal(object)
     def __init__(self, main, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._camera_running = None
@@ -483,14 +488,18 @@ class MainCameraController(QObject, CameraController):
             if self._camera_running:
                 time.sleep(2)
                 temperature = self.get_temperature()
-                self.signal_send_temperature.emit(temperature)
+                power = self.get_power()
+                status = {}
+                status["Temperature"] = temperature
+                status["Power"] = power
+                self.signal_send_status.emit(status)
 
 
 if __name__ == "__main__":
     client = CameraController(device="ZWO CCD ASI533MC Pro")
     client.set_up_camera()
-    # client.test_temperature(temperature=15)
-    client.test_gain(e0=0.1, g0=20, g1=600, ng=30)
+    client.test_temperature(temperature=15)
+    # client.test_gain(e0=0.1, g0=20, g1=600, ng=30)
     print("Ready!")
 
     # # === Testing MainCamera Controller

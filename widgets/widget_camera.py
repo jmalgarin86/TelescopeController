@@ -100,26 +100,27 @@ class MainCameraWidget(GroupBoxWithButtonTitle):
         self.capture_button.setCheckable(True)
         self.capture_button.setDisabled(True)
 
+        # === Labels ===
+        self.temperature_label = QLabel("Temperature:")
+        self.power_label = QLabel("Power:")
+
         # === Layout ===
         layout = QVBoxLayout()
 
         grid = QGridLayout()
         grid.addWidget(self.connect_button, 0, 0, 1, 2)
-
         grid.addWidget(self.gain_label, 1, 0)
         grid.addWidget(self.gain_input, 1, 1)
-
         grid.addWidget(self.exposure_label, 2, 0)
         grid.addWidget(self.exposure_input, 2, 1)
-
         grid.addWidget(self.temp_label, 3, 0)
         grid.addWidget(self.temp_input, 3, 1)
-
         grid.addWidget(self.num_acq_label, 4, 0)
         grid.addWidget(self.num_acq_input, 4, 1)
-
         grid.addWidget(self.update_button, 5, 0)
         grid.addWidget(self.capture_button, 5, 1)
+        grid.addWidget(self.temperature_label, 6, 0)
+        grid.addWidget(self.power_label, 6, 1)
 
         layout.addLayout(grid)
         layout.addStretch()
@@ -128,16 +129,16 @@ class MainCameraWidget(GroupBoxWithButtonTitle):
         # Create main camera controller
         self.main_camera = MainCameraController(main=self.main, device="ZWO CCD ASI533MC Pro")
         self.main_camera.signal_frames_ready.connect(self.frames_ready)
-        self.main_camera.signal_send_temperature.connect(self.temperature_monitor)
+        self.main_camera.signal_send_status.connect(self.monitor_status)
 
         # Connect update button to method
         self.update_button.clicked.connect(self.update_camera_settings)
         self.connect_button.clicked.connect(self.connect_camera)
         self.capture_button.clicked.connect(self.capture_frames)
 
-    @staticmethod
-    def temperature_monitor(temperature):
-        print(f"Temperature: {temperature} ºC")
+    def monitor_status(self, status):
+        self.temperature_label.setText(f"Temperature: {status['Temperature']} ºC")
+        self.power_label.setText(f"Power: {status['Power']} %")
 
     def connect_camera(self):
         if self.connect_button.isChecked():
@@ -182,9 +183,6 @@ class MainCameraWidget(GroupBoxWithButtonTitle):
         except ValueError:
             self.main_camera.set_cooling(False)
             print("Disabling temperature control")
-
-        # Frames to capture
-        self.main_camera.set_frames_to_save(self.num_acq_input.value())
 
     def frames_ready(self):
         self.capture_button.setChecked(False)
