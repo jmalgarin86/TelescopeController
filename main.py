@@ -19,7 +19,7 @@ from controllers.controller_joystick import JoyStickController
 from controllers.controller_toolbar_guide import GuideController
 from controllers.controller_manual_control import ManualController
 from controllers.controller_auto_control import AutoController
-from controllers.controller_camera import GuidingCameraController
+from controllers.controller_camera import GuideCameraController
 from widgets.widget_camera import MainCameraWidget, GuideCameraWidget
 from widgets.widget_figure import ImageWidget, MainImageWidget
 from widgets.widget_plot import PlotWidget
@@ -129,7 +129,7 @@ class TelescopeController(QMainWindow):
         time.sleep(1)
 
         # Connect to guiding camera
-        self.guide_camera_controller = GuidingCameraController(self, device='Bresser GPCMOS02000KPA')
+        self.guide_camera_controller = GuideCameraController(self, device='Bresser GPCMOS02000KPA')
 
         # Create joystick controller
         JoyStickController(self)

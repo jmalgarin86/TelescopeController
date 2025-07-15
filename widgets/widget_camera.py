@@ -54,13 +54,11 @@ class GuideCameraWidget(GroupBoxWithButtonTitle):
                 self.guide_camera.set_up_camera()
             self.guide_camera.set_camera_status(status=True)
             self.update_button.setEnabled(True)
-            self.capture_button.setEnabled(True)
-            print(f"Connected to {self.main_camera.device}")
+            print(f"Connected to {self.guide_camera.device}")
         else:
             self.guide_camera.set_camera_status(status=False)
             self.update_button.setEnabled(False)
-            self.capture_button.setEnabled(False)
-            print(f"Disconnected from {self.main_camera.device}")
+            print(f"Disconnected from {self.guide_camera.device}")
 
     def set_exposure(self):
         exposure = self.slider_exp.value()

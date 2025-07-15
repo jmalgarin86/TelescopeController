@@ -287,7 +287,7 @@ class CameraController(PyIndi.BaseClient):
             return None
 
 class GuideCameraController(QObject, CameraController):
-    _frame_ready = pyqtSignal()
+    signal_guide_frame_ready = pyqtSignal(object)
 
     def __init__(self, main, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -307,11 +307,11 @@ class GuideCameraController(QObject, CameraController):
         self._n_frames = 0
         self.main = main
 
-        # Connect signal with _update_guiding_frame
-        self._frame_ready.connect(self._update_guiding_frame)
-
         thread = threading.Thread(target=self._frame_sniffer)
         thread.start()
+
+    def set_camera_status(self, status: bool):
+        self._camera_running = status
 
     def _frame_sniffer(self):
         while self.main.gui_open:
@@ -339,86 +339,10 @@ class GuideCameraController(QObject, CameraController):
                     sigma = 20  # wider star
                     self._frame += (255 * np.exp(-((X - x0) ** 2 + (Y - y0) ** 2) / (2 * sigma ** 2))).astype(np.uint8)
                     time.sleep(1)
-                self._frame_ready.emit()
+                self.frame_ready.emit(self._frame)
                 time.sleep(0.1)
             else:
                 time.sleep(1)
-
-    def _update_guiding_frame(self):
-        # Update the frame and get the subframe for analysis
-        subframe = self.main.image_guide_camera.set_image(self._frame)
-
-        # If tracking do the analysis
-        star_size = 0
-        star_center = (0, 0)
-        if self._tracking:
-            position = self.main.image_guide_camera.get_roi_position()
-            star_center, star_size = analyze_subframe(subframe)
-            p0 = position[0] + star_center[0]
-            p1 = position[1] + star_center[1]
-            position = (p0, p1)
-            self.main.image_guide_camera.set_roi_position(position)
-
-            # Ensure the length of the vectors is at most 100 elements
-            if len(self._x_vec) == 100:
-                self._x_vec.pop(0)  # Remove the first element
-                self._y_vec.pop(0)
-
-            # Update vectors and plot
-            self._x_vec.append(position[0] - self._reference_position[0])
-            self._y_vec.append(position[1] - self._reference_position[1])
-            self.main.plot_controller_pixel.updatePlot(x=self._x_vec, y=self._y_vec)
-
-        # if guiding, correct position
-        if self._guiding:
-            # Get reference position
-            x_star, y_star = self._reference_position
-
-            # Check if star size is not correct
-            if star_size > self._star_size_threshold:
-                print("Missed alignment, guiding star lost...")
-            else:
-                self._align_position(r0=(x_star, y_star))
-
-    def start_camera(self):
-        # print("Start guiding camera")
-        # # Connect to the server
-        # self.connect_server()
-        #
-        # # Get device
-        # self.get_device()
-        #
-        # # Connect to the device
-        # self.connect_device()
-        #
-        # # Reconnect everything
-        # self.disconnectDevice(self.device)
-        # self.disconnectServer()
-        # self.connect_server()
-        # self.get_device()
-        # self.connect_device()
-        # time.sleep(1)
-        #
-        # # Get exposure and controls properties
-        # self.ccd_exposure = self.device_ccd.getNumber("CCD_EXPOSURE")
-        # self.ccd_gain = self.device_ccd.getNumber("CCD_CONTROLS")
-        #
-        # # Inform to indi server we want to receive blob from CCD1
-        # self.setBLOBMode(PyIndi.B_ALSO, self.device, "CCD1")
-        #
-        # # Get blob
-        # self.ccd_ccd1 = self.device_ccd.getBLOB("CCD1")
-        # time.sleep(1)
-        #
-        # # Fix frame bug
-        # self.set_ccd_capture_format("INDI_RAW(RAW 16)")
-
-        print(f"Connected to {self.device} ")
-        self._camera_running = True
-
-    def stop_camera(self):
-        print("Stop guiding camera")
-        self._camera_running = False
 
     def set_tracking(self, tracking: bool):
         self._tracking = tracking

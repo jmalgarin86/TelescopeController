@@ -181,6 +181,49 @@ class ImageWidget(QWidget):
         self._roi_center = position
         self._draw_roi()
 
+class GuideImageWidget(ImageWidget):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Connect signal
+        self.main.guide_camera_widget.guide_camera.signal_guide_frame_ready.connect(self._on_guide_frame_ready)
+
+    def _on_guide_frame_ready(self, frame):
+        # Update the frame and get the subframe for analysis
+        subframe = self.set_image(frame)
+
+        # If tracking do the analysis
+        star_size = 0
+        star_center = (0, 0)
+        if self._tracking:
+            position = self.main.image_guide_camera.get_roi_position()
+            star_center, star_size = analyze_subframe(subframe)
+            p0 = position[0] + star_center[0]
+            p1 = position[1] + star_center[1]
+            position = (p0, p1)
+            self.main.image_guide_camera.set_roi_position(position)
+
+            # Ensure the length of the vectors is at most 100 elements
+            if len(self._x_vec) == 100:
+                self._x_vec.pop(0)  # Remove the first element
+                self._y_vec.pop(0)
+
+            # Update vectors and plot
+            self._x_vec.append(position[0] - self._reference_position[0])
+            self._y_vec.append(position[1] - self._reference_position[1])
+            self.main.plot_controller_pixel.updatePlot(x=self._x_vec, y=self._y_vec)
+
+        # if guiding, correct position
+        if self._guiding:
+            # Get reference position
+            x_star, y_star = self._reference_position
+
+            # Check if star size is not correct
+            if star_size > self._star_size_threshold:
+                print("Missed alignment, guiding star lost...")
+            else:
+                self._align_position(r0=(x_star, y_star))
+
 class MainImageWidget(ImageWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -190,6 +233,7 @@ class MainImageWidget(ImageWidget):
 
     def _on_main_frame_ready(self, frame):
         subframe = self.set_image(frame)
+        self.main.histogram.set_image(frame)
 
 
 if __name__ == "__main__":
