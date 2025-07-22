@@ -1,4 +1,3 @@
-import copy
 import os
 import sys
 
@@ -6,19 +5,17 @@ import PyIndi
 import time
 import threading
 
+import cv2
 import numpy as np
 from PyQt5.QtCore import pyqtSignal, QObject
 from PyQt5.QtWidgets import QWidget, QApplication
 from astropy.io import fits
 import io
-
 from matplotlib import pyplot as plt
-
-from utils.utils import analyze_subframe
 
 class CameraController(PyIndi.BaseClient):
     signal_frames_ready = pyqtSignal()
-    def __init__(self, device="Bresser GPCMOS02000KPA", host="localhost", port=7624):
+    def __init__(self, device="Bresser GPCMOS02000KPA", host="localhost", port=7624, timeout=1):
         super(CameraController, self).__init__()
         self.ccd_power = None
         self._n_frames_total = None
@@ -37,6 +34,7 @@ class CameraController(PyIndi.BaseClient):
         self.blob_event.clear()
         self.exposure = 1
         self.gain = 100
+        self.timeout = timeout
         self.captures_path = "captures/"
 
         # Create path to save files
@@ -82,7 +80,7 @@ class CameraController(PyIndi.BaseClient):
         time.sleep(1)
 
         if self.device == "Bresser GPCMOS02000KPA":
-            self.set_ccd_capture_format(capture_format="INDI_RGB(RGB)")
+            self.set_ccd_capture_format(capture_format="INDI_RAW(RAW 16)")
         elif self.device == "ZWO CCD ASI533MC Pro":
             self.set_ccd_capture_format(capture_format="ASI_IMG_RAW16(Raw 16 bit)")
 
@@ -123,9 +121,7 @@ class CameraController(PyIndi.BaseClient):
     def set_temperature(self, temperature):
         self.ccd_temperature[0].value = temperature
         self.sendNewNumber(self.ccd_temperature)
-
-    def get_temperature(self):
-        return self.ccd_temperature[0].value
+        time.sleep(0.1)
 
     def get_temperature(self):
         return self.ccd_temperature[0].value
@@ -146,7 +142,7 @@ class CameraController(PyIndi.BaseClient):
         self.ccd_exposure[0].setValue(exposure)
         self.blob_event.clear()
         self.sendNewNumber(self.ccd_exposure)
-        success = self.blob_event.wait(timeout=exposure + 5)
+        success = self.blob_event.wait(timeout=exposure + self.timeout)
         self.blob_event.clear()
         return success
 
@@ -188,7 +184,6 @@ class CameraController(PyIndi.BaseClient):
 
     def test_temperature(self, temperature=0):
         self.set_temperature(temperature=temperature)
-        time.sleep(0.1)
         print("\nMonitoring temperature:")
         while self.get_temperature() > temperature:
             time.sleep(1)
@@ -202,12 +197,15 @@ class CameraController(PyIndi.BaseClient):
         gain = np.linspace(g0, g1, ng)
         avg = []
         std = []
+        self.set_exposure(exposure=e0)
         for ii in range(ng):
-            frame = self.capture(exposure=e0, gain=gain[ii])
+            self.set_gain(gain[ii])
+            frame = self.capture()
             avg.append(np.mean(frame))
             std.append(np.std(frame))
-            progress = (ii / ng * 100)
-            print(f"{round(progress, 1)} %")
+            progress = ((ii+1) / ng * 100)
+            print(f"Progress: {round(progress, 1)} %")
+            print(f"Average: {avg[ii]:.1f}")
 
         plt.figure(figsize=(8, 6))
         plt.plot(gain, avg)
@@ -217,6 +215,37 @@ class CameraController(PyIndi.BaseClient):
         plt.title("Signal and Standard Deviation")
         plt.legend(["Avg", "Std"])
         plt.show()
+
+    def test_performance_vs_temperature(self, temperature=10, e0=1, g0=100):
+        self.set_temperature(temperature=temperature)
+        self.set_exposure(exposure=e0)
+        self.set_gain(gain=g0)
+        avg = []
+        std = []
+        temp = []
+        ii = 0
+        while self.get_temperature() > temperature:
+            time.sleep(1)
+            temp.append(self.get_temperature())
+            print(f"Temperature reading: {temp[ii]:.2f} °C")
+            frame = self.capture()
+            avg.append(np.mean(frame))
+            std.append(np.std(frame))
+            print(f"Average: {avg[ii]:.0f}")
+            print(f"Standard Deviation: {std[ii]:.0f}")
+            ii += 1
+        print("Cooling off")
+        self.set_cooling(False)
+
+        plt.figure(figsize=(8, 6))
+        plt.plot(temp, avg)
+        plt.plot(temp, std)
+        plt.xlabel("Gain")
+        plt.ylabel("Value")
+        plt.title("Signal and Standard Deviation")
+        plt.legend(["Avg", "Std"])
+        plt.show()
+
 
     def characterize_device(self, e0=0.1, e1=1.0, ne = 10, g0=10, g1=600, ng=60):
         gain = np.linspace(g0, g1, ng)
@@ -260,6 +289,10 @@ class CameraController(PyIndi.BaseClient):
             hdul = fits.open(io.BytesIO(fits_data))
             image_data = hdul[0].data
 
+            # Get rgb
+            # image_data = np.array(image_data, dtype=np.uint16)
+            # rgb_image = cv2.cvtColor(image_data, cv2.COLOR_BAYER_RGGB2RGB)
+
             if self._n_frames_to_save > 0:
                 if self._n_frames_total is None:
                     self._n_frames_total = self._n_frames_to_save
@@ -282,8 +315,8 @@ class CameraController(PyIndi.BaseClient):
                     self._n_frames_total = None
 
             return image_data
-        except:
-            print(f"Capturing frame failed.")
+        except Exception as e:
+            print(f"Capturing frame failed: {e}")
             return None
 
 class GuideCameraController(QObject, CameraController):
@@ -339,7 +372,7 @@ class GuideCameraController(QObject, CameraController):
                     sigma = 20  # wider star
                     self._frame += (255 * np.exp(-((X - x0) ** 2 + (Y - y0) ** 2) / (2 * sigma ** 2))).astype(np.uint8)
                     time.sleep(1)
-                self.frame_ready.emit(self._frame)
+                self.signal_guide_frame_ready.emit(self._frame)
                 time.sleep(0.1)
             else:
                 time.sleep(1)
@@ -413,11 +446,21 @@ class MainCameraController(QObject, CameraController):
 
 
 if __name__ == "__main__":
-    client = CameraController(device="ZWO CCD ASI533MC Pro")
+    # Test Bresser camera
+    client = CameraController(device="Bresser GPCMOS02000KPA", timeout=1)
     client.set_up_camera()
-    client.test_temperature(temperature=15)
-    # client.test_gain(e0=0.1, g0=20, g1=600, ng=30)
+    client.test_gain(e0=2.0, g0=20, g1=200, ng=10)
     print("Ready!")
+
+    # Test ZWO camera performance vs gain
+    # client = CameraController(device="ZWO CCD ASI533MC Pro")
+    # client.set_up_camera()
+    # client.test_gain(e0=0.1, g0=60, g1=600, ng=10)
+
+    # Test ZWO camera performance vs temperature
+    # client = CameraController(device="ZWO CCD ASI533MC Pro")
+    # client.set_up_camera()
+    # client.test_performance_vs_temperature(temperature=0, g0=100, e0=1)
 
     # # === Testing MainCamera Controller
     # app = QApplication(sys.argv)

@@ -10,6 +10,9 @@ import numpy as np
 import sys
 from PIL import Image
 
+from utils.utils import analyze_subframe
+
+
 class MplCanvas(FigureCanvas):
     def __init__(self, parent=None, width=5, height=4, dpi=100):
         self.fig = Figure(figsize=(width, height), dpi=dpi, facecolor='black')
