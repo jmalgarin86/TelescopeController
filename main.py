@@ -19,9 +19,8 @@ from controllers.controller_joystick import JoyStickController
 from controllers.controller_toolbar_guide import GuideController
 from controllers.controller_manual_control import ManualController
 from controllers.controller_auto_control import AutoController
-from controllers.controller_camera import GuideCameraController
 from widgets.widget_camera import MainCameraWidget, GuideCameraWidget
-from widgets.widget_figure import ImageWidget, MainImageWidget
+from widgets.widget_figure import MainImageWidget, GuideImageWidget
 from widgets.widget_plot import PlotWidget
 from widgets.widget_histogram import HistogramWidget
 from widgets.widget_calibration import CalibrationWidget
@@ -71,8 +70,8 @@ class TelescopeController(QMainWindow):
         self.calibration_widget.button_clicked.connect(self.hide_calibration)
 
         # Create camera widget
-        self.camera_controller = GuideCameraWidget(self)
-        self.camera_controller.button_clicked.connect(self.hide_guide)
+        self.guide_camera_widget = GuideCameraWidget(self)
+        self.guide_camera_widget.button_clicked.connect(self.hide_guide)
 
         # Create main camera widget
         self.main_camera_widget = MainCameraWidget(self)
@@ -85,7 +84,7 @@ class TelescopeController(QMainWindow):
         left_layout.addWidget(self.manual_controller)
         left_layout.addWidget(self.auto_controller)
         left_layout.addWidget(self.calibration_widget)
-        left_layout.addWidget(self.camera_controller)
+        left_layout.addWidget(self.guide_camera_widget)
         left_layout.addWidget(self.main_camera_widget)
         left_layout.addWidget(self.console_controller, stretch=1)  # Add it to the left_layout
         main_layout.addLayout(left_layout, stretch=1)
@@ -101,7 +100,7 @@ class TelescopeController(QMainWindow):
 
         # Tab widget for figures
         images_tab = QTabWidget()
-        self.image_guide_camera = ImageWidget(image_array=image_array_1, main=self)
+        self.image_guide_camera = GuideImageWidget(image_array=image_array_1, main=self)
         self.image_main_camera = MainImageWidget(image_array=image_array_2, main=self)
         images_tab.addTab(self.image_guide_camera, "Image Guide")
         images_tab.addTab(self.image_main_camera, "Image Main")
@@ -127,9 +126,6 @@ class TelescopeController(QMainWindow):
         thread = threading.Thread(target=self.connect_to_indi_server)
         thread.start()
         time.sleep(1)
-
-        # Connect to guiding camera
-        self.guide_camera_controller = GuideCameraController(self, device='Bresser GPCMOS02000KPA')
 
         # Create joystick controller
         JoyStickController(self)

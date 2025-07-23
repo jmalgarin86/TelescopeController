@@ -15,7 +15,7 @@ from matplotlib import pyplot as plt
 
 class CameraController(PyIndi.BaseClient):
     signal_frames_ready = pyqtSignal()
-    def __init__(self, device="Bresser GPCMOS02000KPA", host="localhost", port=7624, timeout=1):
+    def __init__(self, device="ZWO CCD ASI120MC-S", host="localhost", port=7624, timeout=1):
         super(CameraController, self).__init__()
         self.ccd_power = None
         self._n_frames_total = None
@@ -79,10 +79,10 @@ class CameraController(PyIndi.BaseClient):
         self.ccd_ccd1 = self.device_ccd.getBLOB("CCD1")
         time.sleep(1)
 
-        if self.device == "Bresser GPCMOS02000KPA":
-            self.set_ccd_capture_format(capture_format="INDI_RAW(RAW 16)")
-        elif self.device == "ZWO CCD ASI533MC Pro":
-            self.set_ccd_capture_format(capture_format="ASI_IMG_RAW16(Raw 16 bit)")
+        # self.get_properties()
+
+        # Set capture format
+        self.set_ccd_capture_format(capture_format="ASI_IMG_RAW16(Raw 16 bit)")
 
         print(f"{self.device} ready!")
 
@@ -246,7 +246,6 @@ class CameraController(PyIndi.BaseClient):
         plt.legend(["Avg", "Std"])
         plt.show()
 
-
     def characterize_device(self, e0=0.1, e1=1.0, ne = 10, g0=10, g1=600, ng=60):
         gain = np.linspace(g0, g1, ng)
         exposure = np.linspace(e0, e1, ne)
@@ -254,7 +253,9 @@ class CameraController(PyIndi.BaseClient):
 
         for ii in range(ne):
             for jj in range(ng):
-                frame = self.capture(exposure=exposure[ii], gain=gain[jj])
+                self.set_exposure(exposure=exposure[ii])
+                self.set_gain(gain=gain[jj])
+                frame = self.capture()
                 avg = np.mean(frame)
                 std = np.std(frame)
                 snr[ii, jj] = avg / std
@@ -325,16 +326,7 @@ class GuideCameraController(QObject, CameraController):
     def __init__(self, main, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._n_dec_warnings = None
-        self._strength_ar = None
-        self._strength_de = None
         self._star_size_threshold = None
-        self._looseness_detected = None
-        self._s_vec = []
-        self._y_vec = []
-        self._x_vec = []
-        self._reference_position = None
-        self._tracking = False
-        self._guiding = False
         self._frame = None
         self._camera_running = False
         self._n_frames = 0
@@ -351,16 +343,18 @@ class GuideCameraController(QObject, CameraController):
             if self._camera_running:
                 try:
                     # Get frame
-                    self._n_frames += 1
                     self._frame = self.capture()
-
-                    # Multiply the image by a factor of 8, then clip to 0, 255
-                    if np.max(self._frame) > 0:
-                        self._frame = np.clip(self._frame * float(8) / 2 ** 16 * 2 ** 8, a_min=0, a_max=255).astype(
-                            np.uint8)
-
-                    print(f"Frame {self._n_frames}")
-                except:
+                    if self._frame is not None:
+                        if np.max(self._frame) > 0:
+                            self._frame = np.clip(self._frame * float(8) / 2 ** 16 * 2 ** 8, a_min=0, a_max=255).astype(
+                                np.uint8)
+                        self._n_frames += 1
+                        self.signal_guide_frame_ready.emit(self._frame)
+                        print(f"Guide frame {self._n_frames} acquired")
+                    else:
+                        print(f"Guide frame {self._n_frames} not acquired")
+                        time.sleep(0.1)
+                except Exception as e:
                     h, w = 1080, 1920
                     self._frame = np.zeros((h, w), dtype=np.uint8)
 
@@ -372,28 +366,11 @@ class GuideCameraController(QObject, CameraController):
                     sigma = 20  # wider star
                     self._frame += (255 * np.exp(-((X - x0) ** 2 + (Y - y0) ** 2) / (2 * sigma ** 2))).astype(np.uint8)
                     time.sleep(1)
-                self.signal_guide_frame_ready.emit(self._frame)
+                    self.signal_guide_frame_ready.emit(self._frame)
+                    print(f"Guide frame failed: {e}")
                 time.sleep(0.1)
             else:
                 time.sleep(1)
-
-    def set_tracking(self, tracking: bool):
-        self._tracking = tracking
-
-    def set_guiding(self, guiding: bool):
-        self._guiding = guiding
-
-    def set_reference_position(self, position: tuple):
-        self._reference_position = position
-
-    def set_looseness(self, looseness):
-        self._looseness_detected = looseness
-
-    def set_strength(self, strength=1.0, axis='DEC'):
-        if axis == 'DEC':
-            self._strength_de = strength
-        elif axis == 'AR':
-            self._strength_ar = strength
 
 class MainCameraController(QObject, CameraController):
     signal_main_frame_ready = pyqtSignal(object)
@@ -427,8 +404,8 @@ class MainCameraController(QObject, CameraController):
                         print(f"Main frame {self._n_frames} acquired")
                     else:
                         print(f"Main frame {self._n_frames} not acquired")
-                except:
-                    print(f"Main frame {self._n_frames} not acquired")
+                except Exception as e:
+                    print(f"Main frame failed: {e}")
                 time.sleep(0.1)
             else:
                 time.sleep(1)
@@ -446,27 +423,36 @@ class MainCameraController(QObject, CameraController):
 
 
 if __name__ == "__main__":
-    # Test Bresser camera
-    client = CameraController(device="Bresser GPCMOS02000KPA", timeout=1)
-    client.set_up_camera()
-    client.test_gain(e0=2.0, g0=20, g1=200, ng=10)
-    print("Ready!")
-
-    # Test ZWO camera performance vs gain
-    # client = CameraController(device="ZWO CCD ASI533MC Pro")
+    # Test ASI 120MC-S
+    # client = CameraController(device="ZWO CCD ASI120MC-S", timeout=1)
     # client.set_up_camera()
-    # client.test_gain(e0=0.1, g0=60, g1=600, ng=10)
+    # client.test_gain(e0=1.0, g0=10, g1=100, ng=10)
+    # print("Ready!")
 
-    # Test ZWO camera performance vs temperature
+    # Test ZWO ASI533MC Pro camera performance vs gain
+    client = CameraController(device="ZWO CCD ASI533MC Pro")
+    client.set_up_camera()
+    client.test_gain(e0=0.1, g0=60, g1=600, ng=10)
+
+    # Test ZWO ASI533MC Pro camera performance vs temperature
     # client = CameraController(device="ZWO CCD ASI533MC Pro")
     # client.set_up_camera()
     # client.test_performance_vs_temperature(temperature=0, g0=100, e0=1)
 
-    # # === Testing MainCamera Controller
+    # # === Testing MainCameraController
     # app = QApplication(sys.argv)
     # main = QWidget()
     # main.gui_open = True
     # main.client = MainCameraController(main=main, device="ZWO CCD ASI533MC Pro")
+    # main.client.set_up_camera()
+    # main.client.set_camera_status(True)
+    # app.exit(app.exec_())
+
+    # === Testing GuideCameraController
+    # app = QApplication(sys.argv)
+    # main = QWidget()
+    # main.gui_open = True
+    # main.client = GuideCameraController(main=main, device="ZWO CCD ASI120MC-S", timeout=1)
     # main.client.set_up_camera()
     # main.client.set_camera_status(True)
     # app.exit(app.exec_())

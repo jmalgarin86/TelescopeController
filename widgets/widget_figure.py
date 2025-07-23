@@ -29,6 +29,7 @@ class ImageWidget(QWidget):
         self.n_frame = 0
         self.exposure = 1
         self.gain = 2500
+        self.count = 0
 
         self.setWindowTitle(title)
         self.main = main
@@ -189,7 +190,34 @@ class GuideImageWidget(ImageWidget):
         super().__init__(*args, **kwargs)
 
         # Connect signal
+        self._strength_ar = None
+        self._strength_de = None
+        self._looseness_detected = None
+        self._reference_position = None
+        self._guiding = None
+        self._tracking = None
+        self._s_vec = []
+        self._y_vec = []
+        self._x_vec = []
         self.main.guide_camera_widget.guide_camera.signal_guide_frame_ready.connect(self._on_guide_frame_ready)
+
+    def set_tracking(self, tracking: bool):
+        self._tracking = tracking
+
+    def set_guiding(self, guiding: bool):
+        self._guiding = guiding
+
+    def set_reference_position(self, position: tuple):
+        self._reference_position = position
+
+    def set_looseness(self, looseness):
+        self._looseness_detected = looseness
+
+    def set_strength(self, strength=1.0, axis='DEC'):
+        if axis == 'DEC':
+            self._strength_de = strength
+        elif axis == 'AR':
+            self._strength_ar = strength
 
     def _on_guide_frame_ready(self, frame):
         # Update the frame and get the subframe for analysis

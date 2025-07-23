@@ -25,13 +25,8 @@ class GuideController(GuideToolBar):
 
         # Connect buttons to actions
         self.action_arduino.triggered.connect(self.connect_arduino)
-        self.action_camera.triggered.connect(self.start_camera)
-        self.action_auto_star.triggered.connect(self.select_a_star)
         self.action_tracking.triggered.connect(self.tracking)
         self.action_guide.triggered.connect(self.guiding)
-
-    def select_a_star(self):
-        self.main.guide_camera_controller.detect_and_select_star()
 
     def guiding(self):
         # Check if calibration is done
@@ -58,23 +53,13 @@ class GuideController(GuideToolBar):
     def tracking(self):
         if self.action_tracking.isChecked():
             reference_position = self.main.image_guide_camera.get_roi_position()
-            self.main.guide_camera_controller.set_reference_position(reference_position)
-            self.main.guide_camera_controller.set_tracking(True)
+            self.main.image_guide_camera.set_reference_position(reference_position)
+            self.main.image_guide_camera.set_tracking(True)
             print(f"Reference position: {reference_position}")
             print("Start tracking")
         else:
-            self.main.guide_camera_controller.set_tracking(False)
+            self.main.image_guide_camera.set_tracking(False)
             print("Stop tracking")
-
-    def start_camera(self):
-        if self.action_camera.isChecked():
-            if self.main.guide_camera_controller.device_ccd is None:
-                self.main.guide_camera_controller.set_up_camera()
-            self.main.guide_camera_controller.start_camera()
-        else:
-            self.main.guide_camera_controller.stop_camera()
-
-        return 0
 
     def connect_arduino(self):
         if self.action_arduino.isChecked():

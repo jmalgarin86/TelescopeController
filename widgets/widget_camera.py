@@ -43,10 +43,11 @@ class GuideCameraWidget(GroupBoxWithButtonTitle):
         self.content.setLayout(layout)
 
         # Create main camera controller
-        self.guide_camera = GuideCameraController(main=self.main, device="Bresser GPCMOS02000KPA")
+        self.guide_camera = GuideCameraController(main=self.main, device="ZWO CCD ASI120MC-S", timeout=1)
 
         # Connect buttons
         self.connect_button.clicked.connect(self.connect_camera)
+        self.update_button.clicked.connect(self.update_camera)
 
     def connect_camera(self):
         if self.connect_button.isChecked():
@@ -60,15 +61,11 @@ class GuideCameraWidget(GroupBoxWithButtonTitle):
             self.update_button.setEnabled(False)
             print(f"Disconnected from {self.guide_camera.device}")
 
-    def set_exposure(self):
-        exposure = self.slider_exp.value()
-        self.main.guide_camera_controller.exposure = exposure / 100 * 2
-        self.label_exp.setText(f"Exposure: {exposure / 100 * 2} s")
-
-    def set_gain(self):
-        gain = self.slider_gain.value()
-        self.main.guide_camera_controller.gain = gain / 100 * 5000
-        self.label_gain.setText(f"Gain: {gain}")
+    def update_camera(self):
+        exposure = float(self.exposure_input.text())
+        gain = float(self.gain_input.text())
+        self.guide_camera.set_exposure(exposure=exposure)
+        self.guide_camera.set_gain(gain=gain)
 
 class MainCameraWidget(GroupBoxWithButtonTitle):
     def __init__(self, main):
