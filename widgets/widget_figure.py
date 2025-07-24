@@ -58,7 +58,6 @@ class ImageWidget(QWidget):
         self._canvas.mpl_connect("button_press_event", self._on_click)
         self._canvas.mpl_connect("scroll_event", self._on_scroll)
 
-
     def _on_click(self, event):
         if event.inaxes != self._canvas.axes:
             return
@@ -113,12 +112,12 @@ class ImageWidget(QWidget):
     def get_image(self):
         return self._image_array
 
-    def set_image(self, image_array):
-        self._image_array = image_array
+    def set_image(self, image):
+        self._image_array = image
         self._canvas.axes.clear()
         self._canvas.axes.axis("off")
         self._roi_patch = None
-        self._canvas.axes.imshow(image_array, cmap='gray' if image_array.ndim == 2 else None)
+        self._canvas.axes.imshow(image, cmap='gray' if image.ndim == 2 else None)
 
         # Restore zoom if available
         if self._zoom_xlim and self._zoom_ylim:
@@ -126,7 +125,7 @@ class ImageWidget(QWidget):
             self._canvas.axes.set_ylim(self._zoom_ylim)
 
         # Redraw crosshairs and circle at image center
-        height, width = image_array.shape[:2]
+        height, width = image.shape[:2]
         cx, cy = width / 2, height / 2
 
         # Draw vertical and horizontal lines
@@ -154,7 +153,8 @@ class ImageWidget(QWidget):
             y_start = max(0, int(cy_roi - half))
             y_end = min(height, int(cy_roi + half))
 
-            roi_pixels = image_array[y_start:y_end, x_start:x_end]
+            roi_pixels = image[y_start:y_end, x_start:x_end]
+
             return roi_pixels
         else:
             return None
@@ -186,10 +186,10 @@ class ImageWidget(QWidget):
         self._draw_roi()
 
 class GuideImageWidget(ImageWidget):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, main, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # Connect signal
+        # parameters
         self._strength_ar = None
         self._strength_de = None
         self._looseness_detected = None
@@ -199,7 +199,6 @@ class GuideImageWidget(ImageWidget):
         self._s_vec = []
         self._y_vec = []
         self._x_vec = []
-        self.main.guide_camera_widget.guide_camera.signal_guide_frame_ready.connect(self._on_guide_frame_ready)
 
     def set_tracking(self, tracking: bool):
         self._tracking = tracking
@@ -219,7 +218,7 @@ class GuideImageWidget(ImageWidget):
         elif axis == 'AR':
             self._strength_ar = strength
 
-    def _on_guide_frame_ready(self, frame):
+    def on_guide_frame_ready(self, frame):
         # Update the frame and get the subframe for analysis
         subframe = self.set_image(frame)
 

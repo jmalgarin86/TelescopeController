@@ -65,12 +65,19 @@ class CameraController(PyIndi.BaseClient):
             self.sendNewSwitch(ccd_connect)
         time.sleep(1)
 
+        self.get_properties()
+
         # Get properties
-        self.ccd_exposure = self.device_ccd.getNumber("CCD_EXPOSURE")
-        self.ccd_gain = self.device_ccd.getNumber("CCD_CONTROLS")
-        self.ccd_temperature = self.device_ccd.getNumber("CCD_TEMPERATURE")
-        self.ccd_power = self.device_ccd.getNumber("CCD_COOLER_POWER")
-        self.ccd_cooler_switch = self.device_ccd.getSwitch("CCD_COOLER")
+        if "CCD_EXPOSURE" in self.generic_properties:
+            self.ccd_exposure = self.device_ccd.getNumber("CCD_EXPOSURE")
+        if "CCD_CONTROLS" in self.generic_properties:
+            self.ccd_gain = self.device_ccd.getNumber("CCD_CONTROLS")
+        if "CCD_TEMPERATURE" in self.generic_properties:
+            self.ccd_temperature = self.device_ccd.getNumber("CCD_TEMPERATURE")
+        if "CCD_COOLER_POWER" in self.generic_properties:
+            self.ccd_power = self.device_ccd.getNumber("CCD_COOLER_POWER")
+        if "CCD_COOLER" in self.generic_properties:
+            self.ccd_cooler_switch = self.device_ccd.getSwitch("CCD_COOLER")
 
         # Inform to indi server we want to receive blob from CCD1
         self.setBLOBMode(PyIndi.B_ALSO, self.device, "CCD1")
@@ -91,30 +98,31 @@ class CameraController(PyIndi.BaseClient):
         for device in device_list:
             print(f"   > {device.getDeviceName()}")
 
-    def get_properties(self):
+    def get_properties(self, verbose=False):
         generic_properties = self.device_ccd.getProperties()
         for generic_property in generic_properties:
-            print(f"   > {generic_property.getName()} {generic_property.getTypeAsString()}")
-            self.generic_properties.append((generic_property.getName(), generic_property.getTypeAsString()))
-            if generic_property.getType() == PyIndi.INDI_TEXT:
-                for widget in PyIndi.PropertyText(generic_property):
-                    print(f"       {widget.getName()}({widget.getLabel()}) = {widget.getText()}")
+            self.generic_properties.append(generic_property.getName())
+            if verbose:
+                print(f"   > {generic_property.getName()} {generic_property.getTypeAsString()}")
+                if generic_property.getType() == PyIndi.INDI_TEXT:
+                    for widget in PyIndi.PropertyText(generic_property):
+                        print(f"       {widget.getName()}({widget.getLabel()}) = {widget.getText()}")
 
-            if generic_property.getType() == PyIndi.INDI_NUMBER:
-                for widget in PyIndi.PropertyNumber(generic_property):
-                    print(f"       {widget.getName()}({widget.getLabel()}) = {widget.getValue()}")
+                if generic_property.getType() == PyIndi.INDI_NUMBER:
+                    for widget in PyIndi.PropertyNumber(generic_property):
+                        print(f"       {widget.getName()}({widget.getLabel()}) = {widget.getValue()}")
 
-            if generic_property.getType() == PyIndi.INDI_SWITCH:
-                for widget in PyIndi.PropertySwitch(generic_property):
-                    print(f"       {widget.getName()}({widget.getLabel()}) = {widget.getStateAsString()}")
+                if generic_property.getType() == PyIndi.INDI_SWITCH:
+                    for widget in PyIndi.PropertySwitch(generic_property):
+                        print(f"       {widget.getName()}({widget.getLabel()}) = {widget.getStateAsString()}")
 
-            if generic_property.getType() == PyIndi.INDI_LIGHT:
-                for widget in PyIndi.PropertyLight(generic_property):
-                    print(f"       {widget.getLabel()}({widget.getLabel()}) = {widget.getStateAsString()}")
+                if generic_property.getType() == PyIndi.INDI_LIGHT:
+                    for widget in PyIndi.PropertyLight(generic_property):
+                        print(f"       {widget.getLabel()}({widget.getLabel()}) = {widget.getStateAsString()}")
 
-            if generic_property.getType() == PyIndi.INDI_BLOB:
-                for widget in PyIndi.PropertyBlob(generic_property):
-                    print(f"       {widget.getName()}({widget.getLabel()}) = <blob {widget.getSize()} bytes>")
+                if generic_property.getType() == PyIndi.INDI_BLOB:
+                    for widget in PyIndi.PropertyBlob(generic_property):
+                        print(f"       {widget.getName()}({widget.getLabel()}) = <blob {widget.getSize()} bytes>")
 
         return 0
 
@@ -321,8 +329,6 @@ class CameraController(PyIndi.BaseClient):
             return None
 
 class GuideCameraController(QObject, CameraController):
-    signal_guide_frame_ready = pyqtSignal(object)
-
     def __init__(self, main, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._n_dec_warnings = None
@@ -349,7 +355,8 @@ class GuideCameraController(QObject, CameraController):
                             self._frame = np.clip(self._frame * float(8) / 2 ** 16 * 2 ** 8, a_min=0, a_max=255).astype(
                                 np.uint8)
                         self._n_frames += 1
-                        self.signal_guide_frame_ready.emit(self._frame)
+                        thread = threading.Thread(target=self._update_frame)
+                        thread.start()
                         print(f"Guide frame {self._n_frames} acquired")
                     else:
                         print(f"Guide frame {self._n_frames} not acquired")
@@ -366,11 +373,15 @@ class GuideCameraController(QObject, CameraController):
                     sigma = 20  # wider star
                     self._frame += (255 * np.exp(-((X - x0) ** 2 + (Y - y0) ** 2) / (2 * sigma ** 2))).astype(np.uint8)
                     time.sleep(1)
-                    self.signal_guide_frame_ready.emit(self._frame)
+                    thread = threading.Thread(target=self._update_frame)
+                    thread.start()
                     print(f"Guide frame failed: {e}")
                 time.sleep(0.1)
             else:
                 time.sleep(1)
+
+    def _update_frame(self):
+        self.main.image_guide_camera.on_guide_frame_ready(self._frame)
 
 class MainCameraController(QObject, CameraController):
     signal_main_frame_ready = pyqtSignal(object)
