@@ -357,10 +357,6 @@ class GuideCameraController(QObject, CameraController):
                         self._n_frames += 1
                         thread = threading.Thread(target=self._update_frame)
                         thread.start()
-                        print(f"Guide frame {self._n_frames} acquired")
-                    else:
-                        print(f"Guide frame {self._n_frames} not acquired")
-                        time.sleep(0.1)
                 except Exception as e:
                     h, w = 1080, 1920
                     self._frame = np.zeros((h, w), dtype=np.uint8)
@@ -378,13 +374,12 @@ class GuideCameraController(QObject, CameraController):
                     print(f"Guide frame failed: {e}")
                 time.sleep(0.1)
             else:
-                time.sleep(1)
+                time.sleep(0.1)
 
     def _update_frame(self):
         self.main.image_guide_camera.on_guide_frame_ready(self._frame)
 
 class MainCameraController(QObject, CameraController):
-    signal_main_frame_ready = pyqtSignal(object)
     signal_send_status = pyqtSignal(object)
     def __init__(self, main, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -411,15 +406,13 @@ class MainCameraController(QObject, CameraController):
                     self._frame = self.capture()
                     if self._frame is not None:
                         self._n_frames += 1
-                        self.signal_main_frame_ready.emit(self._frame)
-                        print(f"Main frame {self._n_frames} acquired")
-                    else:
-                        print(f"Main frame {self._n_frames} not acquired")
+                        thread = threading.Thread(target=self._update_frame)
+                        thread.start()
                 except Exception as e:
                     print(f"Main frame failed: {e}")
                 time.sleep(0.1)
             else:
-                time.sleep(1)
+                time.sleep(0.1)
 
     def _temperature_sniffer(self):
         while self.main.gui_open:
@@ -432,6 +425,8 @@ class MainCameraController(QObject, CameraController):
                 status["Power"] = power
                 self.signal_send_status.emit(status)
 
+    def _update_frame(self):
+        self.main.image_main_camera._on_main_frame_ready(self._frame)
 
 if __name__ == "__main__":
     # Test ASI 120MC-S

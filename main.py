@@ -191,8 +191,6 @@ class TelescopeController(QMainWindow):
             self.auto_controller.on_button_clicked()
             self.calibration_widget.title_button.setChecked(not my_bool)
             self.calibration_widget.on_button_clicked()
-            self.camera_controller.title_button.setChecked(not my_bool)
-            self.camera_controller.on_button_clicked()
 
     @staticmethod
     def connect_to_indi_server():

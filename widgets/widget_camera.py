@@ -43,7 +43,7 @@ class GuideCameraWidget(GroupBoxWithButtonTitle):
         self.content.setLayout(layout)
 
         # Create main camera controller
-        self.guide_camera = GuideCameraController(main=self.main, device="ZWO CCD ASI120MC-S", timeout=1)
+        self.guide_camera = GuideCameraController(main=self.main, device="ZWO CCD ASI120MC-S", timeout=5)
 
         # Connect buttons
         self.connect_button.clicked.connect(self.connect_camera)
@@ -132,7 +132,7 @@ class MainCameraWidget(GroupBoxWithButtonTitle):
         self.content.setLayout(layout)
 
         # Create main camera controller
-        self.main_camera = MainCameraController(main=self.main, device="ZWO CCD ASI533MC Pro")
+        self.main_camera = MainCameraController(main=self.main, device="ZWO CCD ASI533MC Pro", timeout=5)
         self.main_camera.signal_frames_ready.connect(self.frames_ready)
         self.main_camera.signal_send_status.connect(self.monitor_status)
 
