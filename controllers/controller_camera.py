@@ -406,9 +406,22 @@ class MainCameraController(QObject, CameraController):
                     self._frame = self.capture()
                     if self._frame is not None:
                         self._n_frames += 1
-                        thread = threading.Thread(target=self._update_frame)
+                        thread = threading.Thread(targeta=self._update_frame)
                         thread.start()
                 except Exception as e:
+                    h, w = 1080, 1920
+                    self._frame = np.zeros((h, w), dtype=np.uint8)
+
+                    # Simulate a "star" as a Gaussian spot
+                    x0, y0 = 960, 540  # center of image
+                    x0 = np.random.randint(x0, x0 + 10)
+                    y0 = np.random.randint(y0, y0 + 10)
+                    X, Y = np.meshgrid(np.arange(w), np.arange(h))
+                    sigma = 20  # wider star
+                    self._frame += (255 * np.exp(-((X - x0) ** 2 + (Y - y0) ** 2) / (2 * sigma ** 2))).astype(np.uint8)
+                    time.sleep(1)
+                    thread = threading.Thread(target=self._update_frame)
+                    thread.start()
                     print(f"Main frame failed: {e}")
                 time.sleep(0.1)
             else:

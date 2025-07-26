@@ -186,7 +186,7 @@ class ImageWidget(QWidget):
         self._draw_roi()
 
 class GuideImageWidget(ImageWidget):
-    def __init__(self, main, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         # parameters
@@ -196,9 +196,9 @@ class GuideImageWidget(ImageWidget):
         self._reference_position = None
         self._guiding = None
         self._tracking = None
-        self._s_vec = []
         self._y_vec = []
         self._x_vec = []
+        self._n_dec_warnings = 0
 
     def set_tracking(self, tracking: bool):
         self._tracking = tracking
@@ -224,14 +224,13 @@ class GuideImageWidget(ImageWidget):
 
         # If tracking do the analysis
         star_size = 0
-        star_center = (0, 0)
         if self._tracking:
-            position = self.main.image_guide_camera.get_roi_position()
+            position = self.get_roi_position()
             star_center, star_size = analyze_subframe(subframe)
             p0 = position[0] + star_center[0]
             p1 = position[1] + star_center[1]
             position = (p0, p1)
-            self.main.image_guide_camera.set_roi_position(position)
+            self.set_roi_position(position)
 
             # Ensure the length of the vectors is at most 100 elements
             if len(self._x_vec) == 100:
@@ -253,13 +252,162 @@ class GuideImageWidget(ImageWidget):
                 print("Missed alignment, guiding star lost...")
             else:
                 self._align_position(r0=(x_star, y_star))
+    
+    def _align_position(self, r0=None, period=str(2)):
+        # Get reference position
+        if r0 is None:
+            r0 = self._reference_position
+
+        # Get current position
+        r1 = self.get_roi_position()
+
+        # Get distance
+        distance = np.sqrt((r1[0] - r0[0])**2 + (r1[1] - r0[1])**2)
+        if distance>100:
+            print("ERROR: Arduino is locked. Motors stopped.")
+            self.main.waiting_commands.append("0 0 0 0 0 0 0\n")
+            return 0
+
+        # Calculate required displacement
+        dr = np.array([r1[0] - r0[0], r1[1] - r0[1]])
+
+        # Move the camera
+        ser_input = self._move_camera(dx=dr[0], dy=dr[1], period=period)
+        if ser_input == "Ready!":
+            return ser_input
+        else:
+            return 0
+
+    def _move_camera(self, dx=0, dy=0, period=str(2)):
+        # Get data from calibration
+        vx_de = self.main.calibration_widget.vx_de
+        vy_de = self.main.calibration_widget.vy_de
+        vx_ra_p = self.main.calibration_widget.vx_ar_p
+        vy_ra_p = self.main.calibration_widget.vy_ar_p
+        vx_ra_n = self.main.calibration_widget.vx_ar_n
+        vy_ra_n = self.main.calibration_widget.vy_ar_n
+
+        # Create matrix
+        v_p = np.array([[vx_de, vx_ra_p], [vy_de, vy_ra_p]])
+        v_n = np.array([[vx_de, vx_ra_n], [vy_de, vy_ra_n]])
+
+        # Get required displacement
+        dr = np.array([dx, dy])
+        dr = -np.reshape(dr, (2, 1))
+
+        # Get required steps (if n_steps[1]>0, then it is time, not steps)
+        n_steps = np.linalg.inv(v_p) @ dr
+        if n_steps[1] < 0:
+            n_steps = np.linalg.inv(v_n) @ dr
+
+        # Apply strength
+        n_steps[0] *= self._strength_de
+        n_steps[1] *= self._strength_ar
+
+        # Ensure Dec movement happens only in the required direction
+        if (self._looseness_detected == "positive" and n_steps[0] < 0) or (self._looseness_detected == "negative" and n_steps[0] > 0):
+            n_steps[0] = 0
+            self._n_dec_warnings += 1
+            print("Dec warning: %i" % self._n_dec_warnings)
+            # Check if looseness_detection has to switch
+            if self._n_dec_warnings >= 20 and self._looseness_detected == "positive":
+                self._looseness_detected = "negative"
+                self._n_dec_warnings = 0
+                print("Looseness direction switched to negative")
+            elif self._n_dec_warnings >= 20 and self._looseness_detected == "negative":
+                self._looseness_detected = "positive"
+                self._n_dec_warnings = 0
+                print("Looseness direction switched to positive")
+        else:
+            if self._n_dec_warnings > 0:
+                print("Dec warning: 0")
+            self._n_dec_warnings = 0
+            if np.abs(n_steps[0])>5:
+                n_steps[0] = int(n_steps[0]/2)
+
+        # Set directions
+        if n_steps[0] >= 0 and self.main.manual_controller.dec_dir == 1:
+            de_dir = str(1)
+        elif n_steps[0] >= 0 and self.main.manual_controller.dec_dir == -1:
+            de_dir = str(0)
+        elif n_steps[0] < 0 and self.main.manual_controller.dec_dir == 1:
+            de_dir = str(0)
+        elif n_steps[0] < 0 and self.main.manual_controller.dec_dir == -1:
+            de_dir = str(1)
+        if n_steps[1] >= 0:
+            ar_dir = str(1)
+        else:
+            ar_dir = str(0)
+
+        # Get instructions
+        de_steps = str(int(np.abs(n_steps[0])))
+        time_delay = 0
+        if n_steps[1] > 0:
+            ar_steps = 0
+            time_delay = n_steps[1][0]
+        else:
+            ar_steps = str(int(np.abs(n_steps[1])))
+        if de_steps == "0":
+            de_command = " 0 0 0"
+        else:
+            de_command = " %s %s %s" % (de_steps, de_dir, period)
+        if ar_steps == "0":
+            ar_command = " 0 0 52"
+        else:
+            ar_command = " %s %s %s" % (ar_steps, ar_dir, period)
+
+        # Send instructions
+        if time_delay > 0:
+            stop = "1"
+        else:
+            stop = "0"
+        if de_steps == "0" and ar_steps == "0" and stop == "0":
+            pass
+            return "Ready!"
+        else:
+            command = "0" + ar_command + de_command + "\n"
+            # Wait until it finish
+            if stop == "1":
+                # Move AR
+                self.main.waiting_commands.append("1 0 0 0 0 0 0\n")
+                time.sleep(time_delay)
+                # Move DEC
+                if de_command == " 0 0 0":
+                    command = "0 1 0 52" + " 0 0 0" + "\n"
+                    self.main.waiting_commands.append(command)
+                else:
+                    command = "0 0 0 52" + de_command + "\n"
+                    self.main.waiting_commands.append(command)
+                ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
+                while ser_input != "Ready!":
+                    ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
+                    time.sleep(0.01)
+                return "Ready!"
+            else:
+                self.main.waiting_commands.append(command)
+                ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
+                while ser_input != "Ready!":
+                    ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
+                    time.sleep(0.01)
+                return ser_input
 
 class MainImageWidget(ImageWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._s_vec = []
 
     def _on_main_frame_ready(self, frame):
         subframe = self.set_image(frame)
+        _, size = analyze_subframe(subframe)
+
+        # Ensure the length of the vectors is at most 100 elements
+        if len(self._s_vec) == 100:
+            self._s_vec.pop(0)  # Remove the first element
+
+        # Update vectors and plot
+        self._s_vec.append(size)
+        self.main.plot_controller_surface.updatePlot(x=self._s_vec)
+
         self.main.histogram.set_image(frame)
 
 
