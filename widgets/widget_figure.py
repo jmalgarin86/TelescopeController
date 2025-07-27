@@ -398,15 +398,18 @@ class MainImageWidget(ImageWidget):
 
     def _on_main_frame_ready(self, frame):
         subframe = self.set_image(frame)
-        _, size = analyze_subframe(subframe)
+        try:
+            _, size = analyze_subframe(subframe)
 
-        # Ensure the length of the vectors is at most 100 elements
-        if len(self._s_vec) == 100:
-            self._s_vec.pop(0)  # Remove the first element
+            # Ensure the length of the vectors is at most 100 elements
+            if len(self._s_vec) == 100:
+                self._s_vec.pop(0)  # Remove the first element
 
-        # Update vectors and plot
-        self._s_vec.append(size)
-        self.main.plot_controller_surface.updatePlot(x=self._s_vec)
+            # Update vectors and plot
+            self._s_vec.append(size)
+            self.main.plot_controller_surface.updatePlot(x=self._s_vec)
+        except:
+            pass
 
         self.main.histogram.set_image(frame)
 

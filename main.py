@@ -8,7 +8,6 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 import numpy as np
-from PIL import Image
 
 import qdarkstyle
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QHBoxLayout, QTabWidget
@@ -90,18 +89,10 @@ class TelescopeController(QMainWindow):
         main_layout.addLayout(left_layout, stretch=1)
         main_layout.addLayout(right_layout, stretch=3)
 
-        # Create space for main image
-        image_path = "your_image.jpeg"
-        image = Image.open(image_path)
-        image_array_1 = np.array(image)
-        image_path = "your_image2.jpeg"
-        image = Image.open(image_path)
-        image_array_2 = np.array(image)
-
         # Tab widget for figures
         images_tab = QTabWidget()
-        self.image_guide_camera = GuideImageWidget(image_array=image_array_1, main=self)
-        self.image_main_camera = MainImageWidget(image_array=image_array_2, main=self)
+        self.image_guide_camera = GuideImageWidget(main=self)
+        self.image_main_camera = MainImageWidget(main=self)
         images_tab.addTab(self.image_guide_camera, "Image Guide")
         images_tab.addTab(self.image_main_camera, "Image Main")
         right_layout.addWidget(images_tab, stretch=2)

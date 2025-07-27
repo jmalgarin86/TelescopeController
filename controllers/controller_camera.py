@@ -86,11 +86,6 @@ class CameraController(PyIndi.BaseClient):
         self.ccd_ccd1 = self.device_ccd.getBLOB("CCD1")
         time.sleep(1)
 
-        # self.get_properties()
-
-        # Set capture format
-        self.set_ccd_capture_format(capture_format="ASI_IMG_RAW16(Raw 16 bit)")
-
         print(f"{self.device} ready!")
 
     def get_devices(self):
@@ -406,7 +401,7 @@ class MainCameraController(QObject, CameraController):
                     self._frame = self.capture()
                     if self._frame is not None:
                         self._n_frames += 1
-                        thread = threading.Thread(targeta=self._update_frame)
+                        thread = threading.Thread(target=self._update_frame)
                         thread.start()
                 except Exception as e:
                     h, w = 1080, 1920
