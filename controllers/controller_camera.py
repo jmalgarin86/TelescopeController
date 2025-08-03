@@ -7,7 +7,7 @@ import threading
 
 import cv2
 import numpy as np
-from PyQt5.QtCore import pyqtSignal, QObject
+from PyQt5.QtCore import pyqtSignal, QObject, QTimer
 from PyQt5.QtWidgets import QWidget, QApplication
 from astropy.io import fits
 import io
@@ -341,13 +341,20 @@ class GuideCameraController(QObject, CameraController):
         self._frame = None
         self._camera_running = False
         self._n_frames = 0
+        self._n_frames_old = 0
         self.main = main
+        self.timer = QTimer()
+        self.timer.timeout.connect(self._update_frame)
 
         thread = threading.Thread(target=self._frame_sniffer)
         thread.start()
 
     def set_camera_status(self, status: bool):
         self._camera_running = status
+        if status:
+            self.timer.start(1000)
+        else:
+            self.timer.stop()
 
     def _frame_sniffer(self):
         while self.main.gui_open:
@@ -359,12 +366,9 @@ class GuideCameraController(QObject, CameraController):
                         if np.max(self._frame) > 0:
                             self._frame = np.clip(self._frame * float(8) / 2 ** 16 * 2 ** 8, a_min=0, a_max=255).astype(
                                 np.uint8)
-                        self._n_frames += 1
-                        thread = threading.Thread(target=self._update_frame)
-                        thread.start()
                     else:
                         h, w = 1080, 1920
-                        self._frame = np.zeros((h, w), dtype=np.uint8)
+                        frame = np.zeros((h, w), dtype=np.uint8)
 
                         # Simulate a "star" as a Gaussian spot
                         x0, y0 = 960, 540  # center of image
@@ -372,11 +376,11 @@ class GuideCameraController(QObject, CameraController):
                         y0 = np.random.randint(y0, y0 + 10)
                         X, Y = np.meshgrid(np.arange(w), np.arange(h))
                         sigma = 20  # wider star
-                        self._frame += (255 * np.exp(-((X - x0) ** 2 + (Y - y0) ** 2) / (2 * sigma ** 2))).astype(
+                        frame += (255 * np.exp(-((X - x0) ** 2 + (Y - y0) ** 2) / (2 * sigma ** 2))).astype(
                             np.uint8)
+                        self._frame = frame
                         time.sleep(1)
-                        thread = threading.Thread(target=self._update_frame)
-                        thread.start()
+                    self._n_frames += 1
                 except Exception as e:
                     print(f"Guide frame failed: {e}")
                 time.sleep(0.1)
@@ -384,7 +388,9 @@ class GuideCameraController(QObject, CameraController):
                 time.sleep(0.1)
 
     def _update_frame(self):
-        self.main.image_guide_camera.on_guide_frame_ready(self._frame)
+        if self._n_frames_old < self._n_frames:
+            self._n_frames_old = self._n_frames
+            self.main.image_guide_camera.on_guide_frame_ready(self._frame)
 
 class MainCameraController(QObject, CameraController):
     signal_send_status = pyqtSignal(object)
@@ -392,7 +398,10 @@ class MainCameraController(QObject, CameraController):
         super().__init__(*args, **kwargs)
         self._camera_running = None
         self._n_frames = 0
+        self._n_frames_old = 0
         self.main = main
+        self.timer = QTimer()
+        self.timer.timeout.connect(self._update_frame)
 
         # Start frame sniffer
         thread = threading.Thread(target=self._frame_sniffer)
@@ -404,6 +413,10 @@ class MainCameraController(QObject, CameraController):
 
     def set_camera_status(self, status: bool):
         self._camera_running = status
+        if status:
+            self.timer.start(1000)
+        else:
+            self.timer.stop()
 
     def _frame_sniffer(self):
         while self.main.gui_open:
@@ -411,11 +424,7 @@ class MainCameraController(QObject, CameraController):
                 try:
                     # Get frame
                     self._frame = self.capture()
-                    if self._frame is not None:
-                        self._n_frames += 1
-                        thread = threading.Thread(target=self._update_frame)
-                        thread.start()
-                    else:
+                    if self._frame is None:
                         h, w = 1080, 1920
                         self._frame = np.zeros((h, w), dtype=np.uint8)
 
@@ -428,8 +437,7 @@ class MainCameraController(QObject, CameraController):
                         self._frame += (255 * np.exp(-((X - x0) ** 2 + (Y - y0) ** 2) / (2 * sigma ** 2))).astype(
                             np.uint8)
                         time.sleep(1)
-                        thread = threading.Thread(target=self._update_frame)
-                        thread.start()
+                    self._n_frames += 1
                 except Exception as e:
                     print(f"Main frame failed: {e}")
                 time.sleep(0.1)
@@ -448,7 +456,9 @@ class MainCameraController(QObject, CameraController):
                 self.signal_send_status.emit(status)
 
     def _update_frame(self):
-        self.main.image_main_camera.on_main_frame_ready(self._frame)
+        if self._n_frames_old < self._n_frames:
+            self._n_frames_old = self._n_frames
+            self.main.image_main_camera.on_main_frame_ready(self._frame)
 
 if __name__ == "__main__":
     # Test ASI 120MC-S
