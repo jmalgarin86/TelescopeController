@@ -52,6 +52,12 @@ class CameraController(PyIndi.BaseClient):
         self.connectServer()
         time.sleep(1)
 
+        # Check for devices
+        devices = self.get_devices()
+        if self.device not in devices:
+            print(f"Device {self.device} not found.")
+            return
+
         # Get the device
         print("Getting device...")
         self.device_ccd = self.getDevice(self.device)
@@ -90,8 +96,12 @@ class CameraController(PyIndi.BaseClient):
 
     def get_devices(self):
         device_list = self.getDevices()
+        devices = []
         for device in device_list:
+            devices.append(device)
             print(f"   > {device.getDeviceName()}")
+
+        return devices
 
     def get_properties(self, verbose=False):
         generic_properties = self.device_ccd.getProperties()
@@ -352,20 +362,22 @@ class GuideCameraController(QObject, CameraController):
                         self._n_frames += 1
                         thread = threading.Thread(target=self._update_frame)
                         thread.start()
-                except Exception as e:
-                    h, w = 1080, 1920
-                    self._frame = np.zeros((h, w), dtype=np.uint8)
+                    else:
+                        h, w = 1080, 1920
+                        self._frame = np.zeros((h, w), dtype=np.uint8)
 
-                    # Simulate a "star" as a Gaussian spot
-                    x0, y0 = 960, 540  # center of image
-                    x0 = np.random.randint(x0, x0 + 10)
-                    y0 = np.random.randint(y0, y0 + 10)
-                    X, Y = np.meshgrid(np.arange(w), np.arange(h))
-                    sigma = 20  # wider star
-                    self._frame += (255 * np.exp(-((X - x0) ** 2 + (Y - y0) ** 2) / (2 * sigma ** 2))).astype(np.uint8)
-                    time.sleep(1)
-                    thread = threading.Thread(target=self._update_frame)
-                    thread.start()
+                        # Simulate a "star" as a Gaussian spot
+                        x0, y0 = 960, 540  # center of image
+                        x0 = np.random.randint(x0, x0 + 10)
+                        y0 = np.random.randint(y0, y0 + 10)
+                        X, Y = np.meshgrid(np.arange(w), np.arange(h))
+                        sigma = 20  # wider star
+                        self._frame += (255 * np.exp(-((X - x0) ** 2 + (Y - y0) ** 2) / (2 * sigma ** 2))).astype(
+                            np.uint8)
+                        time.sleep(1)
+                        thread = threading.Thread(target=self._update_frame)
+                        thread.start()
+                except Exception as e:
                     print(f"Guide frame failed: {e}")
                 time.sleep(0.1)
             else:
@@ -403,20 +415,22 @@ class MainCameraController(QObject, CameraController):
                         self._n_frames += 1
                         thread = threading.Thread(target=self._update_frame)
                         thread.start()
-                except Exception as e:
-                    h, w = 1080, 1920
-                    self._frame = np.zeros((h, w), dtype=np.uint8)
+                    else:
+                        h, w = 1080, 1920
+                        self._frame = np.zeros((h, w), dtype=np.uint8)
 
-                    # Simulate a "star" as a Gaussian spot
-                    x0, y0 = 960, 540  # center of image
-                    x0 = np.random.randint(x0, x0 + 10)
-                    y0 = np.random.randint(y0, y0 + 10)
-                    X, Y = np.meshgrid(np.arange(w), np.arange(h))
-                    sigma = 20  # wider star
-                    self._frame += (255 * np.exp(-((X - x0) ** 2 + (Y - y0) ** 2) / (2 * sigma ** 2))).astype(np.uint8)
-                    time.sleep(1)
-                    thread = threading.Thread(target=self._update_frame)
-                    thread.start()
+                        # Simulate a "star" as a Gaussian spot
+                        x0, y0 = 960, 540  # center of image
+                        x0 = np.random.randint(x0, x0 + 10)
+                        y0 = np.random.randint(y0, y0 + 10)
+                        X, Y = np.meshgrid(np.arange(w), np.arange(h))
+                        sigma = 20  # wider star
+                        self._frame += (255 * np.exp(-((X - x0) ** 2 + (Y - y0) ** 2) / (2 * sigma ** 2))).astype(
+                            np.uint8)
+                        time.sleep(1)
+                        thread = threading.Thread(target=self._update_frame)
+                        thread.start()
+                except Exception as e:
                     print(f"Main frame failed: {e}")
                 time.sleep(0.1)
             else:
@@ -434,7 +448,7 @@ class MainCameraController(QObject, CameraController):
                 self.signal_send_status.emit(status)
 
     def _update_frame(self):
-        self.main.image_main_camera._on_main_frame_ready(self._frame)
+        self.main.image_main_camera.on_main_frame_ready(self._frame)
 
 if __name__ == "__main__":
     # Test ASI 120MC-S

@@ -396,7 +396,7 @@ class MainImageWidget(ImageWidget):
         super().__init__(*args, **kwargs)
         self._s_vec = []
 
-    def _on_main_frame_ready(self, frame):
+    def on_main_frame_ready(self, frame):
         subframe = self.set_image(frame)
         try:
             _, size = analyze_subframe(subframe)
