@@ -92,13 +92,15 @@ class CameraController(PyIndi.BaseClient):
         self.ccd_ccd1 = self.device_ccd.getBLOB("CCD1")
         time.sleep(1)
 
+        self.set_ccd_capture_format(capture_format="ASI_IMG_RAW16(Raw 16 bit)")
+
         print(f"{self.device} ready!")
 
     def get_devices(self):
         device_list = self.getDevices()
         devices = []
         for device in device_list:
-            devices.append(device)
+            devices.append(device.getDeviceName())
             print(f"   > {device.getDeviceName()}")
 
         return devices
