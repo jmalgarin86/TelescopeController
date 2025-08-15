@@ -110,7 +110,7 @@ class AutoController(AutoWidget):
         # Open file
         if last_file:
             time.sleep(1)
-            base_name = last_file[:-5]
+            base_name = last_file.with_suffix('')
             print(f"Running plate solving in {last_file}...")
             self._run_plate_solving(last_file)
             coordinates = self._extract_coordinates(base_name)
@@ -119,21 +119,8 @@ class AutoController(AutoWidget):
                 print("Plate-solving completed successfully!")
             else:
                 print("Failed to extract coordinates.")
-            return None
         else:
-            print(f"No se encontró un archivo nuevo en {timeout} s.")
-            return None
-
-
-
-    def _select_fits_file(self):
-        """Prompt the user to select a FITS file."""
-        options = QFileDialog.Options()
-        options |= QFileDialog.ReadOnly | QFileDialog.DontUseNativeDialog
-        return QFileDialog.getOpenFileName(
-            self, caption="Select a FITS file", directory=os.getcwd(),
-            filter="FITS Files (*.fits)", options=options
-        )[0]
+            print(f"New file not found.")
 
     def _run_plate_solving(self, file_name):
         """Execute plate-solving commands using subprocess."""
