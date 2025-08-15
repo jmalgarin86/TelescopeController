@@ -1,0 +1,9 @@
+qdarkstyle
+pyserial
+numpy
+opencv-python-headless
+astropy
+pyqtgraph
+pygame
+ccdproc
+matplotlib
