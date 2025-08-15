@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import QLabel, QVBoxLayout, QPushButton, QLineEdit, QSpinBo
 
 from controllers.controller_camera import MainCameraController, GuideCameraController
 from widgets.GroupBox import GroupBoxWithButtonTitle
+import threading
 
 
 class GuideCameraWidget(GroupBoxWithButtonTitle):
@@ -42,8 +43,9 @@ class GuideCameraWidget(GroupBoxWithButtonTitle):
         layout.addStretch()
         self.content.setLayout(layout)
 
-        # Create main camera controller
+        # Create guide camera controller
         self.guide_camera = GuideCameraController(main=self.main, device="ZWO CCD ASI120MC-S", timeout=5)
+        self.guide_camera.signal_camera_ready.connect(self._camera_ready)
 
         # Connect buttons
         self.connect_button.clicked.connect(self.connect_camera)
@@ -52,14 +54,22 @@ class GuideCameraWidget(GroupBoxWithButtonTitle):
     def connect_camera(self):
         if self.connect_button.isChecked():
             if self.guide_camera.device_ccd is None:
-                self.guide_camera.set_up_camera()
-            self.guide_camera.set_camera_status(status=True)
-            self.update_button.setEnabled(True)
-            print(f"Connected to {self.guide_camera.device}")
+                thread = threading.Thread(target=self._set_up_camera)
+                thread.start()
+            else:
+                self._camera_ready()
         else:
             self.guide_camera.set_camera_status(status=False)
             self.update_button.setEnabled(False)
             print(f"Disconnected from {self.guide_camera.device}")
+
+    def _camera_ready(self):
+        self.guide_camera.set_camera_status(status=True)
+        self.update_button.setEnabled(True)
+        print(f"Connected to {self.guide_camera.device}")
+    
+    def _set_up_camera(self):
+        self.guide_camera.set_up_camera()
 
     def update_camera(self):
         exposure = float(self.exposure_input.text())
@@ -135,6 +145,7 @@ class MainCameraWidget(GroupBoxWithButtonTitle):
         self.main_camera = MainCameraController(main=self.main, device="ZWO CCD ASI533MC Pro", timeout=5)
         self.main_camera.signal_frames_ready.connect(self.frames_ready)
         self.main_camera.signal_send_status.connect(self.monitor_status)
+        self.main_camera.signal_camera_ready.connect(self._camera_ready)
 
         # Connect update button to method
         self.update_button.clicked.connect(self.update_camera_settings)
@@ -148,17 +159,25 @@ class MainCameraWidget(GroupBoxWithButtonTitle):
     def connect_camera(self):
         if self.connect_button.isChecked():
             if self.main_camera.device_ccd is None:
-                self.main_camera.set_up_camera()
-            self.main_camera.set_camera_status(status=True)
-            self.update_button.setEnabled(True)
-            self.capture_button.setEnabled(True)
-            print(f"Connected to {self.main_camera.device}")
+                thread = threading.Thread(target=self._set_up_camera)
+                thread.start()
+            else:
+                self._camera_ready()
         else:
             self.main_camera.set_camera_status(status=False)
             self.main_camera.set_cooling(cooling=False)
             self.update_button.setEnabled(False)
             self.capture_button.setEnabled(False)
             print(f"Disconnected from {self.main_camera.device}")
+    
+    def _camera_ready(self):
+        self.main_camera.set_camera_status(status=True)
+        self.update_button.setEnabled(True)
+        self.capture_button.setEnabled(True)
+        print(f"Connected to {self.main_camera.device}")
+    
+    def _set_up_camera(self):
+        self.main_camera.set_up_camera()
 
     def update_camera_settings(self):
         # Get gain

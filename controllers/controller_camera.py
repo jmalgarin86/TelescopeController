@@ -15,6 +15,7 @@ from matplotlib import pyplot as plt
 
 class CameraController(PyIndi.BaseClient):
     signal_frames_ready = pyqtSignal()
+    signal_camera_ready = pyqtSignal()
     def __init__(self, device="ZWO CCD ASI120MC-S", host="localhost", port=7624, timeout=1):
         super(CameraController, self).__init__()
         self.ccd_power = None
@@ -61,16 +62,38 @@ class CameraController(PyIndi.BaseClient):
         # Get the device
         print("Getting device...")
         self.device_ccd = self.getDevice(self.device)
-
-        # Connect device
-        print("Connecting to device...")
+        
+        print("Connecting to device (first time)...")
         ccd_connect = self.device_ccd.getSwitch("CONNECTION")
-        if not (self.device_ccd.isConnected()):
+        if not self.device_ccd.isConnected():
             ccd_connect.reset()
             ccd_connect[0].setState(PyIndi.ISS_ON)
             self.sendNewSwitch(ccd_connect)
         time.sleep(1)
 
+        self.get_properties()
+
+        # --- Disconnect ---
+        print("Disconnecting device...")
+        ccd_connect.reset()
+        ccd_connect[0].setState(PyIndi.ISS_OFF)
+        self.sendNewSwitch(ccd_connect)
+        time.sleep(1)
+
+        # Reconnect server
+        self.disconnectServer()
+        time.sleep(1)
+        self.connectServer()
+        time.sleep(1)
+        self.device_ccd = self.getDevice(self.device)
+
+        # --- Second connect ---
+        print("Connecting to device (second time)...")
+        ccd_connect.reset()
+        ccd_connect[0].setState(PyIndi.ISS_ON)
+        self.sendNewSwitch(ccd_connect)
+        time.sleep(1)
+    
         self.get_properties()
 
         # Get properties
@@ -96,6 +119,35 @@ class CameraController(PyIndi.BaseClient):
 
         print(f"{self.device} ready!")
 
+        self.signal_camera_ready.emit()
+    
+    def set_ccd_capture_format(self, capture_format="INDI_RGB(RGB)"):
+        # Capture format
+        ccd_capture_format = self.device_ccd.getSwitch("CCD_CAPTURE_FORMAT")
+
+        # Transfer format
+        ccd_transfer_format = self.device_ccd.getSwitch("CCD_TRANSFER_FORMAT")
+
+        # Set the format
+        if capture_format == "INDI_RGB(RGB)":
+            ccd_capture_format[0].setState(PyIndi.ISS_ON)
+            ccd_transfer_format[0].setState(PyIndi.ISS_OFF)
+            ccd_capture_format[1].setState(PyIndi.ISS_OFF)
+            ccd_transfer_format[1].setState(PyIndi.ISS_ON)
+        elif capture_format == "INDI_RAW(RAW 16)":
+            ccd_capture_format[0].setState(PyIndi.ISS_OFF)
+            ccd_transfer_format[0].setState(PyIndi.ISS_ON)
+            ccd_capture_format[1].setState(PyIndi.ISS_ON)
+            ccd_transfer_format[1].setState(PyIndi.ISS_OFF)
+        elif capture_format == "ASI_IMG_RAW16(Raw 16 bit)":
+            ccd_capture_format[0].setState(PyIndi.ISS_OFF)
+            ccd_capture_format[1].setState(PyIndi.ISS_OFF)
+            ccd_capture_format[2].setState(PyIndi.ISS_OFF)
+            ccd_capture_format[3].setState(PyIndi.ISS_ON)
+        self.sendNewSwitch(ccd_capture_format)
+        self.sendNewSwitch(ccd_transfer_format)
+        self.blob_event.clear()
+
     def get_devices(self):
         device_list = self.getDevices()
         devices = []
@@ -108,7 +160,8 @@ class CameraController(PyIndi.BaseClient):
     def get_properties(self, verbose=False):
         generic_properties = self.device_ccd.getProperties()
         for generic_property in generic_properties:
-            self.generic_properties.append(generic_property.getName())
+            if generic_property.getName() not in self.generic_properties:
+                self.generic_properties.append(generic_property.getName())
             if verbose:
                 print(f"   > {generic_property.getName()} {generic_property.getTypeAsString()}")
                 if generic_property.getType() == PyIndi.INDI_TEXT:
@@ -464,15 +517,15 @@ class MainCameraController(QObject, CameraController):
 
 if __name__ == "__main__":
     # Test ASI 120MC-S
-    # client = CameraController(device="ZWO CCD ASI120MC-S", timeout=1)
-    # client.set_up_camera()
-    # client.test_gain(e0=1.0, g0=10, g1=100, ng=10)
-    # print("Ready!")
+    client = CameraController(device="ZWO CCD ASI120MC-S", timeout=1)
+    client.set_up_camera()
+    client.test_gain(e0=1.0, g0=10, g1=100, ng=10)
+    print("Ready!")
 
     # Test ZWO ASI533MC Pro camera performance vs gain
-    client = CameraController(device="ZWO CCD ASI533MC Pro")
-    client.set_up_camera()
-    client.test_gain(e0=0.1, g0=60, g1=600, ng=10)
+    # client = CameraController(device="ZWO CCD ASI533MC Pro")
+    # client.set_up_camera()
+    # client.test_gain(e0=0.1, g0=60, g1=600, ng=10)
 
     # Test ZWO ASI533MC Pro camera performance vs temperature
     # client = CameraController(device="ZWO CCD ASI533MC Pro")
