@@ -1,6 +1,7 @@
 import csv
 import os
 from csv import excel
+from pathlib import Path
 
 import numpy as np
 import subprocess
@@ -83,21 +84,47 @@ class AutoController(AutoWidget):
         """
         Open a FITS file and retrieve celestial coordinates via plate-solving.
         """
+
+        folder_path = Path('plate_solving/')
+        timeout = 5
+        extension = '.fits'
+
+        # Capture frame
         self.main.main_camera_widget.main_camera.set_frames_to_save(frames_to_save=1, path='plate_solving/')
 
-        file_name = self._select_fits_file()
-        if not file_name:
-            print("No file selected for plate solving")
-            return
+        # Wait to new file
+        start_time = time.time()
+        last_file = None
 
-        base_name = file_name[:-5]
-        self._run_plate_solving(file_name)
-        coordinates = self._extract_coordinates(base_name)
-        if coordinates:
-            self._update_coordinates_display(*coordinates)
-            print("Plate-solving completed successfully!")
+        while time.time() - start_time < timeout:
+            files = list(folder_path.glob(f"*{extension}"))
+            if files:
+                files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
+                candidate = files[0]
+                age = time.time() - candidate.stat().st_mtime
+                if age <= 1.0:
+                    last_file = candidate
+                    break
+            time.sleep(0.2)
+
+        # Open file
+        if last_file:
+            time.sleep(1)
+            base_name = last_file[:-5]
+            print(f"Running plate solving in {last_file}...")
+            self._run_plate_solving(last_file)
+            coordinates = self._extract_coordinates(base_name)
+            if coordinates:
+                self._update_coordinates_display(*coordinates)
+                print("Plate-solving completed successfully!")
+            else:
+                print("Failed to extract coordinates.")
+            return None
         else:
-            print("Failed to extract coordinates.")
+            print(f"No se encontró un archivo nuevo en {timeout} s.")
+            return None
+
+
 
     def _select_fits_file(self):
         """Prompt the user to select a FITS file."""
