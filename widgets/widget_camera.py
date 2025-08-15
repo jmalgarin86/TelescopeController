@@ -213,9 +213,9 @@ class MainCameraWidget(GroupBoxWithButtonTitle):
 
     def capture_frames(self):
         if self.capture_button.isChecked():
-            self.main_camera.set_frames_to_save(self.num_acq_input.value())
+            self.main_camera.set_frames_to_save(self.num_acq_input.value(), path='captures/')
         else:
-            self.main_camera.set_frames_to_save(0)
+            self.main_camera.set_frames_to_save(frames_to_save=0, path='captures/')
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

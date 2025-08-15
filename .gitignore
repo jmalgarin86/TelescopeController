@@ -3,6 +3,8 @@ controllers/__pycache__/
 widgets/__pycache__/
 /captures/
 /widgets/captures/
+/plate_solving/
+/widgets/plate_solving
 /calibration/calibration.csv
 *.pyc
 *.txt

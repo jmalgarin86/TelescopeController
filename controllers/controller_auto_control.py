@@ -83,6 +83,8 @@ class AutoController(AutoWidget):
         """
         Open a FITS file and retrieve celestial coordinates via plate-solving.
         """
+        self.main.main_camera_widget.main_camera.set_frames_to_save(frames_to_save=1, path='plate_solving/')
+
         file_name = self._select_fits_file()
         if not file_name:
             print("No file selected for plate solving")

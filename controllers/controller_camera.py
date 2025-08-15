@@ -38,10 +38,6 @@ class CameraController(PyIndi.BaseClient):
         self.timeout = timeout
         self.captures_path = "captures/"
 
-        # Create path to save files
-        if not os.path.exists(self.captures_path):
-            os.makedirs(self.captures_path, exist_ok=True)
-
     def updateProperty(self, prop):
         if prop.getType() == PyIndi.INDI_BLOB:
             self.blob_event.set()
@@ -247,8 +243,9 @@ class CameraController(PyIndi.BaseClient):
         self.sendNewSwitch(ccd_transfer_format)
         self.blob_event.clear()
 
-    def set_frames_to_save(self, frames_to_save):
+    def set_frames_to_save(self, frames_to_save, path = 'captures/'):
         self._n_frames_to_save = frames_to_save
+        self.captures_path = path
 
     def test_temperature(self, temperature=0):
         self.set_temperature(temperature=temperature)
@@ -366,11 +363,17 @@ class CameraController(PyIndi.BaseClient):
                 if self._n_frames_total is None:
                     self._n_frames_total = self._n_frames_to_save
 
+                # Create file name
                 if file_name is None:
                     import datetime
                     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
                     file_name = f"capture_{timestamp}.fits"
 
+                # Create path to save files
+                if not os.path.exists(self.captures_path):
+                    os.makedirs(self.captures_path, exist_ok=True)
+
+                # Save fits
                 hdu = fits.PrimaryHDU(image_data)
                 hdu.writeto(f"{self.captures_path}{file_name}", overwrite=True)
 
