@@ -6,7 +6,7 @@ widgets/__pycache__/
 /plate_solving/
 /widgets/plate_solving
 /calibration/calibration.csv
-*.pyc
-*.txt
+/log_files/
+*.pycç
 *.jpeg
 *.tar.xz
