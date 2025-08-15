@@ -9,3 +9,4 @@ widgets/__pycache__/
 *.pyc
 *.txt
 *.jpeg
+*.tar.xz
