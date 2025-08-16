@@ -419,11 +419,11 @@ class GuideCameraController(QObject, CameraController):
             if self._camera_running:
                 try:
                     # Get frame
-                    self._frame = self.capture()
-                    if self._frame is not None:
-                        if np.max(self._frame) > 0:
-                            self._frame = np.clip(self._frame * float(8) / 2 ** 16 * 2 ** 8, a_min=0, a_max=255).astype(
-                                np.uint8)
+                    raw = self.capture()
+                    if raw is not None:
+                        color = cv2.cvtColor(raw, cv2.COLOR_BayerGR2BGR)
+                        gray = cv2.cvtColor(color, cv2.COLOR_BGR2GRAY)
+                        self._frame = (gray / 256).astype(np.uint8)
                     else:
                         h, w = 1080, 1920
                         frame = np.zeros((h, w), dtype=np.uint8)
@@ -481,8 +481,12 @@ class MainCameraController(QObject, CameraController):
             if self._camera_running:
                 try:
                     # Get frame
-                    self._frame = self.capture()
-                    if self._frame is None:
+                    raw = self.capture()
+                    if raw is not None:
+                        color = cv2.cvtColor(raw, cv2.COLOR_BayerRG2BGR)
+                        gray = cv2.cvtColor(color, cv2.COLOR_BGR2GRAY)
+                        self._frame = (gray / 256).astype(np.uint8)
+                    else:
                         h, w = 1080, 1920
                         self._frame = np.zeros((h, w), dtype=np.uint8)
 
