@@ -85,12 +85,13 @@ class AutoController(AutoWidget):
         Open a FITS file and retrieve celestial coordinates via plate-solving.
         """
 
-        folder_path = Path('plate_solving/')
-        timeout = 5
+        path = "plate_solving/"
+        folder_path = Path(path)
+        timeout = 10
         extension = '.fits'
 
         # Capture frame
-        self.main.main_camera_widget.main_camera.set_frames_to_save(frames_to_save=1, path='plate_solving/')
+        self.main.main_camera_widget.main_camera.set_frames_to_save(frames_to_save=1, path=path)
 
         # Wait to new file
         start_time = time.time()
@@ -117,10 +118,13 @@ class AutoController(AutoWidget):
             if coordinates:
                 self._update_coordinates_display(*coordinates)
                 print("Plate-solving completed successfully!")
+                return True
             else:
                 print("Failed to extract coordinates.")
+                return False
         else:
             print(f"New file not found.")
+            return False
 
     def _run_plate_solving(self, file_name):
         """Execute plate-solving commands using subprocess."""
@@ -257,61 +261,69 @@ class AutoController(AutoWidget):
         bs = self.motor_period_x1
         bt = self.motor_period_x26
 
-        # Get target coordinates
-        target_ar, target_dec = self.get_steps()
+        # Iterate until time to target is smaller than 5 seconds
+        while True:
+            # Get current coordinates
+            self.get_origin()
 
-        # Coordinates in steps
-        nars_0 = target_ar / bs
-        ndes_0 = target_dec / bs
+            # Get target coordinates
+            target_ar, target_dec = self.get_steps()
 
-        # Get the AR direction
-        if nars_0 >= 0:
-            ar_dir = "1"
-            bt = bt
-        else:
-            ar_dir = "0"
-            bt = -bt
+            # Coordinates in steps
+            nars_0 = target_ar / bs
+            ndes_0 = target_dec / bs
 
-        # Get AR position of the star at telescope intersection
-        nars_tar = bs / (bs + bt) * nars_0
-
-        # Get the number of steps for AR axis
-        nar = str(int(np.abs(nars_tar)))
-
-        # Get the DEC direction
-        if self.main.manual_controller.dec_dir == 1:
-            if ndes_0 >= 0:
-                de_dir = "1"
+            # Get the AR direction
+            if nars_0 >= 0:
+                ar_dir = "1"
+                bt = bt
             else:
-                de_dir = "0"
-        elif self.main.manual_controller.dec_dir == -1:
-            if ndes_0 >= 0:
-                de_dir = "0"
+                ar_dir = "0"
+                bt = -bt
+
+            # Get AR position of the star at telescope intersection
+            nars_tar = bs / (bs + bt) * nars_0
+
+            # Get the number of steps for AR axis
+            nar = str(int(np.abs(nars_tar)))
+
+            # Get the DEC direction
+            if self.main.manual_controller.dec_dir == 1:
+                if ndes_0 >= 0:
+                    de_dir = "1"
+                else:
+                    de_dir = "0"
+            elif self.main.manual_controller.dec_dir == -1:
+                if ndes_0 >= 0:
+                    de_dir = "0"
+                else:
+                    de_dir = "1"
+
+            # Get the number of steps for DEC axis
+            nde = str(int(np.abs(ndes_0)))
+
+            # Get time
+            tar = int(nar) * bt
+            tde = int(nde) * bt
+            t = np.max(np.array([np.abs(tar), np.abs(tde)]))
+            minutes = int(t / 60)
+            seconds = int(t - int(t / 60) * 60)
+            total_time = seconds + 60 * minutes
+
+            if total_time > 5:
+                # Send instruction to arduino
+                print("Go to the target")
+                print("Time: %im %is" % (minutes, seconds))
+                command = "0 %s %s 2 %s %s 2\n" % (nar, ar_dir, nde, de_dir)
+                self.main.waiting_commands.append(command)
+
+                # Wait until it finish
+                ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
+                while ser_input != "Ready!":
+                    ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
+                    time.sleep(0.01)
             else:
-                de_dir = "1"
-
-        # Get the number of steps for DEC axis
-        nde = str(int(np.abs(ndes_0)))
-
-        # Get time
-        tar = int(nar) * bt
-        tde = int(nde) * bt
-        t = np.max(np.array([np.abs(tar), np.abs(tde)]))
-        minutes = int(t / 60)
-        seconds = int(t - int(t / 60) * 60)
-
-        # Send instruction to arduino
-        print("Go to the target")
-        print("Time: %im %is" % (minutes, seconds))
-        command = "0 %s %s 2 %s %s 2\n" % (nar, ar_dir, nde, de_dir)
-        self.main.waiting_commands.append(command)
-
-        # Wait until it finish
-        ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
-        while ser_input != "Ready!":
-            ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
-            time.sleep(0.01)
-        # Print
+                break
 
         print("Ready!")
 
