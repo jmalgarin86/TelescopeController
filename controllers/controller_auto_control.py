@@ -6,6 +6,8 @@ from pathlib import Path
 import numpy as np
 import subprocess
 import re
+
+from PyQt5.QtCore import pyqtSignal
 from astropy.io import fits
 
 from widgets.widget_auto_control import AutoWidget
@@ -62,10 +64,12 @@ def add_or_update_field(csv_file, field_name, field_values):
 
 
 class AutoController(AutoWidget):
+    plate_solving_signal = pyqtSignal()
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         # Atributes
+        self.coordinates = None
         self.motor_period_x1 = 0.104  # s/step or "/step
         self.motor_period_x26 = 0.004  # s/step or "/step
 
@@ -79,6 +83,7 @@ class AutoController(AutoWidget):
         self.goto_button.clicked.connect(self.goto)
         self.origen_combo.currentTextChanged.connect(self.update_origen)
         self.target_combo.currentTextChanged.connect(self.update_target)
+        self.plate_solving_signal.connect(lambda: self._update_coordinates_display(*self.coordinates))
 
     def get_origin(self):
         """
@@ -106,6 +111,8 @@ class AutoController(AutoWidget):
                 if age <= 1.0:
                     last_file = candidate
                     break
+                # last_file = candidate
+                # break
             time.sleep(0.2)
 
         # Open file
@@ -114,9 +121,10 @@ class AutoController(AutoWidget):
             base_name = last_file.with_suffix('')
             print(f"Running plate solving in {last_file}...")
             self._run_plate_solving(last_file)
-            coordinates = self._extract_coordinates(base_name)
-            if coordinates:
-                self._update_coordinates_display(*coordinates)
+            self.coordinates = self._extract_coordinates(base_name)
+            if self.coordinates:
+                self.plate_solving_signal.emit()
+                time.sleep(0.1)
                 print("Plate-solving completed successfully!")
                 return True
             else:
@@ -319,12 +327,15 @@ class AutoController(AutoWidget):
 
                 # Wait until it finish
                 ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
-                while ser_input != "Ready!":
+                while ser_input != "Ready!" and self.main.arduino.serial_connection.is_open:
+                    print(self.main.arduino.serial_connection.is_open)
                     ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
                     time.sleep(0.01)
+
+                # Stop trial if serial communication is closed
+                if not self.main.arduino.serial_connection.is_open:
+                    break
             else:
                 break
 
         print("Ready!")
-
-        return 0
