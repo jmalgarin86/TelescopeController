@@ -72,10 +72,23 @@ class GuideCameraWidget(GroupBoxWithButtonTitle):
         self.guide_camera.set_up_camera()
 
     def update_camera(self):
-        exposure = float(self.exposure_input.text())
-        gain = float(self.gain_input.text())
-        self.guide_camera.set_exposure(exposure=exposure)
-        self.guide_camera.set_gain(gain=gain)
+        # Get gain
+        try:
+            gain = float(self.gain_input.text())
+            self.guide_camera.set_gain(gain)
+            print(f"Setting gain: {gain}")
+        except ValueError:
+            print("Invalid gain value")
+            return
+
+        # Get exposure
+        try:
+            exposure = float(self.exposure_input.text())
+            self.guide_camera.set_exposure(exposure)
+            print(f"Setting exposure: {exposure}")
+        except ValueError:
+            print("Invalid exposure value")
+            return
 
 class MainCameraWidget(GroupBoxWithButtonTitle):
     def __init__(self, main):
