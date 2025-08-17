@@ -328,7 +328,6 @@ class AutoController(AutoWidget):
                 # Wait until it finish
                 ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
                 while ser_input != "Ready!" and self.main.arduino.serial_connection.is_open:
-                    print(self.main.arduino.serial_connection.is_open)
                     ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
                     time.sleep(0.01)
 
