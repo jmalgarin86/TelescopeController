@@ -423,7 +423,7 @@ class GuideCameraController(QObject, CameraController):
                     if raw is not None:
                         color = cv2.cvtColor(raw, cv2.COLOR_BayerGR2BGR)
                         gray = cv2.cvtColor(color, cv2.COLOR_BGR2GRAY)
-                        self._frame = np.clip(gray * 8, 0, 255).astype(np.uint8)
+                        self._frame = np.clip(gray / 256 * 8, 0, 255).astype(np.uint8)
                     else:
                         h, w = 1080, 1920
                         frame = np.zeros((h, w), dtype=np.uint8)
