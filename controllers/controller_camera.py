@@ -44,55 +44,16 @@ class CameraController(PyIndi.BaseClient):
 
     def set_up_camera(self):
         # Connect to server
-        print("Connecting to server...")
-        self.setServer(hostname=self.host, port=self.port)
-        self.connectServer()
-        time.sleep(1)
-
-        # Check for devices
-        devices = self.get_devices()
-        if self.device not in devices:
-            print(f"Device {self.device} not found.")
-            return
-
-        # Get the device
-        print("Getting device...")
-        self.device_ccd = self.getDevice(self.device)
-        
-        print("Connecting to device (first time)...")
-        ccd_connect = self.device_ccd.getSwitch("CONNECTION")
-        if not self.device_ccd.isConnected():
-            ccd_connect.reset()
-            ccd_connect[0].setState(PyIndi.ISS_ON)
-            self.sendNewSwitch(ccd_connect)
-        time.sleep(1)
-
-        self.get_properties()
+        self.connect_camera()
 
         # --- Disconnect ---
-        print("Disconnecting device...")
-        ccd_connect.reset()
-        ccd_connect[0].setState(PyIndi.ISS_OFF)
-        self.sendNewSwitch(ccd_connect)
-        time.sleep(1)
+        self.disconnect_camera()
 
-        # Reconnect server
-        self.disconnectServer()
-        time.sleep(1)
-        self.connectServer()
-        time.sleep(1)
-        self.device_ccd = self.getDevice(self.device)
-
-        # --- Second connect ---
-        print("Connecting to device (second time)...")
-        ccd_connect.reset()
-        ccd_connect[0].setState(PyIndi.ISS_ON)
-        self.sendNewSwitch(ccd_connect)
-        time.sleep(1)
-    
-        self.get_properties()
+        # Second connection
+        self.connect_camera()
 
         # Get properties
+        self.get_properties()
         if "CCD_EXPOSURE" in self.generic_properties:
             self.ccd_exposure = self.device_ccd.getNumber("CCD_EXPOSURE")
         if "CCD_CONTROLS" in self.generic_properties:
@@ -116,7 +77,78 @@ class CameraController(PyIndi.BaseClient):
         print(f"{self.device} ready!")
 
         self.signal_camera_ready.emit()
-    
+
+    def connect_camera(self):
+        """Connect to the INDI server and the selected camera device."""
+        # Connect to server if not already connected
+        if not self.isServerConnected():
+            print(f"Connecting to INDI server at {self.host}:{self.port}...")
+            self.setServer(hostname=self.host, port=self.port)
+            if not self.connectServer():
+                print("ERROR: Could not connect to INDI server.")
+                return False
+            time.sleep(1)
+
+        # Check for devices
+        devices = self.get_devices()
+        if self.device not in devices:
+            print(f"Device {self.device} not found.")
+            return
+
+        # Get the device
+        self.device_ccd = self.getDevice(self.device)
+        if not self.device_ccd:
+            print(f"ERROR: Device {self.device} not found.")
+            return False
+
+        # Connect the device
+        if not self.device_ccd.isConnected():
+            print(f"Connecting to device {self.device}...")
+            ccd_connect = self.device_ccd.getSwitch("CONNECTION")
+            if ccd_connect is not None:
+                ccd_connect.reset()
+                ccd_connect[0].setState(PyIndi.ISS_ON)
+                self.sendNewSwitch(ccd_connect)
+                time.sleep(1)
+
+        if self.device_ccd.isConnected():
+            print(f"{self.device} connected.")
+            return True
+        else:
+            print(f"Failed to connect {self.device}.")
+            return False
+
+    def disconnect_camera(self):
+        """Safely disconnect the camera and server."""
+        if self.device_ccd is not None:
+            print(f"Disconnecting {self.device}...")
+
+            # Disconnect device
+            ccd_connect = self.device_ccd.getSwitch("CONNECTION")
+            if ccd_connect is not None:
+                ccd_connect.reset()
+                ccd_connect[0].setState(PyIndi.ISS_OFF)
+                self.sendNewSwitch(ccd_connect)
+                time.sleep(1)
+                print(f"{self.device} disconnected.")
+
+        # Disconnect server
+        if self.isServerConnected():
+            print("Disconnecting from INDI server...")
+            self.disconnectServer()
+            time.sleep(1)
+            print("Server disconnected.")
+
+        # Reset references
+        self.device_ccd = None
+        self.ccd_exposure = None
+        self.ccd_gain = None
+        self.ccd_temperature = None
+        self.ccd_power = None
+        self.ccd_cooler_switch = None
+        self.ccd_ccd1 = None
+        self.generic_properties = []
+
     def set_ccd_capture_format(self, capture_format="INDI_RGB(RGB)"):
         # Capture format
         ccd_capture_format = self.device_ccd.getSwitch("CCD_CAPTURE_FORMAT")
@@ -346,6 +378,8 @@ class CameraController(PyIndi.BaseClient):
             # Trigger exposure
             while not self._do_exposure(self.exposure):
                 print("Exposure failed. Repeating exposure...")
+                self.disconnect_camera()
+                self.connect_camera()
 
             # Get fits from blob and extract image
             blob = self.ccd_ccd1[0]

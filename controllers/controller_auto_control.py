@@ -96,7 +96,7 @@ class AutoController(AutoWidget):
         extension = '.fits'
 
         # Capture frame
-        self.main.main_camera_widget.main_camera.set_frames_to_save(frames_to_save=1, path=path)
+        # self.main.main_camera_widget.main_camera.set_frames_to_save(frames_to_save=1, path=path)
 
         # Wait to new file
         start_time = time.time()
@@ -111,17 +111,15 @@ class AutoController(AutoWidget):
                 if age <= 1.0:
                     last_file = candidate
                     break
-                # last_file = candidate
-                # break
+                last_file = candidate
+                break
             time.sleep(0.2)
 
         # Open file
         if last_file:
             time.sleep(1)
-            base_name = last_file.with_suffix('')
             print(f"Running plate solving in {last_file}...")
-            self._run_plate_solving(last_file)
-            self.coordinates = self._extract_coordinates(base_name)
+            self.coordinates = self._run_plate_solving(last_file)
             if self.coordinates:
                 self.plate_solving_signal.emit()
                 time.sleep(0.1)
@@ -136,13 +134,18 @@ class AutoController(AutoWidget):
 
     def _run_plate_solving(self, file_name):
         """Execute plate-solving commands using subprocess."""
-        subprocess.run([
-            "solve-field", "--no-remove-lines", "--uniformize", "0",
-            "--overwrite", "--downsample", "4", file_name
-        ])
+        try:
+            subprocess.run([
+                "solve-field", "--no-remove-lines", "--uniformize", "0", "--overwrite", "--no-plots",
+                "--new-fits", "none", "--downsample", "4", "--scale-units", "arcsecperpix", "--scale-low", "0.6",
+                "--scale-high", "1.0", file_name
+            ], capture_output=True, text=True, timeout=5)
+        except:
+            print("Failed to run plate-solving.")
+            return None
 
-    def _extract_coordinates(self, base_name):
-        """Extract celestial coordinates from plate-solving output."""
+        # Analyse wcs generated file
+        base_name = file_name.with_suffix('')
         result = subprocess.run(["wcsinfo", f"{base_name}.wcs"], capture_output=True, text=True)
         if not result.stdout:
             return None
@@ -168,6 +171,9 @@ class AutoController(AutoWidget):
         ra = f"{values['ra_center_h']}h {values['ra_center_m']}m {values['ra_center_s']}s"
         dec_sign = "-" if values['dec_center_sign'] == "-1" else ""
         dec = f"{dec_sign}{values['dec_center_d']}º {values['dec_center_m']}' {values['dec_center_s']}''"
+
+        print(f"RA: {ra}")
+        print(f"DEC: {dec}")
 
         return ra, dec
 
@@ -272,7 +278,8 @@ class AutoController(AutoWidget):
         # Iterate until time to target is smaller than 5 seconds
         while True:
             # Get current coordinates
-            self.get_origin()
+            if not self.get_origin():
+                continue
 
             # Get target coordinates
             target_ar, target_dec = self.get_steps()
