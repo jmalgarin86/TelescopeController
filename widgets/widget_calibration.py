@@ -119,12 +119,12 @@ class CalibrationWidget(GroupBoxWithButtonTitle):
     def de_strength_changed(self):
         strength = self.slider_de.value()
         self.label_de.setText(f"DE strength: {strength / 10}")
-        self.main.guide_camera_controller.set_strength(strength=strength / 10, axis='dec')
+        self.main.image_guide_camera.set_strength(strength=strength / 10, axis='dec')
 
     def ar_strength_changed(self):
         strength = self.slider_ar.value()
         self.label_ar.setText(f"AR strength: {strength / 10}")
-        self.main.guide_camera_controller.set_strength(strength=strength / 10, axis='ar')
+        self.main.image_guide_camera.set_strength(strength=strength / 10, axis='ar')
 
     def calibrateDecLooseness(self):
         if self.button_dec_looseness.isChecked():
@@ -158,15 +158,15 @@ class CalibrationWidget(GroupBoxWithButtonTitle):
 
             # Get dec direction
             if n_steps[0] > 0:
-                self.main.guide_camera_controller.set_looseness("positive")
+                self.main.image_guide_camera.set_looseness("positive")
                 self.looseness_direction = "positive"
                 print("Looseness positive")
             elif n_steps[0] < 0:
-                self.main.guide_camera_controller.set_looseness("negative")
+                self.main.image_guide_camera.set_looseness("negative")
                 self.looseness_direction = "negative"
                 print("Looseness negative")
             elif n_steps[0] == 0:
-                self.main.guide_camera_controller.set_looseness("neutral")
+                self.main.image_guide_camera.set_looseness("neutral")
                 self.looseness_direction = "neutral"
                 print("Looseness neutral")
             self.checkbox_dec_looseness.setChecked(True)
@@ -187,7 +187,7 @@ class CalibrationWidget(GroupBoxWithButtonTitle):
             self.vy_ar_p = float(self.vy_ar_p)
             self.vx_de = float(self.vx_de)
             self.vy_de = float(self.vy_de)
-            self.main.guide_camera_controller.set_looseness(self.looseness_direction)
+            self.main.image_guide_camera.set_looseness(self.looseness_direction)
 
         print("\nvx_ar_p: %0.5f px/s" % self.vx_ar_p)
         print("vy_ar_p: %0.5f px/s" % self.vy_ar_p)

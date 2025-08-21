@@ -36,10 +36,10 @@ class GuideController(GuideToolBar):
         if self.action_guide.isChecked():
             if check_de and check_ar_p and check_ar_n:
                 position = self.main.image_guide_camera.get_roi_position()
-                self.main.guide_camera_controller.set_reference_position(position)
-                self.main.guide_camera_controller.set_guiding(True)
-                self.main.guide_camera_controller.dec_dir_old = None
-                thread = threading.Thread(target=self.main.guide_camera_controller.do_guiding)
+                self.main.image_guide_camera.set_reference_position(position)
+                self.main.image_guide_camera.set_guiding(True)
+                self.main.image_guide_camera.dec_dir_old = None
+                thread = threading.Thread(target=self.main.image_guide_camera.do_guiding)
                 thread.start()
                 print("Start auto-guide")
                 print("Reference position (x, y):", position)
@@ -48,7 +48,7 @@ class GuideController(GuideToolBar):
                 self.action_guide.setChecked(False)
         else:
             print("Stop auto-guide")
-            self.main.guide_camera_controller.set_guiding(False)
+            self.main.image_guide_camera.set_guiding(False)
 
     def tracking(self):
         if self.action_tracking.isChecked():

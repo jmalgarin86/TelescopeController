@@ -96,7 +96,7 @@ class AutoController(AutoWidget):
         extension = '.fits'
 
         # Capture frame
-        # self.main.main_camera_widget.main_camera.set_frames_to_save(frames_to_save=1, path=path)
+        self.main.main_camera_widget.main_camera.set_frames_to_save(frames_to_save=1, path=path)
 
         # Wait to new file
         start_time = time.time()
@@ -111,8 +111,6 @@ class AutoController(AutoWidget):
                 if age <= 1.0:
                     last_file = candidate
                     break
-                last_file = candidate
-                break
             time.sleep(0.2)
 
         # Open file
