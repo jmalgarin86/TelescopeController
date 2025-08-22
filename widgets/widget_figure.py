@@ -179,6 +179,7 @@ class GuideImageWidget(ImageWidget):
         self._strength_de = None
         self._looseness_detected = None
         self._reference_position = None
+        self._star_size_threshold = 10
         self._guiding = None
         self._tracking = None
         self._y_vec = []

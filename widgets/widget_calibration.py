@@ -203,7 +203,7 @@ class CalibrationWidget(GroupBoxWithButtonTitle):
         self.checkbox_ar_n.setChecked(True)
         self.checkbox_ar_p.setChecked(True)
         self.checkbox_dec_looseness.setChecked(True)
-        print("\nCalibration loaded!")
+        print("Calibration loaded!")
 
     def save_calibration(self):
         # Check if calibration is done

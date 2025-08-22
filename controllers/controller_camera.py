@@ -53,7 +53,7 @@ class CameraController(PyIndi.BaseClient):
         self.connect_camera()
 
         # Get properties
-        self.get_properties(verbose=True)
+        self.get_properties()
         if "CCD_EXPOSURE" in self.generic_properties:
             self.ccd_exposure = self.device_ccd.getNumber("CCD_EXPOSURE")
         if "CCD_CONTROLS" in self.generic_properties:
