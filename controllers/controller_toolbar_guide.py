@@ -39,8 +39,7 @@ class GuideController(GuideToolBar):
                 self.main.image_guide_camera.set_reference_position(position)
                 self.main.image_guide_camera.set_guiding(True)
                 self.main.image_guide_camera.dec_dir_old = None
-                thread = threading.Thread(target=self.main.image_guide_camera.do_guiding)
-                thread.start()
+                self.main.image_guide_camera.set_guiding(True)
                 print("Start auto-guide")
                 print("Reference position (x, y):", position)
             else:
