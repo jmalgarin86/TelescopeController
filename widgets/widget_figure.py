@@ -175,8 +175,8 @@ class GuideImageWidget(ImageWidget):
 
         # parameters
         self.main = main
-        self._strength_ar = None
-        self._strength_de = None
+        self._strength_ar = 1.0
+        self._strength_de = 1.0
         self._looseness_detected = None
         self._reference_position = None
         self._star_size_threshold = 10

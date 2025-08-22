@@ -120,12 +120,12 @@ class CalibrationWidget(GroupBoxWithButtonTitle):
     def de_strength_changed(self):
         strength = self.slider_de.value()
         self.label_de.setText(f"DE strength: {strength / 10}")
-        self.main.image_guide_camera.set_strength(strength=strength / 10, axis='dec')
+        self.main.image_guide_camera.set_strength(strength=strength, axis='dec')
 
     def ar_strength_changed(self):
         strength = self.slider_ar.value()
         self.label_ar.setText(f"AR strength: {strength / 10}")
-        self.main.image_guide_camera.set_strength(strength=strength / 10, axis='ar')
+        self.main.image_guide_camera.set_strength(strength=strength, axis='ar')
 
     def calibrateDecLooseness(self):
         if self.button_dec_looseness.isChecked():
