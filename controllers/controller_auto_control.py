@@ -330,12 +330,6 @@ class AutoController(AutoWidget):
                 command = "0 %s %s 2 %s %s 2\n" % (nar, ar_dir, nde, de_dir)
                 self.main.waiting_commands.append(command)
 
-                # Wait until it finish
-                ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
-                while ser_input != "Ready!" and self.main.arduino.serial_connection.is_open:
-                    ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
-                    time.sleep(0.01)
-
                 # Stop trial if serial communication is closed
                 if not self.main.arduino.serial_connection.is_open:
                     break

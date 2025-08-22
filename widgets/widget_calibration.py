@@ -270,20 +270,10 @@ class CalibrationWidget(GroupBoxWithButtonTitle):
             else:
                 command = "0 0 0 52 " + str(n_steps) + " 1 " + str(period) + "\n"
         self.main.waiting_commands.append(command)
-        print(command)
-
-        # Wait until it finish
-        if self.main.arduino.serial_connection is not None:
-            ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
-            while ser_input != "Ready!":
-                ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
-                time.sleep(0.01)
-        else:
-            ser_input = "Demo!"
 
         # Sleep 1 seconds to let the frame refresh
         time.sleep(5)
-        print(ser_input)
+        print("Ready!")
 
         # Get final coordinates
         x1, y1 = self.main.image_guide_camera.get_roi_position()
@@ -347,18 +337,9 @@ class CalibrationWidget(GroupBoxWithButtonTitle):
         command = "0 " + str(n_steps) + " 0 " + str(period) + " 0 0 0\n"
         self.main.waiting_commands.append(command)
 
-        # Wait until it finish
-        if self.main.arduino.serial_connection is not None:
-            ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
-            while ser_input != "Ready!":
-                ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
-                time.sleep(0.01)
-        else:
-            ser_input = "Demo!"
-
-        # Sleep 1 seconds to let the frame to refresh
+        # Sleep 1 seconds to let the frame refresh
         time.sleep(5)
-        print(ser_input)
+        print("Ready!")
 
         # Get final coordinates
         x1, y1 = self.main.image_guide_camera.get_roi_position()

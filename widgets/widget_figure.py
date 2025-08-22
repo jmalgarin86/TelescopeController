@@ -179,7 +179,7 @@ class GuideImageWidget(ImageWidget):
         self._strength_de = 1.0
         self._looseness_detected = None
         self._reference_position = None
-        self._star_size_threshold = 10
+        self._star_size_threshold = 20
         self._guiding = None
         self._tracking = None
         self._y_vec = []
@@ -240,6 +240,7 @@ class GuideImageWidget(ImageWidget):
                 print("Missed alignment, guiding star lost...")
             else:
                 self._align_position(r0=(x_star, y_star))
+        return None
 
     def _align_position(self, r0=None, period=str(2)):
         # Get reference position
@@ -254,17 +255,15 @@ class GuideImageWidget(ImageWidget):
         if distance > 100:
             print("ERROR: Arduino is locked. Motors stopped.")
             self.main.waiting_commands.append("0 0 0 0 0 0 0\n")
-            return 0
+            return False
 
         # Calculate required displacement
         dr = np.array([r1[0] - r0[0], r1[1] - r0[1]])
 
         # Move the camera
-        ser_input = self._move_camera(dx=dr[0], dy=dr[1], period=period)
-        if ser_input == "Ready!":
-            return ser_input
-        else:
-            return 0
+        self._move_camera(dx=dr[0], dy=dr[1], period=period)
+
+        return True
 
     def _move_camera(self, dx=0, dy=0, period=str(2)):
         # Get data from calibration
@@ -367,18 +366,10 @@ class GuideImageWidget(ImageWidget):
                 else:
                     command = "0 0 0 52" + de_command + "\n"
                     self.main.waiting_commands.append(command)
-                ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
-                while ser_input != "Ready!":
-                    ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
-                    time.sleep(0.01)
                 return "Ready!"
             else:
                 self.main.waiting_commands.append(command)
-                ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
-                while ser_input != "Ready!":
-                    ser_input = self.main.arduino.serial_connection.readline().decode('utf-8').strip()
-                    time.sleep(0.01)
-                return ser_input
+                return "Ready!"
 
 class MainImageWidget(ImageWidget):
     def __init__(self, main):
