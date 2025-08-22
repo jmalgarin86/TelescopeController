@@ -1,4 +1,5 @@
 import csv
+import os
 import threading
 import time
 
@@ -210,6 +211,8 @@ class CalibrationWidget(GroupBoxWithButtonTitle):
         check_ar_p = self.checkbox_ar_p.isChecked()
         check_ar_n = self.checkbox_ar_n.isChecked()
         if check_de and check_ar_p and check_ar_n:
+            if not os.path.exists('calibration'):
+                os.mkdir('calibration')
             with open("calibration/calibration.csv", mode='w', newline='') as file:
                 # Create a CSV writer object
                 csv_writer = csv.writer(file)
