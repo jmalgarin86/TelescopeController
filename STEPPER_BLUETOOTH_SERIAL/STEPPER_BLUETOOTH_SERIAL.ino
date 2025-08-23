@@ -84,14 +84,12 @@ void loop() {
   if (BT1.available()>7 || Serial.available()>7) {
     stop = Serial.parseInt();
     if (stop==2) {
-      ar_dir_ref = Serial.parseInt();
-      ar_per_ref = Serial.parseInt();
-      dec_dir_ref = Serial.parseInt();
-      dec_per_ref = Serial.parseInt();
-      ar_dir = ar_dir_ref;
-      ar_per = ar_per_ref;
-      dec_dir = dec_dir_ref;
-      dec_per = dec_per_ref;
+      ar_steps = Serial.parseInt();
+      ar_dir = Serial.parseInt();
+      ar_per = Serial.parseInt();
+      dec_steps = Serial.parseInt();
+      dec_dir = Serial.parseInt();
+      dec_per = Serial.parseInt();
       Serial.println("Ready!");
     }
     else {

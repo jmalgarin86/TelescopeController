@@ -35,13 +35,13 @@ class ManualController(ManualWidget):
             period = int(52 / speed)
 
             # Set command to arduino
-            command = "0 0 0 " + str(period) + " 0 0 0\n"
+            command = "2 0 0 " + str(period) + " 0 0 0\n"
 
             # Send command
             self.main.waiting_commands.append(command)
         else:
             self.speed_combo.setEnabled(True)
-            self.main.waiting_commands.append("0 0 0 52 0 0 0\n")
+            self.main.waiting_commands.append("2 0 0 52 0 0 0\n")
 
         return 0
 
@@ -58,13 +58,13 @@ class ManualController(ManualWidget):
             period = int(52 / speed)
 
             # Set command to arduino
-            command = "0 0 1 " + str(period) + " 0 0 0\n"
+            command = "2 0 1 " + str(period) + " 0 0 0\n"
 
             # Send command
             self.main.waiting_commands.append(command)
         else:
             self.speed_combo.setEnabled(True)
-            self.main.waiting_commands.append("0 0 0 52 0 0 0\n")
+            self.main.waiting_commands.append("2 0 0 52 0 0 0\n")
 
         return 0
 
@@ -82,15 +82,15 @@ class ManualController(ManualWidget):
 
             # Set command to arduino
             if self.dec_dir == 1:
-                command = "0 0 0 52 0 0 " + str(period) + "\n"
+                command = "2 0 0 52 0 0 " + str(period) + "\n"
             else:
-                command = "0 0 0 52 0 1 " + str(period) + "\n"
+                command = "2 0 0 52 0 1 " + str(period) + "\n"
 
             # Send command
             self.main.waiting_commands.append(command)
         else:
             self.speed_combo.setEnabled(True)
-            self.main.waiting_commands.append("0 0 0 52 0 0 0\n")
+            self.main.waiting_commands.append("2 0 0 52 0 0 0\n")
 
         return 0
 
@@ -107,14 +107,14 @@ class ManualController(ManualWidget):
             period = int(52 / speed)
 
             if self.dec_dir == 1:
-                command = "0 0 0 52 0 1 " + str(period) + "\n"
+                command = "2 0 0 52 0 1 " + str(period) + "\n"
             else:
-                command = "0 0 0 52 0 0 " + str(period) + "\n"
+                command = "2 0 0 52 0 0 " + str(period) + "\n"
 
             # Send command
             self.main.waiting_commands.append(command)
         else:
             self.speed_combo.setEnabled(True)
-            self.main.waiting_commands.append("0 0 0 52 0 0 0\n")
+            self.main.waiting_commands.append("2 0 0 52 0 0 0\n")
 
         return 0

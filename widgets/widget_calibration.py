@@ -300,7 +300,7 @@ class CalibrationWidget(GroupBoxWithButtonTitle):
         self.main.waiting_commands.append(command)
 
         # Wait 5 seconds
-        command = "0 0 0 52 0 0 0\n"
+        command = "2 0 0 52 0 0 0\n"
         time.sleep(5)
         self.main.waiting_commands.append(command)
 
