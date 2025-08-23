@@ -30,6 +30,7 @@ class TelescopeController(QMainWindow):
     def __init__(self):
         super().__init__()
         self.gui_open = True
+        self.waiting_response = False
         self.setGeometry(100, 100, 1600, 900)
 
         # Get project path
@@ -234,13 +235,16 @@ class TelescopeController(QMainWindow):
     def sniffer(self):
         while self.gui_open:
             if self.waiting_commands:
+                self.waiting_response = True
                 in_waiting = self.waiting_commands.pop(0)
                 command = in_waiting[0]
                 widget = in_waiting[1]
+                print("New command:")
+                print(in_waiting)
                 self.arduino.send_command(command)
                 ser_input = self.arduino.serial_connection.readline().decode('utf-8').strip()
-                # ser_input = "Ready!"
                 while ser_input != "Ready!":
+                    print("Waiting response...")
                     ser_input = self.arduino.serial_connection.readline().decode('utf-8').strip()
                     time.sleep(0.01)
                 if widget == "manual":
@@ -250,7 +254,8 @@ class TelescopeController(QMainWindow):
                 elif widget == "auto":
                     self.auto_controller.set_serial_ready()
                 elif widget == "figure":
-                    self.image_guide_camera.set_serial_ready()
+                    print(ser_input)
+                    self.waiting_response = False
             time.sleep(0.1)
             self.shutdown_at(hour=7, minute=0)
 

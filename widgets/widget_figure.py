@@ -364,10 +364,8 @@ class GuideImageWidget(ImageWidget):
                 # Move AR
                 self.main.waiting_commands.append(["1 0 0 0 0 0 0\n", "figure"])
                 time.sleep(time_delay)
-                while not self._serial_ready:
+                while self.main.waiting_response:
                     time.sleep(0.01)
-                    continue
-                self._serial_ready = False
 
                 # Move DEC
                 if de_command == " 0 0 0":
@@ -378,12 +376,8 @@ class GuideImageWidget(ImageWidget):
                     self.main.waiting_commands.append([command], "figure")
             else:
                 self.main.waiting_commands.append([command, "figure"])
-
-            # Wait to arduino
-            while not self._serial_ready:
-                time.sleep(0.01)
-                continue
-            self._serial_ready = False
+                while self.main.waiting_response:
+                    time.sleep(0.01)
 
         return "Ready!"
 
