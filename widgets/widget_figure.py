@@ -237,10 +237,11 @@ class GuideImageWidget(ImageWidget):
             x_star, y_star = self._reference_position
 
             # Check if star size is not correct
-            if star_size > self._star_size_threshold:
-                print("Missed alignment, guiding star lost...")
-            else:
-                self._align_position(r0=(x_star, y_star))
+            # if star_size > self._star_size_threshold:
+            #     print("Missed alignment, guiding star lost...")
+            # else:
+            #     self._align_position(r0=(x_star, y_star))
+            self._align_position(r0=(x_star, y_star))
         return None
 
     def _align_position(self, r0=None, period=str(2)):
@@ -255,7 +256,7 @@ class GuideImageWidget(ImageWidget):
         distance = np.sqrt((r1[0] - r0[0]) ** 2 + (r1[1] - r0[1]) ** 2)
         if distance > 100:
             print("ERROR: Arduino is locked. Motors stopped.")
-            self.main.waiting_commands.append(["1 0 0 0 0 0 0\n", "figure"])
+            self.main.waiting_commands.append(["2 0 0 52 0 0 0\n", "figure"])
             while not self._serial_ready:
                 time.sleep(0.01)
                 continue

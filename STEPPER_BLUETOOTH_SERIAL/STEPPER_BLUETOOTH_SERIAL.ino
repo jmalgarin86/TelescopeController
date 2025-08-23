@@ -5,7 +5,7 @@
 
 //Pines Stepper AR
 #define DIR_PIN_AR 2
-#define STP_PIN_AR 13
+#define STP_PIN_AR 3
 #define MS1_PIN_AR 4
 #define MS2_PIN_AR 5
 #define SLP_PIN_AR 6
