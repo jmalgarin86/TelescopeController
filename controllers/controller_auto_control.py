@@ -69,6 +69,7 @@ class AutoController(AutoWidget):
         super().__init__(*args, **kwargs)
 
         # Atributes
+        self._serial_ready = False
         self.coordinates = None
         self.motor_period_x1 = 0.104  # s/step or "/step
         self.motor_period_x26 = 0.004  # s/step or "/step
@@ -328,7 +329,11 @@ class AutoController(AutoWidget):
                 print("Go to the target")
                 print("Time: %im %is" % (minutes, seconds))
                 command = "0 %s %s 2 %s %s 2\n" % (nar, ar_dir, nde, de_dir)
-                self.main.waiting_commands.append(command)
+                self.main.waiting_commands.append([command, "auto"])
+                while not self._serial_ready:
+                    time.sleep(0.01)
+                    continue
+                self._serial_ready = False
 
                 # Stop trial if serial communication is closed
                 if not self.main.arduino.serial_connection.is_open:
@@ -337,3 +342,6 @@ class AutoController(AutoWidget):
                 break
 
         print("Ready!")
+
+    def set_serial_ready(self):
+        self._serial_ready = True

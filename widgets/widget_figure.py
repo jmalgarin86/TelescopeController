@@ -185,6 +185,7 @@ class GuideImageWidget(ImageWidget):
         self._y_vec = []
         self._x_vec = []
         self._n_dec_warnings = 0
+        self._serial_ready = False
 
     def set_tracking(self, tracking: bool):
         self._tracking = tracking
@@ -254,7 +255,11 @@ class GuideImageWidget(ImageWidget):
         distance = np.sqrt((r1[0] - r0[0]) ** 2 + (r1[1] - r0[1]) ** 2)
         if distance > 100:
             print("ERROR: Arduino is locked. Motors stopped.")
-            self.main.waiting_commands.append("0 0 0 0 0 0 0\n")
+            self.main.waiting_commands.append(["1 0 0 0 0 0 0\n", "figure"])
+            while not self._serial_ready:
+                time.sleep(0.01)
+                continue
+            self._serial_ready = False
             return False
 
         # Calculate required displacement
@@ -351,25 +356,39 @@ class GuideImageWidget(ImageWidget):
             stop = "0"
         if de_steps == "0" and ar_steps == "0" and stop == "0":
             pass
-            return "Ready!"
         else:
             command = "0" + ar_command + de_command + "\n"
             # Wait until it finish
             if stop == "1":
                 # Move AR
-                self.main.waiting_commands.append("1 0 0 0 0 0 0\n")
+                self.main.waiting_commands.append(["1 0 0 0 0 0 0\n", "figure"])
                 time.sleep(time_delay)
+                while not self._serial_ready:
+                    time.sleep(0.01)
+                    continue
+                self._serial_ready = False
+
                 # Move DEC
                 if de_command == " 0 0 0":
                     command = "0 1 0 52" + " 0 0 0" + "\n"
-                    self.main.waiting_commands.append(command)
+                    self.main.waiting_commands.append([command, "figure"])
                 else:
                     command = "0 0 0 52" + de_command + "\n"
-                    self.main.waiting_commands.append(command)
-                return "Ready!"
+                    self.main.waiting_commands.append([command], "figure")
             else:
-                self.main.waiting_commands.append(command)
-                return "Ready!"
+                self.main.waiting_commands.append([command, "figure"])
+
+            # Wait to arduino
+            while not self._serial_ready:
+                time.sleep(0.01)
+                continue
+            self._serial_ready = False
+
+        return "Ready!"
+
+    def set_serial_ready(self):
+        self._serial_ready = True
+
 
 class MainImageWidget(ImageWidget):
     def __init__(self, main):

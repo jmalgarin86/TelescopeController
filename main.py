@@ -10,6 +10,7 @@ from pathlib import Path
 import numpy as np
 
 import qdarkstyle
+from PyQt5.QtCore import pyqtSignal, QObject
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QHBoxLayout, QTabWidget
 
 from controllers.controller_arduino import ArduinoController
@@ -233,13 +234,23 @@ class TelescopeController(QMainWindow):
     def sniffer(self):
         while self.gui_open:
             if self.waiting_commands:
-                command = self.waiting_commands.pop(0)
+                in_waiting = self.waiting_commands.pop(0)
+                command = in_waiting[0]
+                widget = in_waiting[1]
                 self.arduino.send_command(command)
                 ser_input = self.arduino.serial_connection.readline().decode('utf-8').strip()
+                # ser_input = "Ready!"
                 while ser_input != "Ready!":
                     ser_input = self.arduino.serial_connection.readline().decode('utf-8').strip()
                     time.sleep(0.01)
-
+                if widget == "manual":
+                    self.manual_controller.set_serial_ready()
+                elif widget == "calibration":
+                    self.calibration_widget.set_serial_ready()
+                elif widget == "auto":
+                    self.auto_controller.set_serial_ready()
+                elif widget == "figure":
+                    self.image_guide_camera.set_serial_ready()
             time.sleep(0.1)
             self.shutdown_at(hour=7, minute=0)
 

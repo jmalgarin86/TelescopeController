@@ -1,11 +1,11 @@
 #include <SoftwareSerial.h>
-SoftwareSerial BT1(7,13); // RX, TX
+//SoftwareSerial BT1(7,13); // RX, TX
 
 //Versión V3.0. Mueve simultaneamente los motores de AR y DEC
 
 //Pines Stepper AR
 #define DIR_PIN_AR 2
-#define STP_PIN_AR 3
+#define STP_PIN_AR 13
 #define MS1_PIN_AR 4
 #define MS2_PIN_AR 5
 #define SLP_PIN_AR 6
@@ -28,7 +28,7 @@ int dec_dir = 0;
 int dec_per = 0;
 int dec_dir_ref = 0;
 int dec_per_ref = 0;
-int stop = 0;
+int control = 0;
 int period = 0;
 
 // Variables to store the last time the LEDs were updated
@@ -47,7 +47,7 @@ int ar_ready = 0;
 
 void setup() {
   //Inicio módulo Bluetooth
-  BT1.begin(19200);
+  //BT1.begin(19200);
   Serial.begin(19200);
   
   //Modos de pines Stepper A
@@ -81,9 +81,10 @@ void setup() {
 }
 
 void loop() {
-  if (BT1.available()>7 || Serial.available()>7) {
-    stop = Serial.parseInt();
-    if (stop==2) {
+  //if (BT1.available()>7 || Serial.available()>7) {
+  if (Serial.available()>7) {
+    control = Serial.parseInt();
+    if (control==2) {
       ar_steps = Serial.parseInt();
       ar_dir = Serial.parseInt();
       ar_per = Serial.parseInt();
@@ -91,8 +92,9 @@ void loop() {
       dec_dir = Serial.parseInt();
       dec_per = Serial.parseInt();
       Serial.println("Ready!");
-    }
-    else {
+    } else if (control==1) {
+      Serial.println("Ready!");
+    } else {
       ar_steps = Serial.parseInt();
       ar_dir = Serial.parseInt();
       ar_per = Serial.parseInt();
@@ -136,7 +138,8 @@ void loop() {
   }
 
   // Check if stop
-  if (stop == 1) {
+  if (control == 1) {
+    delay(100);
     return;
   }
 
