@@ -14,7 +14,6 @@ from widgets.GroupBox import GroupBoxWithButtonTitle
 class CalibrationWidget(GroupBoxWithButtonTitle):
     def __init__(self, main):
         super().__init__("Calibration")
-        self._serial_ready = None
         self.main = main
 
         # Create QPushButtons
@@ -272,10 +271,9 @@ class CalibrationWidget(GroupBoxWithButtonTitle):
                 command = "0 0 0 52 " + str(n_steps) + " 1 " + str(period) + "\n"
 
         # Send command and wait to completion
-        self.main.waiting_commands.append([command, "calibration"])
-        while not self._serial_ready:
-            continue
-        self._serial_ready = False
+        self.main.waiting_commands.append(command)
+        while self.main.waiting_response:
+            time.sleep(0.01)
 
         # Sleep 1 seconds to let the frame refresh
         time.sleep(5)
@@ -303,12 +301,12 @@ class CalibrationWidget(GroupBoxWithButtonTitle):
 
         # Stop mount
         command = "1 0 0 0 0 0 0\n"
-        self.main.waiting_commands.append([command, "calibration"])
+        self.main.waiting_commands.append(command)
 
         # Wait 5 seconds
         command = "2 0 0 52 0 0 0\n"
         time.sleep(5)
-        self.main.waiting_commands.append([command, "calibration"])
+        self.main.waiting_commands.append(command)
 
         # Sleep 1 seconds to let the frame refresh
         time.sleep(5)
@@ -341,7 +339,7 @@ class CalibrationWidget(GroupBoxWithButtonTitle):
 
         # Set command to arduino
         command = "0 " + str(n_steps) + " 0 " + str(period) + " 0 0 0\n"
-        self.main.waiting_commands.append([command, "calibration"])
+        self.main.waiting_commands.append(command)
 
         # Sleep 1 seconds to let the frame refresh
         time.sleep(5)
@@ -359,6 +357,3 @@ class CalibrationWidget(GroupBoxWithButtonTitle):
 
         # Show the check in the checkbox
         self.checkbox_ar_n.setChecked(True)
-
-    def set_serial_ready(self):
-        self._serial_ready = True

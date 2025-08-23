@@ -7,7 +7,6 @@ class ManualController(ManualWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self._serial_ready = False
         self.dec_dir = None
 
         self.set_dec_direction()
@@ -41,16 +40,13 @@ class ManualController(ManualWidget):
             command = "2 0 0 " + str(period) + " 0 0 0\n"
 
             # Send command
-            self.main.waiting_commands.append([command, "manual"])
+            self.main.waiting_commands.append(command)
         else:
             self.speed_combo.setEnabled(True)
-            self.main.waiting_commands.append(["2 0 0 52 0 0 0\n", "manual"])
+            self.main.waiting_commands.append("2 0 0 52 0 0 0\n")
 
-        # Wait to arduino sends "Ready!"
-        while not self._serial_ready:
+        while self.main.waiting_response:
             time.sleep(0.01)
-            continue
-        self._serial_ready = False
 
         return 0
 
@@ -70,16 +66,13 @@ class ManualController(ManualWidget):
             command = "2 0 1 " + str(period) + " 0 0 0\n"
 
             # Send command
-            self.main.waiting_commands.append([command, "manual"])
+            self.main.waiting_commands.append(command)
         else:
             self.speed_combo.setEnabled(True)
-            self.main.waiting_commands.append(["2 0 0 52 0 0 0\n", "manual"])
+            self.main.waiting_commands.append("2 0 0 52 0 0 0\n")
 
-        # Wait to arduino sends "Ready!"
-        while not self._serial_ready:
+        while self.main.waiting_response:
             time.sleep(0.01)
-            continue
-        self._serial_ready = False
 
         return 0
 
@@ -102,16 +95,13 @@ class ManualController(ManualWidget):
                 command = "2 0 0 52 0 1 " + str(period) + "\n"
 
             # Send command
-            self.main.waiting_commands.append([command, "manual"])
+            self.main.waiting_commands.append(command)
         else:
             self.speed_combo.setEnabled(True)
-            self.main.waiting_commands.append(["2 0 0 52 0 0 0\n", "manual"])
+            self.main.waiting_commands.append("2 0 0 52 0 0 0\n")
 
-        # Wait to arduino sends "Ready!"
-        while not self._serial_ready:
+        while self.main.waiting_response:
             time.sleep(0.01)
-            continue
-        self._serial_ready = False
 
         return 0
 
@@ -133,18 +123,12 @@ class ManualController(ManualWidget):
                 command = "2 0 0 52 0 0 " + str(period) + "\n"
 
             # Send command
-            self.main.waiting_commands.append([command, "manual"])
+            self.main.waiting_commands.append(command)
         else:
             self.speed_combo.setEnabled(True)
-            self.main.waiting_commands.append(["2 0 0 52 0 0 0\n", "manual"])
+            self.main.waiting_commands.append("2 0 0 52 0 0 0\n")
 
-        # Wait to arduino sends "Ready!"
-        while not self._serial_ready:
+        while self.main.waiting_response:
             time.sleep(0.01)
-            continue
-        self._serial_ready = False
 
         return 0
-
-    def set_serial_ready(self):
-        self._serial_ready = True

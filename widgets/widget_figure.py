@@ -185,7 +185,7 @@ class GuideImageWidget(ImageWidget):
         self._y_vec = []
         self._x_vec = []
         self._n_dec_warnings = 0
-        self._serial_ready = False
+        self._time = time.time()
 
     def set_tracking(self, tracking: bool):
         self._tracking = tracking
@@ -232,7 +232,8 @@ class GuideImageWidget(ImageWidget):
             self.main.plot_controller_pixel.updatePlot(x=self._x_vec, y=self._y_vec)
 
         # if guiding, correct position
-        if self._guiding:
+        if self._guiding and time.time() - self._time > 3:
+            self._time = time.time()
             # Get reference position
             x_star, y_star = self._reference_position
 
@@ -257,10 +258,8 @@ class GuideImageWidget(ImageWidget):
         if distance > 100:
             print("ERROR: Arduino is locked. Motors stopped.")
             self.main.waiting_commands.append(["2 0 0 52 0 0 0\n", "figure"])
-            while not self._serial_ready:
+            while self.main.waiting_response:
                 time.sleep(0.01)
-                continue
-            self._serial_ready = False
             return False
 
         # Calculate required displacement
@@ -370,12 +369,12 @@ class GuideImageWidget(ImageWidget):
                 # Move DEC
                 if de_command == " 0 0 0":
                     command = "0 1 0 52" + " 0 0 0" + "\n"
-                    self.main.waiting_commands.append([command, "figure"])
+                    self.main.waiting_commands.append(command)
                 else:
                     command = "0 0 0 52" + de_command + "\n"
-                    self.main.waiting_commands.append([command], "figure")
+                    self.main.waiting_commands.append(command)
             else:
-                self.main.waiting_commands.append([command, "figure"])
+                self.main.waiting_commands.append(command)
                 while self.main.waiting_response:
                     time.sleep(0.01)
 

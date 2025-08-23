@@ -237,25 +237,12 @@ class TelescopeController(QMainWindow):
             if self.waiting_commands:
                 self.waiting_response = True
                 in_waiting = self.waiting_commands.pop(0)
-                command = in_waiting[0]
-                widget = in_waiting[1]
-                print("New command:")
-                print(in_waiting)
-                self.arduino.send_command(command)
+                self.arduino.send_command(in_waiting)
                 ser_input = self.arduino.serial_connection.readline().decode('utf-8').strip()
                 while ser_input != "Ready!":
-                    print("Waiting response...")
                     ser_input = self.arduino.serial_connection.readline().decode('utf-8').strip()
                     time.sleep(0.01)
-                if widget == "manual":
-                    self.manual_controller.set_serial_ready()
-                elif widget == "calibration":
-                    self.calibration_widget.set_serial_ready()
-                elif widget == "auto":
-                    self.auto_controller.set_serial_ready()
-                elif widget == "figure":
-                    print(ser_input)
-                    self.waiting_response = False
+                self.waiting_response = False
             time.sleep(0.1)
             self.shutdown_at(hour=7, minute=0)
 
