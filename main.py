@@ -238,12 +238,8 @@ class TelescopeController(QMainWindow):
                 self.waiting_response = True
                 in_waiting = self.waiting_commands.pop(0)
                 self.arduino.send_command(in_waiting)
-                ser_input = self.arduino.serial_connection.readline().decode('utf-8').strip()
-                while ser_input != "Ready!":
-                    ser_input = self.arduino.serial_connection.readline().decode('utf-8').strip()
-                    time.sleep(0.01)
                 self.waiting_response = False
-            time.sleep(0.1)
+            time.sleep(0.01)
             self.shutdown_at(hour=7, minute=0)
 
     def closeEvent(self, event):

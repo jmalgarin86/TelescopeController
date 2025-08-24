@@ -52,27 +52,30 @@ class CameraController(PyIndi.BaseClient):
         # Second connection
         self.connect_camera()
 
-        # Get properties
-        self.get_properties()
-        if "CCD_EXPOSURE" in self.generic_properties:
-            self.ccd_exposure = self.device_ccd.getNumber("CCD_EXPOSURE")
-        if "CCD_CONTROLS" in self.generic_properties:
-            self.ccd_gain = self.device_ccd.getNumber("CCD_CONTROLS")
-        if "CCD_TEMPERATURE" in self.generic_properties:
-            self.ccd_temperature = self.device_ccd.getNumber("CCD_TEMPERATURE")
-        if "CCD_COOLER_POWER" in self.generic_properties:
-            self.ccd_power = self.device_ccd.getNumber("CCD_COOLER_POWER")
-        if "CCD_COOLER" in self.generic_properties:
-            self.ccd_cooler_switch = self.device_ccd.getSwitch("CCD_COOLER")
+        try:
+            # Get properties
+            self.get_properties()
+            if "CCD_EXPOSURE" in self.generic_properties:
+                self.ccd_exposure = self.device_ccd.getNumber("CCD_EXPOSURE")
+            if "CCD_CONTROLS" in self.generic_properties:
+                self.ccd_gain = self.device_ccd.getNumber("CCD_CONTROLS")
+            if "CCD_TEMPERATURE" in self.generic_properties:
+                self.ccd_temperature = self.device_ccd.getNumber("CCD_TEMPERATURE")
+            if "CCD_COOLER_POWER" in self.generic_properties:
+                self.ccd_power = self.device_ccd.getNumber("CCD_COOLER_POWER")
+            if "CCD_COOLER" in self.generic_properties:
+                self.ccd_cooler_switch = self.device_ccd.getSwitch("CCD_COOLER")
 
-        # Inform to indi server we want to receive blob from CCD1
-        self.setBLOBMode(PyIndi.B_ALSO, self.device, "CCD1")
+            # Inform to indi server we want to receive blob from CCD1
+            self.setBLOBMode(PyIndi.B_ALSO, self.device, "CCD1")
 
-        # Get blob
-        self.ccd_ccd1 = self.device_ccd.getBLOB("CCD1")
-        time.sleep(1)
+            # Get blob
+            self.ccd_ccd1 = self.device_ccd.getBLOB("CCD1")
+            time.sleep(1)
 
-        self.set_ccd_capture_format(capture_format="ASI_IMG_RAW16(Raw 16 bit)")
+            self.set_ccd_capture_format(capture_format="ASI_IMG_RAW16(Raw 16 bit)")
+        except:
+            pass
 
         print(f"{self.device} ready!")
 
@@ -422,7 +425,7 @@ class CameraController(PyIndi.BaseClient):
 
             return image_data
         except Exception as e:
-            print(f"Capturing frame failed: {e}")
+            # print(f"Capturing frame failed: {e}")
             return None
 
 class GuideCameraController(QObject, CameraController):
@@ -460,17 +463,17 @@ class GuideCameraController(QObject, CameraController):
                         self._frame = np.clip(gray / 256 * 8, 0, 255).astype(np.uint8)
                     else:
                         h, w = 1080, 1920
-                        frame = np.zeros((h, w), dtype=np.uint8)
+                        frame = np.random.randint(0, 50, (h, w), dtype=np.uint8)
 
                         # Simulate a "star" as a Gaussian spot
                         x0, y0 = 960, 540  # center of image
-                        x0 = np.random.randint(x0, x0 + 10)
-                        y0 = np.random.randint(y0, y0 + 10)
+                        x0 = np.random.randint(x0, x0 + 4)
+                        y0 = np.random.randint(y0, y0 + 4)
                         X, Y = np.meshgrid(np.arange(w), np.arange(h))
-                        sigma = 20  # wider star
+                        sigma = 5  # wider star
                         frame += (255 * np.exp(-((X - x0) ** 2 + (Y - y0) ** 2) / (2 * sigma ** 2))).astype(
                             np.uint8)
-                        self._frame = frame
+                        self._frame = np.clip(frame, 0, 255).astype(np.uint8)
                         time.sleep(1)
                     self._n_frames += 1
                 except Exception as e:

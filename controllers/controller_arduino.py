@@ -1,3 +1,5 @@
+import time
+
 import serial
 import serial.tools.list_ports
 
@@ -7,6 +9,7 @@ class ArduinoController:
         self.print_command = print_command
         self.baud_rate = baud_rate
         self.serial_connection = None
+        self.waiting_response = False
 
     def find_arduino_port(self):
         # Get a list of all available serial ports
@@ -41,11 +44,28 @@ class ArduinoController:
         return 0
 
     def send_command(self, command):
+        self.waiting_response = True
+        # print(command)
         if self.print_command:
             print(command)
         if self.serial_connection:
             if self.serial_connection.is_open:
                 self.serial_connection.write(command.encode())
+                ser_input = self.serial_connection.readline().decode('utf-8').strip()
+                while ser_input != "Ready!":
+                    # print("Waiting response...")
+                    ser_input = self.serial_connection.readline().decode('utf-8').strip()
+                    time.sleep(0.01)
+                self.waiting_response = False
+                # print(ser_input)
+            else:
+                print("Serial connection is not open.")
+                ser_input = None
+        else:
+            print("No serial connection created.")
+            ser_input = None
+        self.waiting_response = False
+        return ser_input
 
     def start_tracking(self):
         self.send_command("2 0 0 52 0 0 0\n")

@@ -257,9 +257,8 @@ class GuideImageWidget(ImageWidget):
         distance = np.sqrt((r1[0] - r0[0]) ** 2 + (r1[1] - r0[1]) ** 2)
         if distance > 100:
             print("ERROR: Arduino is locked. Motors stopped.")
-            self.main.waiting_commands.append(["2 0 0 52 0 0 0\n", "figure"])
-            while self.main.waiting_response:
-                time.sleep(0.01)
+            self.main.waiting_commands.append("2 0 0 52 0 0 0\n")
+            self.check_arduino()
             return False
 
         # Calculate required displacement
@@ -270,7 +269,7 @@ class GuideImageWidget(ImageWidget):
 
         return True
 
-    def _move_camera(self, dx=0, dy=0, period=str(2)):
+    def _move_camera(self, dx=0.0, dy=0.0, period=str(2)):
         # Get data from calibration
         vx_de = self.main.calibration_widget.vx_de
         vy_de = self.main.calibration_widget.vy_de
@@ -336,7 +335,7 @@ class GuideImageWidget(ImageWidget):
         de_steps = str(int(np.abs(n_steps[0])))
         time_delay = 0
         if n_steps[1] > 0:
-            ar_steps = 0
+            ar_steps = "0"
             time_delay = n_steps[1][0]
         else:
             ar_steps = str(int(np.abs(n_steps[1])))
@@ -361,28 +360,26 @@ class GuideImageWidget(ImageWidget):
             # Wait until it finish
             if stop == "1":
                 # Move AR
-                self.main.waiting_commands.append(["1 0 0 0 0 0 0\n", "figure"])
+                self._send_to_arduino("1 0 0 0 0 0 0\n")
                 time.sleep(time_delay)
-                while self.main.waiting_response:
-                    time.sleep(0.01)
 
                 # Move DEC
                 if de_command == " 0 0 0":
                     command = "0 1 0 52" + " 0 0 0" + "\n"
-                    self.main.waiting_commands.append(command)
+                    self._send_to_arduino(command)
                 else:
                     command = "0 0 0 52" + de_command + "\n"
-                    self.main.waiting_commands.append(command)
+                    self._send_to_arduino(command)
             else:
-                self.main.waiting_commands.append(command)
-                while self.main.waiting_response:
-                    time.sleep(0.01)
+                self._send_to_arduino(command)
 
         return "Ready!"
 
-    def set_serial_ready(self):
-        self._serial_ready = True
-
+    def _send_to_arduino(self, command):
+        self.main.arduino.waiting_response = True
+        self.main.waiting_commands.append(command)
+        while self.main.arduino.waiting_response:
+            time.sleep(1)
 
 class MainImageWidget(ImageWidget):
     def __init__(self, main):
