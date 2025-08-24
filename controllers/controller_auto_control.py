@@ -328,9 +328,7 @@ class AutoController(AutoWidget):
                 print("Go to the target")
                 print("Time: %im %is" % (minutes, seconds))
                 command = "0 %s %s 2 %s %s 2\n" % (nar, ar_dir, nde, de_dir)
-                self.main.waiting_commands.append(command)
-                while self.main.waiting_response:
-                    time.sleep(0.01)
+                self.send_to_arduino(command)
 
                 # Stop trial if serial communication is closed
                 if not self.main.arduino.serial_connection.is_open:
@@ -339,3 +337,9 @@ class AutoController(AutoWidget):
                 break
 
         print("Ready!")
+
+    def _send_to_arduino(self, command):
+        self.main.arduino.waiting_response = True
+        self.main.waiting_commands.append(command)
+        while self.main.arduino.waiting_response:
+            time.sleep(1)

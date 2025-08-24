@@ -271,9 +271,7 @@ class CalibrationWidget(GroupBoxWithButtonTitle):
                 command = "0 0 0 52 " + str(n_steps) + " 1 " + str(period) + "\n"
 
         # Send command and wait to completion
-        self.main.waiting_commands.append(command)
-        while self.main.waiting_response:
-            time.sleep(0.01)
+        self.send_to_arduino(command)
 
         # Sleep 1 seconds to let the frame refresh
         time.sleep(5)
@@ -301,12 +299,12 @@ class CalibrationWidget(GroupBoxWithButtonTitle):
 
         # Stop mount
         command = "1 0 0 0 0 0 0\n"
-        self.main.waiting_commands.append(command)
+        self.send_to_arduino(command)
 
         # Wait 5 seconds
         command = "2 0 0 52 0 0 0\n"
         time.sleep(5)
-        self.main.waiting_commands.append(command)
+        self.send_to_arduino(command)
 
         # Sleep 1 seconds to let the frame refresh
         time.sleep(5)
@@ -339,7 +337,7 @@ class CalibrationWidget(GroupBoxWithButtonTitle):
 
         # Set command to arduino
         command = "0 " + str(n_steps) + " 0 " + str(period) + " 0 0 0\n"
-        self.main.waiting_commands.append(command)
+        self.send_to_arduino(command)
 
         # Sleep 1 seconds to let the frame refresh
         time.sleep(5)
@@ -357,3 +355,9 @@ class CalibrationWidget(GroupBoxWithButtonTitle):
 
         # Show the check in the checkbox
         self.checkbox_ar_n.setChecked(True)
+
+    def _send_to_arduino(self, command):
+        self.main.arduino.waiting_response = True
+        self.main.waiting_commands.append(command)
+        while self.main.arduino.waiting_response:
+            time.sleep(1)

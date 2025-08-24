@@ -43,10 +43,7 @@ class ManualController(ManualWidget):
             self.main.waiting_commands.append(command)
         else:
             self.speed_combo.setEnabled(True)
-            self.main.waiting_commands.append("2 0 0 52 0 0 0\n")
-
-        while self.main.waiting_response:
-            time.sleep(0.01)
+            self._send_to_arduino("2 0 0 52 0 0 0\n")
 
         return 0
 
@@ -66,13 +63,10 @@ class ManualController(ManualWidget):
             command = "2 0 1 " + str(period) + " 0 0 0\n"
 
             # Send command
-            self.main.waiting_commands.append(command)
+            self._send_to_arduino(command)
         else:
             self.speed_combo.setEnabled(True)
-            self.main.waiting_commands.append("2 0 0 52 0 0 0\n")
-
-        while self.main.waiting_response:
-            time.sleep(0.01)
+            self._send_to_arduino("2 0 0 52 0 0 0\n")
 
         return 0
 
@@ -95,13 +89,10 @@ class ManualController(ManualWidget):
                 command = "2 0 0 52 0 1 " + str(period) + "\n"
 
             # Send command
-            self.main.waiting_commands.append(command)
+            self._send_to_arduino(command)
         else:
             self.speed_combo.setEnabled(True)
-            self.main.waiting_commands.append("2 0 0 52 0 0 0\n")
-
-        while self.main.waiting_response:
-            time.sleep(0.01)
+            self._send_to_arduino("2 0 0 52 0 0 0\n")
 
         return 0
 
@@ -123,12 +114,15 @@ class ManualController(ManualWidget):
                 command = "2 0 0 52 0 0 " + str(period) + "\n"
 
             # Send command
-            self.main.waiting_commands.append(command)
+            self._send_to_arduino(command)
         else:
             self.speed_combo.setEnabled(True)
-            self.main.waiting_commands.append("2 0 0 52 0 0 0\n")
-
-        while self.main.waiting_response:
-            time.sleep(0.01)
+            self._send_to_arduino("2 0 0 52 0 0 0\n")
 
         return 0
+
+    def _send_to_arduino(self, command):
+        self.main.arduino.waiting_response = True
+        self.main.waiting_commands.append(command)
+        while self.main.arduino.waiting_response:
+            time.sleep(1)
