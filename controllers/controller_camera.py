@@ -509,7 +509,7 @@ class MainCameraController(QObject, CameraController):
     def set_camera_status(self, status: bool):
         self._camera_running = status
         if status:
-            self.timer.start(1000)
+            self.timer.start(100)
         else:
             self.timer.stop()
 
