@@ -125,4 +125,4 @@ class ManualController(ManualWidget):
         self.main.arduino.waiting_response = True
         self.main.waiting_commands.append(command)
         while self.main.arduino.waiting_response:
-            time.sleep(1)
+            time.sleep(0.01)
