@@ -252,10 +252,6 @@ class GuideImageWidget(ImageWidget):
 
         # Get current position
         r1 = self.get_roi_position()
-        print("Aligning position...")
-        print(f"Reference position: {r0}")
-        print(f"Current position: {r1}")
-
 
         # Get distance
         distance = np.sqrt((r1[0] - r0[0]) ** 2 + (r1[1] - r0[1]) ** 2)
@@ -266,7 +262,6 @@ class GuideImageWidget(ImageWidget):
 
         # Calculate required displacement
         dr = np.array([r1[0] - r0[0], r1[1] - r0[1]])
-        print(f"Correction: {dr}")
 
         # Move the camera
         self._move_camera(dx=dr[0], dy=dr[1], period=period)
@@ -374,7 +369,6 @@ class GuideImageWidget(ImageWidget):
         return "Ready!"
 
     def _send_to_arduino(self, command):
-        print(command)
         self.main.arduino.waiting_response = True
         self.main.waiting_commands.append(command)
         while self.main.arduino.waiting_response:
