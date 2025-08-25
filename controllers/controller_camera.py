@@ -373,9 +373,6 @@ class CameraController(PyIndi.BaseClient):
 
     def capture(self, file_name=None):
         try:
-            print("Capturing frame...")
-            print(f"Gain: {self.gain}")
-            print(f"Exposure: {self.exposure}")
             # Set gain
             self.ccd_gain[0].setValue(self.gain)
             self.sendNewNumber(self.ccd_gain)
