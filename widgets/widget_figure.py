@@ -152,7 +152,7 @@ class ImageWidget(QGraphicsView):
         center = self._rect_coords.center()
 
         # Return as a tuple (x, y)
-        return (center.x(), center.y())
+        return (int(center.x()), int(center.y()))
 
     def set_roi_position(self, position):
         x, y = position
@@ -252,17 +252,21 @@ class GuideImageWidget(ImageWidget):
 
         # Get current position
         r1 = self.get_roi_position()
+        print("Aligning position...")
+        print(f"Reference position: {r0}")
+        print(f"Current position: {r1}")
+
 
         # Get distance
         distance = np.sqrt((r1[0] - r0[0]) ** 2 + (r1[1] - r0[1]) ** 2)
         if distance > 100:
             print("ERROR: Arduino is locked. Motors stopped.")
-            self.main.waiting_commands.append("2 0 0 52 0 0 0\n")
-            self.check_arduino()
+            self._send_to_arduino("2 0 0 52 0 0 0\n")
             return False
 
         # Calculate required displacement
         dr = np.array([r1[0] - r0[0], r1[1] - r0[1]])
+        print(f"Correction: {dr}")
 
         # Move the camera
         self._move_camera(dx=dr[0], dy=dr[1], period=period)
@@ -292,8 +296,8 @@ class GuideImageWidget(ImageWidget):
             n_steps = np.linalg.inv(v_n) @ dr
 
         # Apply strength
-        n_steps[0] *= self._strength_de
-        n_steps[1] *= self._strength_ar
+        n_steps[0] *= self._strength_de / 2
+        n_steps[1] *= self._strength_ar / 2
 
         # Ensure Dec movement happens only in the required direction
         if (self._looseness_detected == "positive" and n_steps[0] < 0) or (
@@ -362,7 +366,7 @@ class GuideImageWidget(ImageWidget):
                 # Move AR
                 self._send_to_arduino("1 0 0 0 0 0 0\n")
                 time.sleep(time_delay)
-
+            
                 # Move DEC
                 if de_command == " 0 0 0":
                     command = "0 1 0 52" + " 0 0 0" + "\n"
@@ -372,10 +376,11 @@ class GuideImageWidget(ImageWidget):
                     self._send_to_arduino(command)
             else:
                 self._send_to_arduino(command)
-
+            
         return "Ready!"
 
     def _send_to_arduino(self, command):
+        print(command)
         self.main.arduino.waiting_response = True
         self.main.waiting_commands.append(command)
         while self.main.arduino.waiting_response:

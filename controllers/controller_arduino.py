@@ -50,14 +50,19 @@ class ArduinoController:
             print(command)
         if self.serial_connection:
             if self.serial_connection.is_open:
-                self.serial_connection.write(command.encode())
-                ser_input = self.serial_connection.readline().decode('utf-8').strip()
-                while ser_input != "Ready!":
-                    # print("Waiting response...")
+                try:
+                    self.serial_connection.write(command.encode())
                     ser_input = self.serial_connection.readline().decode('utf-8').strip()
-                    time.sleep(0.01)
-                self.waiting_response = False
-                # print(ser_input)
+                    while ser_input != "Ready!":
+                        # print("Waiting response...")
+                        ser_input = self.serial_connection.readline().decode('utf-8').strip()
+                        time.sleep(0.01)
+                        print(ser_input)
+                    self.waiting_response = False
+                except Exception as e:
+                    self.waiting_response = False
+                    print(f"Serial communication error: {e}")
+                    return False
             else:
                 print("Serial connection is not open.")
                 ser_input = None

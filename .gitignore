@@ -1,6 +1,9 @@
 .idea/
+.venv/
+catalogs/__pycache__/
 controllers/__pycache__/
 widgets/__pycache__/
+utils/__pycache__/
 /captures/
 /widgets/captures/
 /plate_solving/
@@ -10,3 +13,4 @@ widgets/__pycache__/
 *.pycç
 *.jpeg
 *.tar.xz
+*.pyc
