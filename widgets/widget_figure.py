@@ -341,8 +341,10 @@ class GuideImageWidget(ImageWidget):
         if n_steps[1] > 0:
             ar_steps = "0"
             time_delay = n_steps[1][0]
+            stop = "1"
         else:
             ar_steps = str(int(np.abs(n_steps[1])))
+            stop = "0"
         if de_steps == "0":
             de_command = " 0 0 0"
         else:
@@ -353,10 +355,6 @@ class GuideImageWidget(ImageWidget):
             ar_command = " %s %s %s" % (ar_steps, ar_dir, period)
 
         # Send instructions
-        if time_delay > 0:
-            stop = "1"
-        else:
-            stop = "0"
         if de_steps == "0" and ar_steps == "0" and stop == "0":
             pass
         else:
@@ -368,12 +366,8 @@ class GuideImageWidget(ImageWidget):
                 time.sleep(time_delay)
             
                 # Move DEC
-                if de_command == " 0 0 0":
-                    command = "0 1 0 52" + " 0 0 0" + "\n"
-                    self._send_to_arduino(command)
-                else:
-                    command = "0 0 0 52" + de_command + "\n"
-                    self._send_to_arduino(command)
+                command = "0 0 0 52" + de_command + "\n"
+                self._send_to_arduino(command)
             else:
                 self._send_to_arduino(command)
             
