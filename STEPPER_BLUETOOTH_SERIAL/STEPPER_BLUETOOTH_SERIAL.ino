@@ -102,16 +102,6 @@ void loop() {
       dec_dir = Serial.parseInt();
       dec_per = Serial.parseInt();
 
-      // Set periods to reference in case period is -1
-      if (ar_per==-1) {
-        ar_dir = ar_dir_ref;
-        ar_per = ar_per_ref;
-      }
-      if (dec_per==-1) {
-        dec_dir = dec_dir_ref;
-        dec_per = dec_per_ref;
-      }
-
       // Set counter to zero
       n_ar = 0;
       n_de = 0;
@@ -132,6 +122,13 @@ void loop() {
         de_ready = 1;
       }
     }
+
+    // In case bot are ready
+    if (ar_ready + de_ready == 2) {
+      Serial.println("Ready!");
+    }
+
+    
     // Set the pins on
     digitalWrite(DIR_PIN_AR, ar_dir);
     digitalWrite(DIR_PIN_DEC, dec_dir);    
