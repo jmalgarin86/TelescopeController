@@ -93,6 +93,12 @@ void loop() {
       dec_per = Serial.parseInt();
       Serial.println("Ready!");
     } else if (control==1) {
+      ar_steps = Serial.parseInt();
+      ar_dir = Serial.parseInt();
+      ar_per = Serial.parseInt();
+      dec_steps = Serial.parseInt();
+      dec_dir = Serial.parseInt();
+      dec_per = Serial.parseInt();
       Serial.println("Ready!");
     } else {
       ar_steps = Serial.parseInt();
@@ -121,14 +127,13 @@ void loop() {
       else {
         de_ready = 1;
       }
+
+      // In case bot are ready
+      if (ar_ready + de_ready == 2) {
+        Serial.println("Ready!");
+      }
     }
 
-    // In case bot are ready
-    if (ar_ready + de_ready == 2) {
-      Serial.println("Ready!");
-    }
-
-    
     // Set the pins on
     digitalWrite(DIR_PIN_AR, ar_dir);
     digitalWrite(DIR_PIN_DEC, dec_dir);    
@@ -145,6 +150,7 @@ void loop() {
   
   // Check if it's time to blink the AR
   if (t1 - t0_ar >= ar_per && ar_per > 0) {
+    Serial.println("AR loop!");
     // Save the current time
     t0_ar = t1;
 
@@ -179,6 +185,7 @@ void loop() {
 
   // Check if it's time to blink the DEC
   if (t1 - t0_dec >= dec_per && dec_per > 0) {
+    Serial.println("DEC loop");
     // Save the current time
     t0_dec = t1;
 
