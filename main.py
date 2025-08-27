@@ -42,7 +42,6 @@ class TelescopeController(QMainWindow):
         # Create the ConsoleWidget widget
         self.console_widget = ConsoleWidget()
 
-
         # Connect to indiserver
         thread = threading.Thread(target=self.connect_to_indi_server)
         thread.start()
