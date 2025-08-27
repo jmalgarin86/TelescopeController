@@ -261,14 +261,14 @@ class CalibrationWidget(GroupBoxWithButtonTitle):
         # Set command to arduino
         if self.direction == +1:
             if self.main.manual_controller.dec_dir == 1:
-                command = "0 0 0 52 " + str(n_steps) + " 1 " + str(period) + "\n"
+                command = "0 0 52 " + str(n_steps) + " 1 " + str(period) + "\n"
             else:
-                command = "0 0 0 52 " + str(n_steps) + " 0 " + str(period) + "\n"
+                command = "0 0 52 " + str(n_steps) + " 0 " + str(period) + "\n"
         elif self.direction == -1:
             if self.main.manual_controller.dec_dir == 1:
-                command = "0 0 0 52 " + str(n_steps) + " 0 " + str(period) + "\n"
+                command = "0 0 52 " + str(n_steps) + " 0 " + str(period) + "\n"
             else:
-                command = "0 0 0 52 " + str(n_steps) + " 1 " + str(period) + "\n"
+                command = "0 0 52 " + str(n_steps) + " 1 " + str(period) + "\n"
 
         # Send command and wait to completion
         self._send_to_arduino(command)
@@ -298,11 +298,11 @@ class CalibrationWidget(GroupBoxWithButtonTitle):
         x0, y0 = self.main.image_guide_camera.get_roi_position()
 
         # Stop mount
-        command = "1 0 0 0 0 0 0\n"
+        command = "0 0 0 0 0 0\n"
         self._send_to_arduino(command)
 
         # Wait 5 seconds
-        command = "2 0 0 52 0 0 0\n"
+        command = "0 0 52 0 0 0\n"
         time.sleep(5)
         self._send_to_arduino(command)
 
@@ -336,7 +336,7 @@ class CalibrationWidget(GroupBoxWithButtonTitle):
         x0, y0 = self.main.image_guide_camera.get_roi_position()
 
         # Set command to arduino
-        command = "0 " + str(n_steps) + " 0 " + str(period) + " 0 0 0\n"
+        command = str(n_steps) + " 0 " + str(period) + " 0 0 0\n"
         self._send_to_arduino(command)
 
         # Sleep 1 seconds to let the frame refresh

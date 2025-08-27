@@ -7,18 +7,14 @@ import os
 from datetime import datetime, timedelta
 from pathlib import Path
 
-import numpy as np
-
 import qdarkstyle
-from PyQt5.QtCore import pyqtSignal, QObject
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QHBoxLayout, QTabWidget
 
 from controllers.controller_arduino import ArduinoController
-from controllers.controller_console import ConsoleController
-from controllers.controller_joystick import JoyStickController
+from widgets.widget_console import ConsoleWidget
 from controllers.controller_toolbar_guide import GuideController
-from controllers.controller_manual_control import ManualController
-from controllers.controller_auto_control import AutoController
+from widgets.widget_manual_control import ManualWidget
+from widgets.widget_auto_control import AutoWidget
 from widgets.widget_camera import MainCameraWidget, GuideCameraWidget
 from widgets.widget_figure import MainImageWidget, GuideImageWidget
 from widgets.widget_plot import PlotWidget
@@ -59,12 +55,12 @@ class TelescopeController(QMainWindow):
         right_layout = QVBoxLayout()
 
         # Create the manual control widget
-        self.manual_controller = ManualController(self)
-        self.manual_controller.button_clicked.connect(self.hide_manual)
+        self.manual_widget = ManualWidget(self)
+        self.manual_widget.button_clicked.connect(self.hide_manual)
 
         # Create the auto control widget
-        self.auto_controller = AutoController(self)
-        self.auto_controller.button_clicked.connect(self.hide_auto)
+        self.auto_widget = AutoWidget(self)
+        self.auto_widget.button_clicked.connect(self.hide_auto)
 
         # Create calibration controller
         self.calibration_widget = CalibrationWidget(self)
@@ -78,16 +74,16 @@ class TelescopeController(QMainWindow):
         self.main_camera_widget = MainCameraWidget(self)
         self.main_camera_widget.button_clicked.connect(self.hide_main)
 
-        # Create the ConsoleController widget
-        self.console_controller = ConsoleController()
+        # Create the ConsoleWidget widget
+        self.console_widget = ConsoleWidget()
 
         # Create the layout
-        left_layout.addWidget(self.manual_controller)
-        left_layout.addWidget(self.auto_controller)
+        left_layout.addWidget(self.manual_widget)
+        left_layout.addWidget(self.auto_widget)
         left_layout.addWidget(self.calibration_widget)
         left_layout.addWidget(self.guide_camera_widget)
         left_layout.addWidget(self.main_camera_widget)
-        left_layout.addWidget(self.console_controller, stretch=1)  # Add it to the left_layout
+        left_layout.addWidget(self.console_widget, stretch=1)  # Add it to the left_layout
         main_layout.addLayout(left_layout, stretch=1)
         main_layout.addLayout(right_layout, stretch=3)
 
@@ -120,9 +116,6 @@ class TelescopeController(QMainWindow):
         thread.start()
         time.sleep(1)
 
-        # Create joystick controller
-        JoyStickController(self)
-
         # Create list that contains the instructions to execute
         self.waiting_commands = []
 
@@ -134,8 +127,8 @@ class TelescopeController(QMainWindow):
 
     def hide_manual(self, my_bool):
         if my_bool:
-            self.auto_controller.title_button.setChecked(not my_bool)
-            self.auto_controller.on_button_clicked()
+            self.auto_widget.title_button.setChecked(not my_bool)
+            self.auto_widget.on_button_clicked()
             self.calibration_widget.title_button.setChecked(not my_bool)
             self.calibration_widget.on_button_clicked()
             self.guide_camera_widget.title_button.setChecked(not my_bool)
@@ -145,8 +138,8 @@ class TelescopeController(QMainWindow):
 
     def hide_auto(self, my_bool):
         if my_bool:
-            self.manual_controller.title_button.setChecked(not my_bool)
-            self.manual_controller.on_button_clicked()
+            self.manual_widget.title_button.setChecked(not my_bool)
+            self.manual_widget.on_button_clicked()
             self.calibration_widget.title_button.setChecked(not my_bool)
             self.calibration_widget.on_button_clicked()
             self.guide_camera_widget.title_button.setChecked(not my_bool)
@@ -156,10 +149,10 @@ class TelescopeController(QMainWindow):
 
     def hide_calibration(self, my_bool):
         if my_bool:
-            self.manual_controller.title_button.setChecked(not my_bool)
-            self.manual_controller.on_button_clicked()
-            self.auto_controller.title_button.setChecked(not my_bool)
-            self.auto_controller.on_button_clicked()
+            self.manual_widget.title_button.setChecked(not my_bool)
+            self.manual_widget.on_button_clicked()
+            self.auto_widget.title_button.setChecked(not my_bool)
+            self.auto_widget.on_button_clicked()
             self.guide_camera_widget.title_button.setChecked(not my_bool)
             self.guide_camera_widget.on_button_clicked()
             self.main_camera_widget.title_button.setChecked(not my_bool)
@@ -167,10 +160,10 @@ class TelescopeController(QMainWindow):
 
     def hide_guide(self, my_bool):
         if my_bool:
-            self.manual_controller.title_button.setChecked(not my_bool)
-            self.manual_controller.on_button_clicked()
-            self.auto_controller.title_button.setChecked(not my_bool)
-            self.auto_controller.on_button_clicked()
+            self.manual_widget.title_button.setChecked(not my_bool)
+            self.manual_widget.on_button_clicked()
+            self.auto_widget.title_button.setChecked(not my_bool)
+            self.auto_widget.on_button_clicked()
             self.calibration_widget.title_button.setChecked(not my_bool)
             self.calibration_widget.on_button_clicked()
             self.main_camera_widget.title_button.setChecked(not my_bool)
@@ -178,10 +171,10 @@ class TelescopeController(QMainWindow):
 
     def hide_main(self, my_bool):
         if my_bool:
-            self.manual_controller.title_button.setChecked(not my_bool)
-            self.manual_controller.on_button_clicked()
-            self.auto_controller.title_button.setChecked(not my_bool)
-            self.auto_controller.on_button_clicked()
+            self.manual_widget.title_button.setChecked(not my_bool)
+            self.manual_widget.on_button_clicked()
+            self.auto_widget.title_button.setChecked(not my_bool)
+            self.auto_widget.on_button_clicked()
             self.calibration_widget.title_button.setChecked(not my_bool)
             self.calibration_widget.on_button_clicked()
             self.guide_camera_widget.title_button.setChecked(not my_bool)

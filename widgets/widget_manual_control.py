@@ -1,4 +1,5 @@
 import sys
+import time
 
 from PyQt5.QtWidgets import QPushButton, QGridLayout, QHBoxLayout, QLabel, QComboBox, \
     QSizePolicy, QRadioButton, QWidget, QGroupBox, QApplication
@@ -57,6 +58,122 @@ class ManualWidget(GroupBoxWithButtonTitle):
         layout.setRowStretch(layout.rowCount(), 1)
 
         self.content.setLayout(layout)
+
+        self.dec_dir = None
+
+        self.set_dec_direction()
+
+        self.button_ar_n.clicked.connect(self.move_ar_n)
+        self.button_ar_p.clicked.connect(self.move_ar_p)
+        self.button_dec_n.clicked.connect(self.move_dec_n)
+        self.button_dec_p.clicked.connect(self.move_dec_p)
+        self.radio_east.clicked.connect(self.set_dec_direction)
+        self.radio_west.clicked.connect(self.set_dec_direction)
+
+    def set_dec_direction(self):
+        if self.radio_east.isChecked():
+            self.dec_dir = +1
+        elif self.radio_west.isChecked():
+            self.dec_dir = -1
+
+    def move_ar_n(self):
+        if self.button_ar_n.isChecked():
+            # Uncheck other buttons
+            self.button_ar_p.setChecked(False)
+            self.button_dec_n.setChecked(False)
+            self.button_dec_p.setChecked(False)
+            self.speed_combo.setEnabled(False)
+
+            # Check for speed
+            speed = float(self.speed_combo.currentText()[1::])
+            period = int(52 / speed)
+
+            # Send command
+            command = "0 0 " + str(period) + " 0 0 0\n"
+            self._send_to_arduino(command)
+        else:
+            self.speed_combo.setEnabled(True)
+            self._send_to_arduino("0 0 52 0 0 0\n")
+
+        return 0
+
+    def move_ar_p(self):
+        if self.button_ar_p.isChecked():
+            # Uncheck other buttons
+            self.button_ar_n.setChecked(False)
+            self.button_dec_n.setChecked(False)
+            self.button_dec_p.setChecked(False)
+            self.speed_combo.setEnabled(False)
+
+            # Check for speed
+            speed = float(self.speed_combo.currentText()[1::])
+            period = int(52 / speed)
+
+            # Send command
+            command = "0 1 " + str(period) + " 0 0 0\n"
+            self._send_to_arduino(command)
+        else:
+            self.speed_combo.setEnabled(True)
+            self._send_to_arduino("0 0 52 0 0 0\n")
+
+        return 0
+
+    def move_dec_n(self):
+        if self.button_dec_n.isChecked():
+            # Uncheck other buttons
+            self.button_ar_p.setChecked(False)
+            self.button_ar_n.setChecked(False)
+            self.button_dec_p.setChecked(False)
+            self.speed_combo.setEnabled(False)
+
+            # Check for speed
+            speed = float(self.speed_combo.currentText()[1::])
+            period = int(52 / speed)
+
+            # Set command to arduino
+            if self.dec_dir == 1:
+                command = "0 0 52 0 0 " + str(period) + "\n"
+            else:
+                command = "0 0 52 0 1 " + str(period) + "\n"
+
+            # Send command
+            self._send_to_arduino(command)
+        else:
+            self.speed_combo.setEnabled(True)
+            self._send_to_arduino("0 0 52 0 0 0\n")
+
+        return 0
+
+    def move_dec_p(self):
+        if self.button_dec_p.isChecked():
+            # Uncheck other buttons
+            self.button_ar_p.setChecked(False)
+            self.button_ar_n.setChecked(False)
+            self.button_dec_n.setChecked(False)
+            self.speed_combo.setEnabled(False)
+
+            # Check for speed
+            speed = float(self.speed_combo.currentText()[1::])
+            period = int(52 / speed)
+
+            if self.dec_dir == 1:
+                command = "0 0 52 0 1 " + str(period) + "\n"
+            else:
+                command = "0 0 52 0 0 " + str(period) + "\n"
+
+            # Send command
+            self._send_to_arduino(command)
+        else:
+            self.speed_combo.setEnabled(True)
+            self._send_to_arduino("0 0 52 0 0 0\n")
+
+        return 0
+
+    def _send_to_arduino(self, command):
+        self.main.arduino.waiting_response = True
+        self.main.waiting_commands.append(command)
+        while self.main.arduino.waiting_response:
+            time.sleep(0.01)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

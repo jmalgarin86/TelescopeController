@@ -1,11 +1,9 @@
-#include <SoftwareSerial.h>
-//SoftwareSerial BT1(7,13); // RX, TX
-
 //Versión V3.0. Mueve simultaneamente los motores de AR y DEC
+//Versión V4.0. Versión simplificada con solo 6 digitos de entrada por puerto serie
 
 //Pines Stepper AR
 #define DIR_PIN_AR 2
-#define STP_PIN_AR 3
+#define STP_PIN_AR 13
 #define MS1_PIN_AR 4
 #define MS2_PIN_AR 5
 #define SLP_PIN_AR 6
@@ -47,7 +45,6 @@ int ar_ready = 0;
 
 void setup() {
   //Inicio módulo Bluetooth
-  //BT1.begin(19200);
   Serial.begin(19200);
   
   //Modos de pines Stepper A
@@ -81,57 +78,37 @@ void setup() {
 }
 
 void loop() {
-  //if (BT1.available()>7 || Serial.available()>7) {
-  if (Serial.available()>7) {
-    control = Serial.parseInt();
-    if (control==2) {
-      ar_steps = Serial.parseInt();
-      ar_dir = Serial.parseInt();
-      ar_per = Serial.parseInt();
-      dec_steps = Serial.parseInt();
-      dec_dir = Serial.parseInt();
-      dec_per = Serial.parseInt();
+  if (Serial.available()>6) {
+    ar_steps = Serial.parseInt();
+    ar_dir = Serial.parseInt();
+    ar_per = Serial.parseInt();
+    dec_steps = Serial.parseInt();
+    dec_dir = Serial.parseInt();
+    dec_per = Serial.parseInt();
+
+    // Set counter to zero
+    n_ar = 0;
+    n_de = 0;
+    step_ar = 0;
+    step_de = 0;
+
+    // Set checkers to 0
+    if (ar_steps>0) {
+      ar_ready = 0;
+    }
+    else {
+      ar_ready = 1;
+    }
+    if (dec_steps > 0) {
+      de_ready = 0;
+    }
+    else {
+      de_ready = 1;
+    }
+
+    // In case bot are ready
+    if (ar_ready + de_ready == 2) {
       Serial.println("Ready!");
-    } else if (control==1) {
-      ar_steps = Serial.parseInt();
-      ar_dir = Serial.parseInt();
-      ar_per = Serial.parseInt();
-      dec_steps = Serial.parseInt();
-      dec_dir = Serial.parseInt();
-      dec_per = Serial.parseInt();
-      Serial.println("Ready!");
-    } else {
-      ar_steps = Serial.parseInt();
-      ar_dir = Serial.parseInt();
-      ar_per = Serial.parseInt();
-      dec_steps = Serial.parseInt();
-      dec_dir = Serial.parseInt();
-      dec_per = Serial.parseInt();
-
-      // Set counter to zero
-      n_ar = 0;
-      n_de = 0;
-      step_ar = 0;
-      step_de = 0;
-
-      // Set checkers to 0
-      if (ar_steps>0) {
-        ar_ready = 0;
-      }
-      else {
-        ar_ready = 1;
-      }
-      if (dec_steps > 0) {
-        de_ready = 0;
-      }
-      else {
-        de_ready = 1;
-      }
-
-      // In case bot are ready
-      if (ar_ready + de_ready == 2) {
-        Serial.println("Ready!");
-      }
     }
 
     // Set the pins on
@@ -139,18 +116,11 @@ void loop() {
     digitalWrite(DIR_PIN_DEC, dec_dir);    
   }
 
-  // Check if stop
-  if (control == 1) {
-    delay(100);
-    return;
-  }
-
   // Get the current time
   unsigned long t1 = millis();
   
   // Check if it's time to blink the AR
   if (t1 - t0_ar >= ar_per && ar_per > 0) {
-    Serial.println("AR loop!");
     // Save the current time
     t0_ar = t1;
 
@@ -185,7 +155,6 @@ void loop() {
 
   // Check if it's time to blink the DEC
   if (t1 - t0_dec >= dec_per && dec_per > 0) {
-    Serial.println("DEC loop");
     // Save the current time
     t0_dec = t1;
 

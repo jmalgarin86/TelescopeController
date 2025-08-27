@@ -73,8 +73,8 @@ class ArduinoController:
         return ser_input
 
     def start_tracking(self):
-        self.send_command("2 0 0 52 0 0 0\n")
+        self.send_command("0 0 52 0 0 0\n")
 
     def stop_tracking(self):
-        self.send_command("2 0 0 52 0 0 0\n")
+        self.send_command("0 0 52 0 0 0\n")
 

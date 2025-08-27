@@ -257,7 +257,8 @@ class GuideImageWidget(ImageWidget):
         distance = np.sqrt((r1[0] - r0[0]) ** 2 + (r1[1] - r0[1]) ** 2)
         if distance > 100:
             print("ERROR: Arduino is locked. Motors stopped.")
-            self._send_to_arduino("2 0 0 52 0 0 0\n")
+            command = "0 0 0 0 0 0\n"
+            self._send_to_arduino(command)
             return False
 
         # Calculate required displacement
@@ -353,15 +354,16 @@ class GuideImageWidget(ImageWidget):
         if de_steps == "0" and ar_steps == "0" and stop == "0":
             pass
         else:
-            command = "0" + ar_command + de_command + "\n"
+            command = ar_command + de_command + "\n"
             # Wait until it finish
             if stop == "1":
                 # Move AR
-                self._send_to_arduino("1 0 0 0 0 0 0\n")
+                command = "0 0 0 0 0 0\n"
+                self._send_to_arduino(command)
                 time.sleep(time_delay)
             
                 # Move DEC
-                command = "0 0 0 52" + de_command + "\n"
+                command = "0 0 52" + de_command + "\n"
                 self._send_to_arduino(command)
             else:
                 self._send_to_arduino(command)
