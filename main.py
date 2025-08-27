@@ -39,6 +39,25 @@ class TelescopeController(QMainWindow):
         # Set the window title
         self.setWindowTitle("TelescopeController")
 
+        # Create the ConsoleWidget widget
+        self.console_widget = ConsoleWidget()
+
+
+        # Connect to indiserver
+        thread = threading.Thread(target=self.connect_to_indi_server)
+        thread.start()
+        time.sleep(1)
+
+        # Create list that contains the instructions to execute
+        self.waiting_commands = []
+
+        # Call the sniffer in a parallel thread
+        thread = threading.Thread(target=self.sniffer)
+        thread.start()
+
+        # Connect to Arduino
+        self.arduino = ArduinoController(print_command=False)
+
         # Create a central widget to hold the content
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
@@ -74,9 +93,6 @@ class TelescopeController(QMainWindow):
         self.main_camera_widget = MainCameraWidget(self)
         self.main_camera_widget.button_clicked.connect(self.hide_main)
 
-        # Create the ConsoleWidget widget
-        self.console_widget = ConsoleWidget()
-
         # Create the layout
         left_layout.addWidget(self.manual_widget)
         left_layout.addWidget(self.auto_widget)
@@ -107,21 +123,6 @@ class TelescopeController(QMainWindow):
         calibration_tab.addTab(self.plot_controller_surface, "Focus plot")
         calibration_tab.addTab(self.histogram, "Histogram")
         right_layout.addWidget(calibration_tab, stretch=1)
-
-        # Connect to Arduino
-        self.arduino = ArduinoController(print_command=False)
-
-        # Connect to indiserver
-        thread = threading.Thread(target=self.connect_to_indi_server)
-        thread.start()
-        time.sleep(1)
-
-        # Create list that contains the instructions to execute
-        self.waiting_commands = []
-
-        # Call the sniffer in a parallel thread
-        thread = threading.Thread(target=self.sniffer)
-        thread.start()
 
         self.showMaximized()
 

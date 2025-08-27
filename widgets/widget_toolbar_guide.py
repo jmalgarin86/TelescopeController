@@ -13,6 +13,8 @@ class GuideToolBar(QToolBar):
         self.action_arduino.setStatusTip("Connect to arduino")
         self.action_arduino.setCheckable(True)
         self.addAction(self.action_arduino)
+        self.action_arduino.setChecked(True)
+        self.connect_arduino()
 
         # Look for a star
         self.action_auto_star = QAction(QIcon("icons/auto-star.png"), "Select star automatically", self)

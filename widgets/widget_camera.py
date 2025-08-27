@@ -51,6 +51,11 @@ class GuideCameraWidget(GroupBoxWithButtonTitle):
         self.connect_button.clicked.connect(self.connect_camera)
         self.update_button.clicked.connect(self.update_camera)
 
+        # Connect to guie camera
+        self.connect_button.setChecked(True)
+        self.connect_camera()
+
+
     def connect_camera(self):
         if self.connect_button.isChecked():
             if self.guide_camera.device_ccd is None:
@@ -164,6 +169,11 @@ class MainCameraWidget(GroupBoxWithButtonTitle):
         self.update_button.clicked.connect(self.update_camera_settings)
         self.connect_button.clicked.connect(self.connect_camera)
         self.capture_button.clicked.connect(self.capture_frames)
+
+        # Connect to main camera
+        self.connect_button.setChecked(True)
+        self.connect_camera()
+
 
     def monitor_status(self, status):
         self.temperature_label.setText(f"Temperature: {status['Temperature']} ºC")
