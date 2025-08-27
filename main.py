@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QHB
 
 from controllers.controller_arduino import ArduinoController
 from widgets.widget_console import ConsoleWidget
-from controllers.controller_toolbar_guide import GuideController
+from widgets.widget_toolbar_guide import GuideToolBar
 from widgets.widget_manual_control import ManualWidget
 from widgets.widget_auto_control import AutoWidget
 from widgets.widget_camera import MainCameraWidget, GuideCameraWidget
@@ -44,7 +44,7 @@ class TelescopeController(QMainWindow):
         self.setCentralWidget(central_widget)
 
         # Create guiding toolbar
-        self.guiding_toolbar = GuideController(self, "Guiding toolbar")
+        self.guiding_toolbar = GuideToolBar(self, "Guiding toolbar")
 
         # Create main_layout for the central widget
         main_layout = QHBoxLayout()
