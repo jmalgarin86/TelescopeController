@@ -8,7 +8,8 @@ from pathlib import Path
 
 import numpy as np
 from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtWidgets import QLabel, QLineEdit, QGridLayout, QPushButton, QComboBox, QSizePolicy, QWidget, QApplication
+from PyQt5.QtWidgets import QLabel, QLineEdit, QGridLayout, QPushButton, QComboBox, QSizePolicy, QWidget, QApplication, \
+    QProgressBar, QTextEdit
 from catalogs.catalog import catalog
 from widgets.GroupBox import GroupBoxWithButtonTitle
 
@@ -59,6 +60,7 @@ class AutoWidget(GroupBoxWithButtonTitle):
     plate_solving_signal = pyqtSignal()
     def __init__(self, main=None):
         super().__init__("Auto Control")
+        self.total_time = 0
         self.main = main
 
         # Origin/Target button/label
@@ -91,6 +93,10 @@ class AutoWidget(GroupBoxWithButtonTitle):
         self.update_button = QPushButton("Add or Update")
         self.goto_button = QPushButton("GoTo")
 
+        # Progress bar
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setValue(11)
+
         # Layout
         layout = QGridLayout()
         layout.addWidget(ar_label, 2, 0)
@@ -103,8 +109,9 @@ class AutoWidget(GroupBoxWithButtonTitle):
         layout.addWidget(self.ar_target_edit, 2, 2)
         layout.addWidget(self.dec_origin_edit, 3, 1)
         layout.addWidget(self.dec_target_edit, 3, 2)
-        layout.addWidget(self.update_button, 4, 0, 1, 3)
-        layout.addWidget(self.goto_button, 5, 0, 1, 3)
+        layout.addWidget(self.progress_bar, 4, 0, 1, 3)
+        layout.addWidget(self.update_button, 5, 0, 1, 3)
+        layout.addWidget(self.goto_button, 6, 0, 1, 3)
 
         layout.setRowStretch(layout.rowCount(), 1)
 
@@ -357,15 +364,18 @@ class AutoWidget(GroupBoxWithButtonTitle):
             # Get the number of steps for DEC axis
             nde = str(int(np.abs(ndes_0)))
 
+            # Get distance in steps
+            n = np.sqrt(int(nde)**2 + int(nar)**2)
+
             # Get time
             tar = int(nar) * bt
             tde = int(nde) * bt
             t = np.max(np.array([np.abs(tar), np.abs(tde)]))
             minutes = int(t / 60)
             seconds = int(t - int(t / 60) * 60)
-            total_time = seconds + 60 * minutes
+            self.total_time = seconds + 60 * minutes
 
-            if total_time > 5:
+            if n>10:
                 # Send instruction to arduino
                 print("Go to the target")
                 print("Time: %im %is" % (minutes, seconds))
@@ -379,6 +389,21 @@ class AutoWidget(GroupBoxWithButtonTitle):
                 break
 
         print("Ready!")
+
+    def progress(self):
+        thread = threading.Thread(target=self.runProgress)
+        thread.start()
+
+    def runProgress(self):
+        t0 = time.time()
+        progress = 0
+        while progress < 100:
+            t1 = time.time()
+            progress = int((t1 - t0) / self.total_time * 100)
+            if progress >= 100:
+                progress = 100
+            self.progress_bar.setValue(progress)
+            time.sleep(1)
 
     def _send_to_arduino(self, command):
         self.main.arduino.waiting_response = True
