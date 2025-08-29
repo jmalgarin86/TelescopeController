@@ -325,6 +325,7 @@ class AutoWidget(GroupBoxWithButtonTitle):
         # Iterate until time to target is smaller than 5 seconds
         while True:
             # Get current coordinates
+            time.sleep(1)
             if not self.get_origin():
                 continue
 
@@ -350,12 +351,12 @@ class AutoWidget(GroupBoxWithButtonTitle):
             nar = str(int(np.abs(nars_tar)))
 
             # Get the DEC direction
-            if self.main.manual_controller.dec_dir == 1:
+            if self.main.manual_widget.dec_dir == 1:
                 if ndes_0 >= 0:
                     de_dir = "1"
                 else:
                     de_dir = "0"
-            elif self.main.manual_controller.dec_dir == -1:
+            elif self.main.manual_widget.dec_dir == -1:
                 if ndes_0 >= 0:
                     de_dir = "0"
                 else:

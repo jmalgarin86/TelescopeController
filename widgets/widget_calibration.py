@@ -260,12 +260,12 @@ class CalibrationWidget(GroupBoxWithButtonTitle):
 
         # Set command to arduino
         if self.direction == +1:
-            if self.main.manual_controller.dec_dir == 1:
+            if self.main.manual_widget.dec_dir == 1:
                 command = "0 0 52 " + str(n_steps) + " 1 " + str(period) + "\n"
             else:
                 command = "0 0 52 " + str(n_steps) + " 0 " + str(period) + "\n"
         elif self.direction == -1:
-            if self.main.manual_controller.dec_dir == 1:
+            if self.main.manual_widget.dec_dir == 1:
                 command = "0 0 52 " + str(n_steps) + " 0 " + str(period) + "\n"
             else:
                 command = "0 0 52 " + str(n_steps) + " 1 " + str(period) + "\n"

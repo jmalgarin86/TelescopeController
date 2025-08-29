@@ -318,13 +318,13 @@ class GuideImageWidget(ImageWidget):
                 n_steps[0] = int(n_steps[0] / 2)
 
         # Set directions
-        if n_steps[0] >= 0 and self.main.manual_controller.dec_dir == 1:
+        if n_steps[0] >= 0 and self.main.manual_widget.dec_dir == 1:
             de_dir = str(1)
-        elif n_steps[0] >= 0 and self.main.manual_controller.dec_dir == -1:
+        elif n_steps[0] >= 0 and self.main.manual_widget.dec_dir == -1:
             de_dir = str(0)
-        elif n_steps[0] < 0 and self.main.manual_controller.dec_dir == 1:
+        elif n_steps[0] < 0 and self.main.manual_widget.dec_dir == 1:
             de_dir = str(0)
-        elif n_steps[0] < 0 and self.main.manual_controller.dec_dir == -1:
+        elif n_steps[0] < 0 and self.main.manual_widget.dec_dir == -1:
             de_dir = str(1)
         if n_steps[1] >= 0:
             ar_dir = str(1)
@@ -356,7 +356,7 @@ class GuideImageWidget(ImageWidget):
         else:
             command = ar_command + de_command + "\n"
             # Wait until it finish
-            if stop == "1":
+            if time_delay>0:
                 # Move AR
                 command = "0 0 0 0 0 0\n"
                 self._send_to_arduino(command)
