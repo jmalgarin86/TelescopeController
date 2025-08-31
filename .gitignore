@@ -3,6 +3,7 @@
 catalogs/__pycache__/
 controllers/__pycache__/
 widgets/__pycache__/
+controllers/captures/
 utils/__pycache__/
 /captures/
 /widgets/captures/

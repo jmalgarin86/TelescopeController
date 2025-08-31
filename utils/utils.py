@@ -1,4 +1,7 @@
+import os
+
 import numpy as np
+from astropy.io import fits
 from matplotlib import pyplot as plt
 
 
@@ -33,6 +36,88 @@ def analyze_subframe(roi):
     cy = cy - (h / 2)
 
     return (int(round(cx)), int(round(cy))), star_size
+
+def get_last_folder_in_directory(path):
+    try:
+        # List all directories in the given path
+        directories = [d for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
+        if not directories:
+            return None
+        # Sort directories lexicographically and return the last one
+        directories.sort()
+        last_folder = directories[-1]
+        return os.path.join(path, last_folder)
+    except FileNotFoundError:
+        return "Path not found"
+    except PermissionError:
+        return "Permission denied"
+    except Exception as e:
+        return str(e)
+
+
+def get_last_file_in_directory(path):
+    try:
+        # List all files in the given path
+        files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+        if not files:
+            return None
+        # Sort files lexicographically and return the last one
+        files.sort()
+        last_file = files[-1]
+        return last_file
+    except FileNotFoundError:
+        return "Path not found"
+    except PermissionError:
+        return "Permission denied"
+    except Exception as e:
+        return str(e)
+
+def delete_all_except_last(path):
+    last_file = get_last_file_in_directory(path)
+
+    if last_file is None:
+        # print("No files to delete.")
+        return
+    elif isinstance(last_file, str) and ("Path not found" in last_file or "Permission denied" in last_file):
+        print(last_file)
+        return
+
+    try:
+        # List all files in the given path
+        files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+
+        # Delete all files except the last one
+        for file in files:
+            if file != last_file:
+                os.remove(os.path.join(path, file))
+        # print("All files except the last one have been deleted.")
+    except FileNotFoundError:
+        print("Path not found")
+    except PermissionError:
+        print("Permission denied")
+    except Exception as e:
+        print(str(e))
+
+
+def extract_image_matrix(file_path):
+    try:
+        # Open the FITS file
+        with fits.open(file_path) as hdul:
+            img_data = hdul[0].data  # Extract the image data from the primary HDU
+
+        if img_data is None:
+            return "No image data found in the FITS file"
+
+        # Convert to a numpy array (ensuring it's in a proper format)
+        image_matrix = np.array(img_data, dtype=np.float32)
+        return image_matrix
+    except FileNotFoundError:
+        return "File not found"
+    except PermissionError:
+        return "Permission denied"
+    except Exception as e:
+        return str(e)
+
 
 if __name__ == '__main__':
     # Create empty image
