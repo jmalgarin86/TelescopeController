@@ -242,7 +242,7 @@ class CameraController(PyIndi.BaseClient):
         self.blob_event.clear()
         self.sendNewNumber(self.ccd_exposure)
         success = self.blob_event.wait(timeout=exposure + self.timeout)
-        self.blob_event.clear()
+        # self.blob_event.clear()
         return success
 
     def set_exposure(self, exposure):
@@ -384,9 +384,17 @@ class CameraController(PyIndi.BaseClient):
                 self.disconnect_camera()
                 self.connect_camera()
 
-            # Get fits from blob and extract image
+            # Get fits from blob and extract image after exposure success
             blob = self.ccd_ccd1[0]
-            fits_data = blob.getblobdata()
+            if blob is None or blob.size == 0:
+                print("Invalid blob")
+                return None
+
+            try:
+                fits_data = bytes(blob.getblobdata())  # force copy
+            except Exception as e:
+                print(f"Failed to get blob data: {e}")
+                return None
 
             # Open FITS from bytes
             hdul = fits.open(io.BytesIO(fits_data))
@@ -526,16 +534,17 @@ class MainCameraController(QObject, CameraController):
                         self._frame = (gray / 256).astype(np.uint8)
                     else:
                         h, w = 1080, 1920
-                        self._frame = np.zeros((h, w), dtype=np.uint8)
+                        frame = np.random.randint(0, 50, (h, w), dtype=np.uint8)
 
                         # Simulate a "star" as a Gaussian spot
                         x0, y0 = 960, 540  # center of image
-                        x0 = np.random.randint(x0, x0 + 10)
-                        y0 = np.random.randint(y0, y0 + 10)
+                        x0 = np.random.randint(x0, x0 + 4)
+                        y0 = np.random.randint(y0, y0 + 4)
                         X, Y = np.meshgrid(np.arange(w), np.arange(h))
-                        sigma = 20  # wider star
-                        self._frame += (255 * np.exp(-((X - x0) ** 2 + (Y - y0) ** 2) / (2 * sigma ** 2))).astype(
+                        sigma = 5  # wider star
+                        frame += (255 * np.exp(-((X - x0) ** 2 + (Y - y0) ** 2) / (2 * sigma ** 2))).astype(
                             np.uint8)
+                        self._frame = np.clip(frame, 0, 255).astype(np.uint8)
                         time.sleep(1)
                     self._n_frames += 1
                 except Exception as e:
@@ -561,11 +570,28 @@ class MainCameraController(QObject, CameraController):
             self.main.image_main_camera.on_main_frame_ready(self._frame)
 
 if __name__ == "__main__":
+    import faulthandler
+    faulthandler.enable()
+    
     # Test ASI 120MC-S
+    # client = CameraController(device="ZWO CCD ASI120MC-S", timeout=1)
+    # client.set_up_camera()
+    # client.test_gain(e0=1.0, g0=10, g1=100, ng=10)
+    # print("Ready!")
+
+    # Test ASI 120MC-S
+    app = QApplication(sys.argv)
+    main = QWidget()
+    # main.gui_open = True    
     client = CameraController(device="ZWO CCD ASI120MC-S", timeout=1)
     client.set_up_camera()
-    client.test_gain(e0=1.0, g0=10, g1=100, ng=10)
-    print("Ready!")
+    client.set_gain(100)
+    client.set_exposure(0.1)
+    n = 0
+    while True:
+        n += 1
+        print(f"Getting frame {n}...")
+        client.capture()
 
     # Test ZWO ASI533MC Pro camera performance vs gain
     # client = CameraController(device="ZWO CCD ASI533MC Pro")
