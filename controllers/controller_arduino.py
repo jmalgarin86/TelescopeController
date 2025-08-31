@@ -45,7 +45,6 @@ class ArduinoController:
 
     def send_command(self, command):
         self.waiting_response = True
-        # print(command)
         if self.print_command:
             print(command)
         if self.serial_connection:
@@ -54,10 +53,9 @@ class ArduinoController:
                     self.serial_connection.write(command.encode())
                     ser_input = self.serial_connection.readline().decode('utf-8').strip()
                     while ser_input != "Ready!":
-                        # print("Waiting response...")
                         ser_input = self.serial_connection.readline().decode('utf-8').strip()
                         time.sleep(0.01)
-                        print(ser_input)
+                    print("ARDUINO READY!")
                     self.waiting_response = False
                 except Exception as e:
                     self.waiting_response = False

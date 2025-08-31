@@ -495,6 +495,7 @@ class MainCameraController(QObject, CameraController):
         self._n_frames = 0
         self._n_frames_old = 0
         self.main = main
+        self.gain = 600
         self.timer = QTimer()
         self.timer.timeout.connect(self._update_frame)
 

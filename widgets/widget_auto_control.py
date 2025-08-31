@@ -93,10 +93,6 @@ class AutoWidget(GroupBoxWithButtonTitle):
         self.update_button = QPushButton("Add or Update")
         self.goto_button = QPushButton("GoTo")
 
-        # Progress bar
-        self.progress_bar = QProgressBar()
-        self.progress_bar.setValue(11)
-
         # Layout
         layout = QGridLayout()
         layout.addWidget(ar_label, 2, 0)
@@ -109,9 +105,8 @@ class AutoWidget(GroupBoxWithButtonTitle):
         layout.addWidget(self.ar_target_edit, 2, 2)
         layout.addWidget(self.dec_origin_edit, 3, 1)
         layout.addWidget(self.dec_target_edit, 3, 2)
-        layout.addWidget(self.progress_bar, 4, 0, 1, 3)
-        layout.addWidget(self.update_button, 5, 0, 1, 3)
-        layout.addWidget(self.goto_button, 6, 0, 1, 3)
+        layout.addWidget(self.update_button, 4, 0, 1, 3)
+        layout.addWidget(self.goto_button, 5, 0, 1, 3)
 
         layout.setRowStretch(layout.rowCount(), 1)
 
@@ -376,11 +371,12 @@ class AutoWidget(GroupBoxWithButtonTitle):
             seconds = int(t - int(t / 60) * 60)
             self.total_time = seconds + 60 * minutes
 
-            if n>10:
+            if n>10 and self.total_time>0:
                 # Send instruction to arduino
                 print("Go to the target")
                 print("Time: %im %is" % (minutes, seconds))
                 command = "%s %s 2 %s %s 2\n" % (nar, ar_dir, nde, de_dir)
+                print(command)
                 self._send_to_arduino(command)
 
                 # Stop trial if serial communication is closed
@@ -390,21 +386,6 @@ class AutoWidget(GroupBoxWithButtonTitle):
                 break
 
         print("Ready!")
-
-    def progress(self):
-        thread = threading.Thread(target=self.runProgress)
-        thread.start()
-
-    def runProgress(self):
-        t0 = time.time()
-        progress = 0
-        while progress < 100:
-            t1 = time.time()
-            progress = int((t1 - t0) / self.total_time * 100)
-            if progress >= 100:
-                progress = 100
-            self.progress_bar.setValue(progress)
-            time.sleep(1)
 
     def _send_to_arduino(self, command):
         self.main.arduino.waiting_response = True

@@ -103,7 +103,7 @@ class MainCameraWidget(GroupBoxWithButtonTitle):
 
         # === Gain Input ===
         self.gain_label = QLabel("Gain:")
-        self.gain_input = QLineEdit("100")
+        self.gain_input = QLineEdit("600")
 
         # === Exposure Input ===
         self.exposure_label = QLabel("Exposure (s):")
