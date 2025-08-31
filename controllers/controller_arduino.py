@@ -55,7 +55,6 @@ class ArduinoController:
                     while ser_input != "Ready!":
                         ser_input = self.serial_connection.readline().decode('utf-8').strip()
                         time.sleep(0.01)
-                    print("ARDUINO READY!")
                     self.waiting_response = False
                 except Exception as e:
                     self.waiting_response = False
