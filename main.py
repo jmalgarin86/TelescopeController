@@ -11,6 +11,7 @@ import qdarkstyle
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QHBoxLayout, QTabWidget
 
 from controllers.controller_arduino import ArduinoController
+from controllers.controller_frames import FrameSniffer
 from widgets.widget_console import ConsoleWidget
 from widgets.widget_toolbar_guide import GuideToolBar
 from widgets.widget_manual_control import ManualWidget
@@ -85,19 +86,15 @@ class TelescopeController(QMainWindow):
         self.calibration_widget.button_clicked.connect(self.hide_calibration)
 
         # Create camera widget
-        self.guide_camera_widget = GuideCameraWidget(self)
-        self.guide_camera_widget.button_clicked.connect(self.hide_guide)
+        self.guide_camera_widget = FrameSniffer(main=self, camera='guide')
 
         # Create main camera widget
-        self.main_camera_widget = MainCameraWidget(self)
-        self.main_camera_widget.button_clicked.connect(self.hide_main)
+        self.main_camera_widget = FrameSniffer(main=self, camera='main')
 
         # Create the layout
         left_layout.addWidget(self.manual_widget)
         left_layout.addWidget(self.auto_widget)
         left_layout.addWidget(self.calibration_widget)
-        left_layout.addWidget(self.guide_camera_widget)
-        left_layout.addWidget(self.main_camera_widget)
         left_layout.addWidget(self.console_widget, stretch=1)  # Add it to the left_layout
         main_layout.addLayout(left_layout, stretch=1)
         main_layout.addLayout(right_layout, stretch=3)
