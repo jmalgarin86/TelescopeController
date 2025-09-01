@@ -582,8 +582,9 @@ if __name__ == "__main__":
     # Test ASI 120MC-S
     app = QApplication(sys.argv)
     main = QWidget()
-    # main.gui_open = True    
+    # main.gui_open = True
     client = CameraController(device="ZWO CCD ASI120MC-S", timeout=1)
+    # client = CameraController(device="CCD Simulator", timeout=1)
     client.set_up_camera()
     client.set_gain(100)
     client.set_exposure(0.1)
