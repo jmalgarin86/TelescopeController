@@ -43,11 +43,6 @@ class TelescopeController(QMainWindow):
         # Create the ConsoleWidget widget
         self.console_widget = ConsoleWidget()
 
-        # Connect to indiserver
-        thread = threading.Thread(target=self.connect_to_indi_server)
-        thread.start()
-        time.sleep(1)
-
         # Create list that contains the instructions to execute
         self.waiting_commands = []
 
@@ -89,12 +84,13 @@ class TelescopeController(QMainWindow):
         self.guide_camera_widget = FrameSniffer(main=self, camera='guide')
 
         # Create main camera widget
-        self.main_camera_widget = FrameSniffer(main=self, camera='main')
+        self.main_camera_widget = MainCameraWidget(main=self)
 
         # Create the layout
         left_layout.addWidget(self.manual_widget)
         left_layout.addWidget(self.auto_widget)
         left_layout.addWidget(self.calibration_widget)
+        left_layout.addWidget(self.main_camera_widget)
         left_layout.addWidget(self.console_widget, stretch=1)  # Add it to the left_layout
         main_layout.addLayout(left_layout, stretch=1)
         main_layout.addLayout(right_layout, stretch=3)
@@ -230,7 +226,6 @@ class TelescopeController(QMainWindow):
                 self.arduino.send_command(in_waiting)
                 self.waiting_response = False
             time.sleep(0.01)
-            self.shutdown_at(hour=7, minute=0)
 
     def closeEvent(self, event):
         # Return stdout to defaults.

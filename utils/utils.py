@@ -1,5 +1,8 @@
 import os
+import re
+import subprocess
 
+import cv2
 import numpy as np
 from astropy.io import fits
 from matplotlib import pyplot as plt
@@ -37,6 +40,51 @@ def analyze_subframe(roi):
 
     return (int(round(cx)), int(round(cy))), star_size
 
+def run_plate_solving(self, file_name):
+    """Execute plate-solving commands using subprocess."""
+    try:
+        subprocess.run([
+            "solve-field", "--no-remove-lines", "--uniformize", "0", "--overwrite", "--no-plots",
+            "--new-fits", "none", "--downsample", "4", "--scale-units", "arcsecperpix", "--scale-low", "0.6",
+            "--scale-high", "1.0", file_name
+        ], capture_output=True, text=True, timeout=5)
+    except:
+        print("Failed to run plate-solving.")
+        return None
+
+    # Analyse wcs generated file
+    base_name = file_name.with_suffix('')
+    result = subprocess.run(["wcsinfo", f"{base_name}.wcs"], capture_output=True, text=True)
+    if not result.stdout:
+        return None
+
+    patterns = {
+        "ra_center_h": r"ra_center_h (\d+)",
+        "ra_center_m": r"ra_center_m (\d+)",
+        "ra_center_s": r"ra_center_s ([\d\.]+)",
+        "dec_center_sign": r"dec_center_sign (-?\d+)",
+        "dec_center_d": r"dec_center_d (\d+)",
+        "dec_center_m": r"dec_center_m (\d+)",
+        "dec_center_s": r"dec_center_s ([\d\.]+)"
+    }
+
+    extracted = {k: re.search(p, result.stdout) for k, p in patterns.items()}
+    if None in extracted.values():
+        return None
+
+    values = {k: v.group(1) for k, v in extracted.items()}
+    values['ra_center_s'] = str(round(float(values['ra_center_s'])))
+    values['dec_center_s'] = str(round(float(values['dec_center_s'])))
+
+    ra = f"{values['ra_center_h']}h {values['ra_center_m']}m {values['ra_center_s']}s"
+    dec_sign = "-" if values['dec_center_sign'] == "-1" else ""
+    dec = f"{dec_sign}{values['dec_center_d']}º {values['dec_center_m']}' {values['dec_center_s']}''"
+
+    print(f"RA: {ra}")
+    print(f"DEC: {dec}")
+
+    return ra, dec
+
 def get_last_folder_in_directory(path):
     try:
         # List all directories in the given path
@@ -62,7 +110,7 @@ def get_last_file_in_directory(path):
         if not files:
             return None
         # Sort files lexicographically and return the last one
-        files.sort()
+        files.sort(key=lambda f: os.path.getctime(os.path.join(path, f)))
         last_file = files[-1]
         return last_file
     except FileNotFoundError:
@@ -96,7 +144,7 @@ def delete_all_except_last(path):
     except PermissionError:
         print("Permission denied")
     except Exception as e:
-        print(str(e))
+        pass
 
 
 def extract_image_matrix(file_path):
@@ -109,7 +157,9 @@ def extract_image_matrix(file_path):
             return "No image data found in the FITS file"
 
         # Convert to a numpy array (ensuring it's in a proper format)
-        image_matrix = np.array(img_data, dtype=np.float32)
+        color = cv2.cvtColor(img_data, cv2.COLOR_BayerGR2BGR)
+        gray = cv2.cvtColor(color, cv2.COLOR_BGR2GRAY)
+        image_matrix = np.clip(gray / 256 * 8, 0, 255).astype(np.uint8)
         return image_matrix
     except FileNotFoundError:
         return "File not found"

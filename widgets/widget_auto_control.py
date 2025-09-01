@@ -11,6 +11,7 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QLabel, QLineEdit, QGridLayout, QPushButton, QComboBox, QSizePolicy, QWidget, QApplication, \
     QProgressBar, QTextEdit
 from catalogs.catalog import catalog
+from utils import utils
 from widgets.GroupBox import GroupBoxWithButtonTitle
 
 def add_or_update_field(csv_file, field_name, field_values):
@@ -161,7 +162,7 @@ class AutoWidget(GroupBoxWithButtonTitle):
         if last_file:
             time.sleep(1)
             print(f"Running plate solving in {last_file}...")
-            self.coordinates = self._run_plate_solving(last_file)
+            self.coordinates = utils.run_plate_solving(last_file)
             if self.coordinates:
                 self.plate_solving_signal.emit()
                 time.sleep(0.1)
@@ -173,51 +174,6 @@ class AutoWidget(GroupBoxWithButtonTitle):
         else:
             print(f"New file not found.")
             return False
-
-    def _run_plate_solving(self, file_name):
-        """Execute plate-solving commands using subprocess."""
-        try:
-            subprocess.run([
-                "solve-field", "--no-remove-lines", "--uniformize", "0", "--overwrite", "--no-plots",
-                "--new-fits", "none", "--downsample", "4", "--scale-units", "arcsecperpix", "--scale-low", "0.6",
-                "--scale-high", "1.0", file_name
-            ], capture_output=True, text=True, timeout=5)
-        except:
-            print("Failed to run plate-solving.")
-            return None
-
-        # Analyse wcs generated file
-        base_name = file_name.with_suffix('')
-        result = subprocess.run(["wcsinfo", f"{base_name}.wcs"], capture_output=True, text=True)
-        if not result.stdout:
-            return None
-
-        patterns = {
-            "ra_center_h": r"ra_center_h (\d+)",
-            "ra_center_m": r"ra_center_m (\d+)",
-            "ra_center_s": r"ra_center_s ([\d\.]+)",
-            "dec_center_sign": r"dec_center_sign (-?\d+)",
-            "dec_center_d": r"dec_center_d (\d+)",
-            "dec_center_m": r"dec_center_m (\d+)",
-            "dec_center_s": r"dec_center_s ([\d\.]+)"
-        }
-
-        extracted = {k: re.search(p, result.stdout) for k, p in patterns.items()}
-        if None in extracted.values():
-            return None
-
-        values = {k: v.group(1) for k, v in extracted.items()}
-        values['ra_center_s'] = str(round(float(values['ra_center_s'])))
-        values['dec_center_s'] = str(round(float(values['dec_center_s'])))
-
-        ra = f"{values['ra_center_h']}h {values['ra_center_m']}m {values['ra_center_s']}s"
-        dec_sign = "-" if values['dec_center_sign'] == "-1" else ""
-        dec = f"{dec_sign}{values['dec_center_d']}º {values['dec_center_m']}' {values['dec_center_s']}''"
-
-        print(f"RA: {ra}")
-        print(f"DEC: {dec}")
-
-        return ra, dec
 
     def _update_coordinates_display(self, ra, dec):
         """Update the UI with the extracted celestial coordinates."""
