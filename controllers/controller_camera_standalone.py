@@ -91,8 +91,8 @@ class CameraController(PyIndi.BaseClient):
 
 
 if __name__ =='__main__':
-    client = CameraController(device="ZWO CCD ASI120MC-S", timeout=1)
-    # client = CameraController(device="CCD Simulator", timeout=1)
+    # client = CameraController(device="ZWO CCD ASI120MC-S", timeout=1)
+    client = CameraController(device="CCD Simulator", timeout=1)
     n = 0
     while True:
         n += 1
