@@ -60,7 +60,7 @@ class GuideToolBar(QToolBar):
                 self.main.image_guide_camera.dec_dir_old = None
                 self.main.image_guide_camera.set_guiding(True)
                 print("Start auto-guide")
-                print("Reference position (x, y):", position)
+                print(f"Reference position (x, y): {position}")
             else:
                 print("Calibrate first!")
                 self.action_guide.setChecked(False)

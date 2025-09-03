@@ -124,8 +124,6 @@ class TelescopeController(QMainWindow):
             self.auto_widget.on_button_clicked()
             self.calibration_widget.title_button.setChecked(not my_bool)
             self.calibration_widget.on_button_clicked()
-            self.guide_camera_widget.title_button.setChecked(not my_bool)
-            self.guide_camera_widget.on_button_clicked()
             self.main_camera_widget.title_button.setChecked(not my_bool)
             self.main_camera_widget.on_button_clicked()
 
@@ -135,8 +133,6 @@ class TelescopeController(QMainWindow):
             self.manual_widget.on_button_clicked()
             self.calibration_widget.title_button.setChecked(not my_bool)
             self.calibration_widget.on_button_clicked()
-            self.guide_camera_widget.title_button.setChecked(not my_bool)
-            self.guide_camera_widget.on_button_clicked()
             self.main_camera_widget.title_button.setChecked(not my_bool)
             self.main_camera_widget.on_button_clicked()
 
@@ -146,19 +142,6 @@ class TelescopeController(QMainWindow):
             self.manual_widget.on_button_clicked()
             self.auto_widget.title_button.setChecked(not my_bool)
             self.auto_widget.on_button_clicked()
-            self.guide_camera_widget.title_button.setChecked(not my_bool)
-            self.guide_camera_widget.on_button_clicked()
-            self.main_camera_widget.title_button.setChecked(not my_bool)
-            self.main_camera_widget.on_button_clicked()
-
-    def hide_guide(self, my_bool):
-        if my_bool:
-            self.manual_widget.title_button.setChecked(not my_bool)
-            self.manual_widget.on_button_clicked()
-            self.auto_widget.title_button.setChecked(not my_bool)
-            self.auto_widget.on_button_clicked()
-            self.calibration_widget.title_button.setChecked(not my_bool)
-            self.calibration_widget.on_button_clicked()
             self.main_camera_widget.title_button.setChecked(not my_bool)
             self.main_camera_widget.on_button_clicked()
 
@@ -170,8 +153,6 @@ class TelescopeController(QMainWindow):
             self.auto_widget.on_button_clicked()
             self.calibration_widget.title_button.setChecked(not my_bool)
             self.calibration_widget.on_button_clicked()
-            self.guide_camera_widget.title_button.setChecked(not my_bool)
-            self.guide_camera_widget.on_button_clicked()
 
     @staticmethod
     def connect_to_indi_server():

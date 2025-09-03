@@ -141,7 +141,7 @@ class AutoWidget(GroupBoxWithButtonTitle):
         extension = '.fits'
 
         # Capture frame
-        self.main.main_camera_widget.main_camera.set_frames_to_save(frames_to_save=1, path=path)
+        self.main.main_camera_widget.main_camera.set_frames_to_save(n=1, path=path)
 
         # Wait to new file
         start_time = time.time()
@@ -327,7 +327,7 @@ class AutoWidget(GroupBoxWithButtonTitle):
             seconds = int(t - int(t / 60) * 60)
             self.total_time = seconds + 60 * minutes
 
-            if n>10 and self.total_time>0:
+            if n>20:
                 # Send instruction to arduino
                 print("Go to the target")
                 print("Time: %im %is" % (minutes, seconds))

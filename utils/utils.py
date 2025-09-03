@@ -40,7 +40,7 @@ def analyze_subframe(roi):
 
     return (int(round(cx)), int(round(cy))), star_size
 
-def run_plate_solving(self, file_name):
+def run_plate_solving(file_name):
     """Execute plate-solving commands using subprocess."""
     try:
         subprocess.run([
