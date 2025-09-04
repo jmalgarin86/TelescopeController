@@ -26,8 +26,10 @@ def open_astrodmx():
     # Build the command based on the detected OS/distro
     if distro == "ubuntu":
         subprocess.Popen(["gnome-terminal", "--", "./astrodmx.sh"])
+        subprocess.Popen(["gnome-terminal", "--", "./kstars.sh"])
     elif distro in ("raspbian", "debian"):
         subprocess.Popen([ "lxterminal", "--command=bash -c './astrodmx.sh; exec bash'"])
+        subprocess.Popen([ "lxterminal", "--command=bash -c './kstars.sh; exec bash'"])
     else:
         print("Unsupported OS or unknown Linux distribution.")
 
