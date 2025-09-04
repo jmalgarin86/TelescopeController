@@ -16,7 +16,7 @@ from widgets.widget_console import ConsoleWidget
 from widgets.widget_toolbar_guide import GuideToolBar
 from widgets.widget_manual_control import ManualWidget
 from widgets.widget_auto_control import AutoWidget
-from widgets.widget_camera import MainCameraWidget, GuideCameraWidget
+from widgets.widget_camera import MainCameraWidget
 from widgets.widget_figure import MainImageWidget, GuideImageWidget
 from widgets.widget_plot import PlotWidget
 from widgets.widget_histogram import HistogramWidget

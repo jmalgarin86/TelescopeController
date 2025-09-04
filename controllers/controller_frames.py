@@ -55,21 +55,26 @@ class FrameSniffer:
             if file_path != self._old_file and path is not None:
                 self._old_file = file_path
                 self._n_frames += 1
-                with fits.open(file_path) as hdul:
-                    raw = hdul[0].data
-                    if self._camera=='guide':
-                        color = cv2.cvtColor(raw, cv2.COLOR_BayerGR2BGR)
-                        gray = cv2.cvtColor(color, cv2.COLOR_BGR2GRAY)
-                        self._frame = np.clip(gray / 256 * 8, 0, 255).astype(np.uint8)
-                    elif self._camera=='main':
-                        color = cv2.cvtColor(raw, cv2.COLOR_BayerRG2BGR)
-                        gray = cv2.cvtColor(color, cv2.COLOR_BGR2GRAY)
-                        self._frame = (gray / 256).astype(np.uint8)
-                if self._n_frames_to_save > 0:
-                    self._n_frames_to_save -= 1
-                    print(f"{self._n_frames_total - self._n_frames_to_save}/{self._n_frames_total}, {file_path}")
-                    thread = threading.Thread(target=self._copy_file)
-                    thread.start()
+                time.sleep(0.1)
+                try:
+                    with fits.open(file_path) as hdul:
+                        raw = hdul[0].data
+                        if self._camera=='guide':
+                            color = cv2.cvtColor(raw, cv2.COLOR_BayerGR2BGR)
+                            gray = cv2.cvtColor(color, cv2.COLOR_BGR2GRAY)
+                            self._frame = np.clip(gray * 8, 0, 255).astype(np.uint8)
+                        elif self._camera=='main':
+                            color = cv2.cvtColor(raw, cv2.COLOR_BayerRG2BGR)
+                            gray = cv2.cvtColor(color, cv2.COLOR_BGR2GRAY)
+                            self._frame = (gray / 256).astype(np.uint8)
+                    if self._n_frames_to_save > 0:
+                        self._n_frames_to_save -= 1
+                        print(f"{self._n_frames_total - self._n_frames_to_save}/{self._n_frames_total}, {file_path}")
+                        thread = threading.Thread(target=self._copy_file)
+                        thread.start()
+                    pass
+                except:
+                    pass
             time.sleep(0.1)
 
     def set_frames_to_save(self, n=0, path='captures/'):
