@@ -1,3 +1,4 @@
+import platform
 import os
 import re
 import subprocess
@@ -7,6 +8,28 @@ import numpy as np
 from astropy.io import fits
 from matplotlib import pyplot as plt
 
+def open_astrodmx():
+    # Get the OS information
+    system = platform.system()
+    distro = ""
+    if system == "Linux":
+        try:
+            # This will work on most modern Linux distros
+            with open("/etc/os-release") as f:
+                for line in f:
+                    if line.startswith("ID="):
+                        distro = line.strip().split("=")[1].strip('"').lower()
+                        break
+        except FileNotFoundError:
+            pass
+
+    # Build the command based on the detected OS/distro
+    if distro == "ubuntu":
+        subprocess.Popen(["gnome-terminal", "--", "./astrodmx.sh"])
+    elif distro in ("raspbian", "debian"):
+        subprocess.Popen([ "lxterminal", "--command=bash -c './astrodmx.sh; exec bash'"])
+    else:
+        print("Unsupported OS or unknown Linux distribution.")
 
 def analyze_subframe(roi):
     if roi is None or roi.size == 0:

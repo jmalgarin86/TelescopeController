@@ -4,8 +4,9 @@ import sys
 import threading
 import time
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
+from utils import utils
 
 import qdarkstyle
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QHBoxLayout, QTabWidget
@@ -220,6 +221,7 @@ class TelescopeController(QMainWindow):
 def main():
     app = QApplication(sys.argv)
     window = TelescopeController()
+    utils.open_astrodmx()
     sys.exit(app.exec_())
 
 
